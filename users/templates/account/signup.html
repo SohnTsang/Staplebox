@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% load crispy_forms_filters %}
+
+{% block title %}Sign Up{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/styles.css' %}">
+{% endblock extra_css %}
+
+
+{% block content %}
+<div class="container mt-5 custom-signup-container">
+    <div class="signuplogin-form-wrapper">
+        <h2>Sign Up</h2>
+        <form method="post" id="signupForm" class="needs-validation" novalidate>
+            {% csrf_token %}
+            <div class="form-group needs-validation" novalidate>
+                {{ form.username|as_crispy_field }}
+            </div>
+            <div class="form-group">
+                {{ form.email|as_crispy_field }}
+            </div>
+            <div class="form-group">
+                <div id="div_id_password1" class="mb3">
+                    <label for="{{ form.password1.id_for_label }}" class="form-label requiredField">Password</label>
+                    <input type="{{ form.password1.field.widget.input_type }}" name="{{ form.password1.name }}" class="form-control {% if form.password1.errors %}is-invalid{% endif %}" id="{{ form.password1.id_for_label }}">
+
+                    <div id="passwordStrength" class="progress mt-2" style="height: 5px;">
+                        <div class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    {% if form.password1.errors %}
+                        {% for error in form.password1.errors %}
+                            <p id="error_{{ forloop.counter }}_id_{{ form.password1.name }}" class="invalid-feedback">
+                                <strong>{{ error }}</strong>
+                            </p>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+            <div class="form-group">
+                {{ form.password2|as_crispy_field }}
+            </div>
+            <div class="form-group">
+                {% for value, label in form.role.field.choices %}
+                    <div class="form-check is-invalid">
+                        <input class="form-check-input" type="radio" name="{{ form.role.name }}" id="{{ form.role.name }}_{{ forloop.counter }}" value="{{ value }}" {% if forloop.first %}required{% endif %}>
+                        <label class="form-check-label" for="{{ form.role.name }}_{{ forloop.counter }}">
+                            {{ label }}
+                        </label>
+                    </div>
+                {% endfor %}
+                {% if form.role.errors %}
+                    <p id="error_{{ forloop.counter }}_id_{{ form.role.name }}" class="invalid-feedback">
+                        {% for error in form.role.errors %}
+                            <strong>{{ error }}</strong>
+                        {% endfor %}
+                    </p>
+                {% endif %}
+
+            </div>
+            <!--
+            {% if form.errors %}
+                <div class="alert alert-danger" role="alert">
+                    Please correct the errors below.
+                </div>
+            {% endif %}
+            -->
+            <button type="submit" class="btn btn-primary">Sign Up</button>
+        </form>
+        <a href="{% url 'account_login' %}"><button type="submit" class="btn btn-primary">Login</button></a>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/password-strength.js' %}"></script>
+
+
+{% endblock extra_js %}

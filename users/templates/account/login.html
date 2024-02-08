@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% load crispy_forms_filters %}
+{% block title %}Log in{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/styles.css' %}">
+{% endblock extra_css %}
+
+{% block content %}
+<div class="container mt-5 custom-signup-container">
+    <div class="signuplogin-form-wrapper">
+        <h2>Login</h2>
+        {% if form.errors %}
+                <div class="alert alert-danger" role="alert">
+                    Your username and/or password were incorrect.
+                </div>
+            {% endif %}
+        {% if messages %}
+            <div id="messages-container">
+                {% for message in messages %}
+                    <div class="{{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                {{ form.login|as_crispy_field }}
+            </div>
+            <div class="form-group">
+                {{ form.password|as_crispy_field }}
+            </div>
+
+            <button type="submit" class="btn btn-primary">Login</button>
+
+        </form>
+        <a href="{% url 'account_signup' %}"><button type="submit" class="btn btn-primary">Signup</button></a>
+    </div>
+</div>
+{% endblock %}
+

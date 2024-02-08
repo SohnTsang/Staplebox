@@ -1,0 +1,13 @@
+{% autoescape off %}
+Dear {{ user.get_username }},
+
+Thank you for signing up. Please confirm your email address to complete the registration process.
+
+Confirm your email address by clicking the following link:
+{{ activate_url }}
+
+If you did not sign up for this account, you can ignore this email.
+
+Best,
+Your Site Team
+{% endautoescape %}
