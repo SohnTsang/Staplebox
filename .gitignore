@@ -144,3 +144,8 @@ cython_debug/
 
 # DS_Store
 .DS_Store
+
+# doc file
+.doc
+.docx
+/media/
