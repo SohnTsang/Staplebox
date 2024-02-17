@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% load crispy_forms_filters %}
+{% block title %}Folders in {{ product.product_name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2>Folders in {{ product.product_name }}</h2>
+    <a href="{% url 'folder_create' product_id=product.id %}" class="btn btn-primary">Add Folder</a>
+    <div>
+        {% for folder in folders %}
+            <p>{{ folder.name }}</p>
+            <!-- Add link to view documents in a folder or create new document -->
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

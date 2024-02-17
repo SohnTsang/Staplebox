@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% load crispy_forms_filters %}
+{% block title %}Product Management{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2>{% if form.instance.pk %}Edit Product{% else %}Add Product{% endif %}</h2>
+    <form method="post" class="form">
+        {% csrf_token %}
+        <div class="mb-3">
+            {{ form.product_name|as_crispy_field }}
+        </div>
+        <div class="mb-3">
+            {{ form.product_description|as_crispy_field }}
+        </div>
+        <div class="form-group">
+            <label for="id_product_type">Product Type:</label>
+            {{ form.product_type }}
+            {% if form.product_type.errors %}
+                <div class="alert alert-danger">{{ form.product_type.errors.as_text }}</div>
+            {% endif %}
+        </div>
+        <button type="submit" class="btn btn-primary">Save</button>
+        <a href="{% url 'home' %}" class="btn btn-secondary">Back to Home</a>
+    </form>
+</div>
+{% endblock %}

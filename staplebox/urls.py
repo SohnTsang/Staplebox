@@ -23,16 +23,22 @@ from users.views import LoginView
 from users.views import password_reset_request
 from django.contrib.auth import views as auth_views
 from users.views import CustomPasswordResetCompleteView
+from django.conf import settings
+from django.conf.urls.static import static
+from products.views import home_view  # Adjust the import based on your project structure
+
 
 urlpatterns = [
 
     path('users/', include(('users.urls', 'users'), namespace='users')),
+    path('folder/', include(('folder.urls', 'folder'), namespace='folder')),
+    path('documents/', include(('documents.urls', 'documents'), namespace='documents')),
+    path('products/', include('products.urls')),
     path('accounts/login/', LoginView.as_view(), name='account_login'),
-
     path('password/reset/complete/', CustomPasswordResetCompleteView.as_view(), name='password_reset_complete'),
     #path('password/reset/', password_reset_request, name='password_reset_request'),
     path('admin/', admin.site.urls),
     path('accounts/', include('allauth.urls')),  # Assuming you're using django-allauth for authentication
-    path('', user_views.home, name='home'),  # Directs to the home view for the root URL
+    path('', home_view, name='home'),  # Directs to the home view for the root URL
 
-]
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -1,0 +1,10 @@
+
+    {% for folder in subfolders %}
+    <div class="folder-item " data-folder-id="{{ folder.id }}">
+        <a href="#" data-folder-id="{{ folder.id }}" class="folder-link">{{ folder.name }}</a>
+        <button class="btn btn-danger btn-sm delete-folder-btn" data-folder-id="{{ folder.id }}">Delete</button>
+    </div>
+
+    {% empty %}
+    {% endfor %}
+

@@ -32,13 +32,14 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
     'compliance',
+    'folder',
     'documents',
     'document_types',
     'notifications',
     'partners',
     'products',
     'subscriptions',
-    'users',
+    'users.apps.UsersConfig',
     'crispy_forms',
     'crispy_bootstrap5',
     'django.contrib.admin',
@@ -187,6 +188,11 @@ STATICFILES_DIRS = [
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
+MEDIA_URL = '/media/'
+
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+
 LANGUAGES = [
     ('en', 'English'),
     ('ja', 'Japanese'),
@@ -203,21 +209,36 @@ LOCALE_PATHS = [
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'handlers': {
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'user_activity.log'),
+        },
         'console': {
+            'level': 'DEBUG',
             'class': 'logging.StreamHandler',
         },
     },
     'loggers': {
-        'django': {
-            'handlers': ['console'],
-            'level': 'ERROR',  # Only log errors and above
+        'users': {
+            'handlers': ['file', 'console'],
+            'level': 'DEBUG',
+            'propagate': True,
         },
     },
+    'django.contrib.auth': {
+        'handlers': ['file'],
+        'level': 'INFO',
+        'propagate': False,
+        },
 }
+
+MESSAGE_STORAGE = 'staplebox.message_storage.FilteredMessagesStorage'
 
 CRISPY_TEMPLATE_PACK = 'bootstrap5'
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"

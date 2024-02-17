@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% load crispy_forms_filters %}
+
+{% block title %}Product Directory{% endblock %}
+
+{% block content %}
+
+<div id="product-explorer" data-product-id="{{ product.id }}" data-root-folder-id="{{ root_folder_id }}" class="container mt-3">
+
+    <h2>{{ product.product_name }}</h2>
+
+    <!-- Product Actions (Edit, Delete, etc.) -->
+    <div id="product-actions">
+        <a href="{% url 'edit_product' product.id %}" class="btn btn-primary">Edit Product</a>
+        <form action="{% url 'delete_product' product.id %}" method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary">Delete Product</button>
+        </form>
+    </div>
+
+    <!-- Breadcrumbs for navigation -->
+    <nav aria-label="breadcrumb">
+    <ol class="breadcrumb" id="breadcrumbs">
+        <!-- Remove the automatic addition of "Root" here -->
+        {% for folder in breadcrumbs %}
+        <li class="breadcrumb-item">
+            {{ folder.name }}
+        </li>
+        {% endfor %}
+    </ol>
+</nav>
+
+    <!-- Folder and Document Actions -->
+    <div id="folder-actions">
+        <button type="button" class="btn btn-success" data-toggle="modal" data-target="#createFolderModal">Create Folder</button>
+        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#uploadDocumentModal">Upload Document</button>
+    </div>
+
+    <!-- Folder Contents -->
+    <div id="folders-container">
+        <div id="folder-contents">
+            {% include 'folders/folder_contents.html' with subfolders=folders %}
+            <div id="document-list-{{ current_folder.id }}" class="document-list"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Folder Modal -->
+{% include "modal/create_folder_modal.html" %}
+{% include "modal/upload_document_modal.html" %}
+
+
+
+{% block javascript %}
+<script src="{% static 'products/js/product_explorer.js' %}"></script>
+
+<script>
+
+
+</script>
+{% endblock %}
+
+{% endblock %}
