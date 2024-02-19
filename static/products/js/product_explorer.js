@@ -263,6 +263,7 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(data => {
             updateFolderContents(data, currentFolderId);  // Update your UI with the fetched data
+
             updateDocumentList(data.documents, folderId);
             updateBreadcrumbs(data.breadcrumbs, data.currentFolderName, productId);
         })
@@ -273,25 +274,30 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
     function updateDocumentList(documents, folderId) {
-    // Ensure the document list container exists or create it if not
-        let docListContainer = document.getElementById(`document-list-${folderId}`);
-        if (!docListContainer) {
-            const folderContentsContainer = document.getElementById('folder-contents');
-            docListContainer = document.createElement('div');
-            docListContainer.id = `document-list-${folderId}`;
-            docListContainer.className = 'document-list';
-            folderContentsContainer.appendChild(docListContainer);
-        } else {
-            // Clear existing content if the container already exists
-            docListContainer.innerHTML = '';
-        }
+        // Assuming you have the correct endpoint to fetch documents by folderId
 
-        // Iterate over the documents to append each to the document list container
-        documents.forEach(documentData => appendDocumentToFolder(documentData, folderId));
+        fetch(`/products/${productId}/folders/${folderId}/documents/`)
+            .then(response => response.json())
+            .then(data => {
+                const documents = data.documents;
+                let docListContainer = document.getElementById(`document-list-${folderId}`);
+                if (!docListContainer) {
+                    const folderContentsContainer = document.getElementById('folder-contents');
+                    docListContainer = document.createElement('div');
+                    docListContainer.id = `document-list-${folderId}`;
+                    docListContainer.className = 'document-list';
+                    folderContentsContainer.appendChild(docListContainer);
+                } else {
+                    // Clear existing content if the container already exists
+                    docListContainer.innerHTML = '';
+                }
+                // Iterate over the documents to append each to the document list container
+                documents.forEach(documentData => appendDocumentToFolder(documentData, folderId));
+            })
+            .catch(error => console.error('Error fetching documents:', error));
     }
 
     function appendDocumentToFolder(documentData, folderId) {
-    // Assume documentData contains fields like id, name (or file name), and document_type (name)
         const docListId = `document-list-${folderId}`;  // Dynamic ID based on folder
         const docList = document.getElementById(docListId);
 
@@ -299,30 +305,39 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Document list container not found for folder ID:', folderId);
             return;
         }
+
         // Create the container for the new document
         const docItem = document.createElement('div');
         docItem.className = 'document-item';
         docItem.setAttribute('data-document-id', documentData.id);
 
-        // Create the document name element
-        const docName = document.createElement('span');
-        docName.textContent = documentData.name; // Use the actual property name for the document's name
-        docItem.appendChild(docName);
+        // Create the document details element
+        const docDetails = document.createElement('div');
+        docDetails.innerHTML = `
+            <span>${documentData.name}</span> |
+            <span>Type: ${documentData.document_type}</span> |
+            <span>Size: ${formatBytes(documentData.size)}</span> |
+            <span>Uploaded: ${documentData.uploaded_at}</span>
+            <a href="/documents/download/${documentData.id}/" target="_blank">Download</a>
+        `;
 
-        // Optionally, create and append other details like document type, etc.
+        docItem.appendChild(docDetails);
 
-        // Create the delete button for the document
-        const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'btn btn-danger btn-sm delete-document-btn';
-        deleteBtn.textContent = 'Delete';
-        deleteBtn.setAttribute('data-document-id', documentData.id);
-        deleteBtn.onclick = function() {
-            deleteDocument(documentData.id);
-        };
+        // Create and append the delete button
+        const deleteBtn = createDeleteButton(documentData.id);
         docItem.appendChild(deleteBtn);
 
         // Append the document item to the document list in the UI
         docList.appendChild(docItem);
+    }
+
+    function createDeleteButton(documentId) {
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'btn btn-danger btn-sm delete-document-btn';
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.setAttribute('data-document-id', documentId);
+        deleteBtn.onclick = () => deleteDocument(documentId);
+        return deleteBtn;
     }
 
     function deleteDocument(documentId) {
@@ -341,7 +356,6 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
             if(data.success) {
                 // Attempt to find and remove the document from the UI
-                console.log(documentId);
                 const documentElement = document.querySelector(`div[data-document-id="${documentId}"]`);
                 if (documentElement) {
                     documentElement.remove();
@@ -355,11 +369,34 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(error => console.error('Error:', error));
     }
 
+    function formatBytes(bytes, decimals = 2) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const dm = decimals < 0 ? 0 : decimals;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+    }
+
 
     document.getElementById('upload-document-form').addEventListener('submit', function(e) {
         e.preventDefault();
         const formData = new FormData(this);
         formData.append('folder_id', currentFolderId); // Ensure currentFolderId is kept updated as you navigate
+
+        const files = document.getElementById('documentFile').files;
+        const documentTypeSelect = document.getElementById('documentType').value;
+        const selectedDocumentTypeId = documentTypeSelect.value;
+
+
+        Array.from(files).forEach((file, index) => {
+            formData.append(`file_${index}`, file); // Append file
+            const documentTypeId = document.querySelector(`[name="document_type_${index}"]`).value; // Get the selected document type for this file
+            formData.append(`document_type_${index}`, documentTypeId); // Append document type ID
+        });
+
+        formData.append('folder_id', currentFolderId);
+
 
         fetch(`/products/${productId}/folders/${currentFolderId}/upload_document/`, {
             method: 'POST',
@@ -375,7 +412,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Handle success, e.g., append the new document to the DOM.
                 $('#uploadDocumentModal').modal('hide')
                 console.log('Document uploaded successfully');
-                appendDocumentToFolder(data, currentFolderId);
+                data.documents.forEach(document => appendDocumentToFolder(document, currentFolderId));
 
             } else {
                 // Handle error
@@ -385,8 +422,73 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(error => console.error('Error:', error));
     });
 
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Fetch document types and store them
+
+    let currentFolderId = new URLSearchParams(window.location.search).get('folderId') || rootFolderId;
+    const productId = document.querySelector('[data-product-id]').getAttribute('data-product-id');
+    let documentTypes = [];
+
+    fetch(`/products/${productId}/folders/${currentFolderId}/api/document_types/`)  // Adjust the URL based on your actual endpoint
+      .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then(data => {
+        documentTypes = data; // Adjust based on your actual response structure
+
+        updateDocumentTypeOptions();
+      });
+
+    document.getElementById('documentFile').addEventListener('change', function(e) {
+        const files = e.target.files;
+        const formContainer = document.getElementById('dynamicFormsContainer'); // Container in your modal
+
+        // Clear previous inputs
+        formContainer.innerHTML = '';
+
+        Array.from(files).forEach((file, index) => {
 
 
+            const formGroup = document.createElement('div');
+            formGroup.className = 'form-group';
+            let optionsHtml = '';
+            if (documentTypes && documentTypes.length > 0) {
 
+                optionsHtml = documentTypes.map(type => `<option value="${type.id}">${type.type_name}</option>`).join('');
+            } else {
+                console.error('Document types not loaded correctly.');
+            }
+
+            formGroup.innerHTML = `
+                <label>Document Type for ${file.name}:</label>
+                <select class="form-control" name="document_type_${index}" id="documentType">
+                    ${optionsHtml}
+                </select>
+            `;
+            formContainer.appendChild(formGroup);
+        });
+    });
+
+    function updateDocumentTypeOptions() {
+    // Assuming 'documentTypes' is an array of document type objects available globally
+        const documentTypeSelects = document.querySelectorAll('.document-type-select'); // This class should be added to your dynamically created selects
+
+        // Clear existing options in each select (optional)
+        documentTypeSelects.forEach(select => {
+            select.innerHTML = ''; // Clear existing options
+            // Populate each select with new options
+            documentTypes.forEach(type => {
+                const option = document.createElement('option');
+                option.value = type.id;
+                option.textContent = type.type_name;
+                select.appendChild(option);
+            });
+        });
+    }
 
 });

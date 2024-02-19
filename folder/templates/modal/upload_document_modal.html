@@ -9,25 +9,19 @@
             </div>
             <div class="modal-body">
                 <form id="upload-document-form" enctype="multipart/form-data">
+                    <!-- File input to allow multiple file selections -->
                     <div class="form-group">
-                        <label for="documentFile">Select Document</label>
-                        <input type="file" class="form-control-file" id="documentFile" name="file" required>
+                        <label for="documentFile">Select Documents</label>
+                        <input type="file" class="form-control-file" id="documentFile" name="files[]" multiple required>
                     </div>
-                    <div class="form-group">
-                        <label for="documentType">Document Type</label>
-                        <select class="form-control" id="documentType" name="document_type" required>
-                            <!-- Dynamically populate this with document types -->
-                            {% for document_type in document_types %}
-                            <option value="{{ document_type.id }}">{{ document_type.type_name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
+                    <!-- Container where dynamic forms for document type selection will be appended -->
+                    <div id="dynamicFormsContainer"></div>
                     <input type="hidden" id="folderId" name="folder_id">
                     <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="submit" class="btn btn-primary" form="upload-document-form">Upload Document</button>
+                <button type="submit" class="btn btn-primary" form="upload-document-form">Upload Documents</button>
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
             </div>
         </div>
