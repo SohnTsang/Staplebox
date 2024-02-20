@@ -28,7 +28,6 @@ def folder_explorer(request, product_id, folder_id=None):
             'productName': product.product_name,
             'breadcrumbs': [{'id': b.id, 'name': b.name} for b in breadcrumbs],
         }
-        print(response_data)
         return JsonResponse(response_data)
 
     context = {

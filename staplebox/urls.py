@@ -40,5 +40,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('allauth.urls')),  # Assuming you're using django-allauth for authentication
     path('', home_view, name='home'),  # Directs to the home view for the root URL
+    path('invitations/', include(('invitations.urls', 'invitations'), namespace='invitations')),
+    path('partners/', include('partners.urls', namespace='partners')),
+
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

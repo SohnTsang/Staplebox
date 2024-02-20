@@ -10,7 +10,7 @@
 <div id="product-explorer" data-product-id="{{ product.id }}" data-root-folder-id="{{ root_folder_id }}" class="container mt-3">
 
     <h2>{{ product.product_name }}</h2>
-
+    <a href="{% url 'home' %}" class="btn btn-secondary">Back to Home</a>
     <!-- Product Actions (Edit, Delete, etc.) -->
     <div id="product-actions">
         <a href="{% url 'edit_product' product.id %}" class="btn btn-primary">Edit Product</a>

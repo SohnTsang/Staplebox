@@ -411,7 +411,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if(data.success) {
                 // Handle success, e.g., append the new document to the DOM.
                 $('#uploadDocumentModal').modal('hide')
-                console.log('Document uploaded successfully');
                 data.documents.forEach(document => appendDocumentToFolder(document, currentFolderId));
 
             } else {
