@@ -9,7 +9,7 @@ from django.utils.timezone import localtime
 
 
 class Document(models.Model):
-    folder = models.ForeignKey(Folder, on_delete=models.CASCADE, related_name='documents')  # Changed from product to folder
+    folder = models.ForeignKey(Folder, on_delete=models.CASCADE, related_name='documents')
     document_type = models.ForeignKey(DocumentType, on_delete=models.CASCADE)
     file = models.FileField(upload_to='documents/%Y/%m/%d/')
     version = models.IntegerField(default=1)

@@ -9,10 +9,10 @@ from django.shortcuts import get_object_or_404
 def partner_list_view(request):
     user = request.user
     if user.userprofile.role == 'exporter':
-        partnerships = Partnership.objects.filter(exporter=user)
+        active_partnerships = Partnership.objects.filter(exporter=user, is_active=True)
     else:  # Assuming the only other role is 'importer'
-        partnerships = Partnership.objects.filter(importer=user)
-    context = {'partnerships': partnerships}
+        active_partnerships = Partnership.objects.filter(importer=user, is_active=True)
+    context = {'partnerships': active_partnerships}
     return render(request, 'partners/partner_list.html', context)
 
 
@@ -24,6 +24,7 @@ def delete_partner(request, partner_id):
 
     try:
         partner = get_object_or_404(Partnership, id=partner_id, exporter=request.user)
+        partner.is_active = False
         partner.delete()
         return JsonResponse({'success': True})
     except Exception as e:

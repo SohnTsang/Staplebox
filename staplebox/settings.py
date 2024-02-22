@@ -28,9 +28,19 @@ DEBUG = True
 ALLOWED_HOSTS = []
 
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        #for production
+        #'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        #'LOCATION': 'redis://127.0.0.1:6379/1',
+    }
+}
+
 # Application definition
 
 INSTALLED_APPS = [
+    'access_control',
     'invitations',
     'compliance',
     'folder',

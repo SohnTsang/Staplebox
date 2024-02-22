@@ -58,7 +58,11 @@ def accept_invitation(request, token):
         if request.user.is_authenticated and request.user == user:
             # User is logged in and matches the invited user
             # Create or update partnership
-            Partnership.objects.get_or_create(exporter=invitation.sender, importer=user)
+            partnership, created = Partnership.objects.get_or_create(exporter=invitation.sender, importer=user)
+            if not created:
+                partnership.is_active = True  # Reactivate the partnership if it was previously deactivated
+                partnership.save()
+
             invitation.accepted = True
             invitation.save()
             messages.success(request, 'Invitation accepted. You are now partners.')

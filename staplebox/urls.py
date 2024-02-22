@@ -42,6 +42,7 @@ urlpatterns = [
     path('', home_view, name='home'),  # Directs to the home view for the root URL
     path('invitations/', include(('invitations.urls', 'invitations'), namespace='invitations')),
     path('partners/', include('partners.urls', namespace='partners')),
+    path('access_control/', include('access_control.urls')),  # Include access_control URLs
 
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

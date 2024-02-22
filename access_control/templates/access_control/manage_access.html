@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% load crispy_forms_filters %}
+
+{% block title %}Manage Access for Products{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <a href="{% url 'home' %}" class="btn btn-secondary mb-3">Back to Home</a>
+    <h2 class="mb-3">Manage Access for: {{ product.product_name }}</h2>
+    <div class="row">
+        <!-- Granting Access Column -->
+        <div class="col-md-6">
+            <div id="accessManagement">
+                <h3>Partners:</h3>
+                <div>
+                    {% for partner in partners %}
+                    <div class="partner" data-partner-id="{{ partner.id }}">
+                        <input type="checkbox" class="partner-access" id="partner_{{ partner.id }}">
+                        <label for="partner_{{ partner.id }}">{{ partner.username }}</label>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <h3>Content:</h3>
+                <div class="content">
+                    {% for folder_data in folders_data %}
+                    <div class="folder" data-folder-id="{{ folder_data.folder.id }}">
+                        <input type="checkbox" class="folder-access" id="folder_{{ folder_data.folder.id }}">
+                        <label for="folder_{{ folder_data.folder.id }}">{{ folder_data.folder.name }}</label>
+                        <div class="documents">
+                            {% for document in folder_data.documents %}
+                            <div class="document" data-document-id="{{ document.id }}">
+                                <input type="checkbox" class="document-access" id="document_{{ document.id }}">
+                                <label for="document_{{ document.id }}">{{ document.file_name }}</label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <button id="grantAccess" class="btn btn-primary mt-3">Grant Access</button>
+        </div>
+
+        <!-- Displaying Granted Access Column -->
+        <div class="col-md-6">
+            <div id="grantedAccessDetails">
+                <h3>Access Granted To:</h3>
+                <ul id="accessList" class="list-unstyled">
+                    <!-- Dynamically filled with JavaScript -->
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block javascript %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const product_id = "{{ product.id }}";
+    // Initial fetch to populate access details
+    updateAccessList(product_id);
+
+    document.getElementById('grantAccess').addEventListener('click', function() {
+        const accessData = {
+            product_id: product_id,
+            partners: [],
+            folders: [],
+            documents: []
+        };
+
+        // Collecting IDs for partners, folders, and documents
+        document.querySelectorAll('.partner-access:checked').forEach(checkbox => {
+            accessData.partners.push(checkbox.closest('.partner').dataset.partnerId);
+        });
+        document.querySelectorAll('.folder-access:checked').forEach(checkbox => {
+            accessData.folders.push(checkbox.closest('.folder').dataset.folderId);
+        });
+        document.querySelectorAll('.document-access:checked').forEach(checkbox => {
+            accessData.documents.push(checkbox.closest('.document').dataset.documentId);
+        });
+
+        
+
+        // AJAX call to backend to update access permissions
+        fetch('/access_control/api/grant_access/', {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify(accessData)
+        })
+        .then(handleResponse)
+        .then(data => {
+            console.log('1Received access details:', data);
+            updateAccessList(product_id);
+            alert('Access has been updated successfully.');
+        })
+        .catch(error => {
+            console.error('Error updating access:', error.message);
+            alert(`An error occurred while updating access: ${error.message}`);
+        });
+    });
+
+    function updateAccessList(product_id) {
+        fetch(`/access_control/api/get_access_details/${product_id}/`, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(handleResponse)
+        .then(data => {
+            console.log('2Received access details:', data);
+            populateAccessList(data.accessDetails);
+        })
+        .catch(error => console.error('Error fetching access details:', error));
+    }
+
+    function populateAccessList(accessDetails) {
+        const accessList = document.getElementById('accessList');
+        if (!accessList) {
+            console.error('The accessList element was not found!');
+            return; // Exit the function if accessList is null
+        }
+        accessList.innerHTML = ''; // Clear current list
+
+        accessDetails.forEach(item => {
+            const li = document.createElement('li');
+            li.innerHTML = `Partner: ${item.partnerName}, Access Level: ${item.accessLevel}`;
+            const removeButton = document.createElement('button');
+            removeButton.textContent = 'Remove Access';
+            removeButton.className = 'btn btn-danger btn-sm ml-2 remove-access';
+            removeButton.setAttribute('data-access-id', item.id);
+            removeButton.addEventListener('click', function() {
+                removeAccess(item.id, li);
+            });
+
+            li.appendChild(removeButton);
+            accessList.appendChild(li);
+        });
+    }
+
+    function removeAccess(accessId, listItem) {
+        const removeButton = listItem.querySelector('.remove-access');
+        removeButton.disabled = true;
+
+        fetch(`/access_control/api/remove_access/${accessId}/`, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({ accessId })
+        })
+        .then(handleResponse)
+        .then(data => {
+            if(data.success) {
+                alert('Access removed successfully.');
+                listItem.remove(); // Remove the corresponding list item
+            } else {
+                removeButton.disabled = false;
+                throw new Error(data.error || 'Unknown error occurred');
+            }
+        })
+        .catch(error => {
+            console.error('Error removing access:', error);
+            alert(`An error occurred while removing access: ${error}`);
+            // Re-enable the button to allow retrying
+            removeButton.disabled = false;
+
+        });
+    }
+
+    // Helper function to handle fetch responses
+    function handleResponse(response) {
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        return response.json();
+    }
+
+    // Function to retrieve CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+});
+</script>
+{% endblock %}
+
+
+{% endblock %}

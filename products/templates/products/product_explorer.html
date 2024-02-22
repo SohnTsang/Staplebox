@@ -36,9 +36,12 @@
     <div id="folder-actions">
         <button type="button" class="btn btn-success" data-toggle="modal" data-target="#createFolderModal">Create Folder</button>
         <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#uploadDocumentModal">Upload Document</button>
+        <a href="{% url 'access_control:manage_access' product_id=product.id %}" class="btn btn-info">Manage Access</a>
+
     </div>
 
     <!-- Folder Contents -->
+
     <div id="folders-container">
         <div id="folder-contents">
             {% include 'folders/folder_contents.html' with subfolders=folders %}
