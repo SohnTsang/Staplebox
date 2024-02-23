@@ -42,24 +42,35 @@ def folder_explorer(request, product_id, folder_id=None):
 @login_required
 def folder_create(request, product_id):
     product = get_object_or_404(Product, id=product_id)
-    root_folder, _ = Folder.objects.get_or_create(name="Root", product=product, parent=None)
+
+    # Ensure there is a root folder for the product but don't recreate it if it already exists.
+    root_folder, created = Folder.objects.get_or_create(
+        name="Root", 
+        product=product, 
+        defaults={'is_root': True, 'parent': None}
+    )
+    
+    if not created:
+        # If the root folder was not created this time (i.e., it already exists), ensure it's marked as root.
+        root_folder.is_root = True
+        root_folder.save()
 
     if request.method == 'POST':
         form = FolderForm(request.POST)
         if form.is_valid():
             folder = form.save(commit=False)
             folder.product = product
-            #if not folder.parent:
-                #folder.parent = root_folder
-            # Assign the parent folder if it's provided
-            parent_id = request.POST.get('parent_id', None)  # Make sure 'parent_id' is sent with your AJAX call
+            
+            # Assign the parent folder if it's provided, otherwise set to root
+            parent_id = request.POST.get('parent_id', None)
             if parent_id:
                 try:
                     folder.parent_id = parent_id
-                    parent_folder = Folder.objects.get(id=parent_id)
-                    folder.parent = parent_folder
                 except Folder.DoesNotExist:
                     return JsonResponse({'success': False, 'errors': 'Invalid parent folder.'}, status=400)
+            else:
+                # Optionally, automatically set root as the parent if no parent is specified
+                folder.parent = root_folder
 
             folder.save()
             return JsonResponse({'success': True, 'folderId': folder.id, 'folderName': folder.name}, status=201)
@@ -67,7 +78,6 @@ def folder_create(request, product_id):
             return JsonResponse({'success': False, 'errors': form.errors.as_json()}, status=400)
     else:
         form = FolderForm()
-        # Assume you pass necessary context for rendering the form
         return render(request, 'folder/folder_form.html', {'form': form, 'product': product})
 
 @login_required

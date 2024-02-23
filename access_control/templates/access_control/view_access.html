@@ -1,42 +1,120 @@
 {% extends "base.html" %}
-{% load static %}
-{% load crispy_forms_tags %}
-{% load crispy_forms_filters %}
 
 {% block title %}View Access{% endblock %}
 
 {% block content %}
 <div class="container">
     <h2>Access Granted To Me</h2>
-    <div class="accordion" id="accordionExample">
-        {% for product_id, product_info in products_structure.items %}
-        <div class="accordion-item">
-            <h2 class="accordion-header" id="heading{{ product_id }}">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ product_id }}" aria-expanded="false" aria-controls="collapse{{ product_id }}">
-                    {{ product_info.name }} by {{ product_info.exporter }}
-                </button>
-            </h2>
-            <div id="collapse{{ product_id }}" class="accordion-collapse collapse" aria-labelledby="heading{{ product_id }}" data-bs-parent="#accordionExample">
-                <div class="accordion-body">
-                    <!-- Content here -->
-                    {% for folder_id, folder_info in product_info.folders.items %}
-                        <div>{{ folder_info.name }}</div>
-                        <!-- Include your subfolders template if necessary -->
-                        {% if folder_info.subfolders %}
-                            {% include 'access_control/subfolders.html' with folders=folder_info.subfolders %}
-                        {% endif %}
-                        {% for document_name in folder_info.documents %}
-                            <li>{{ document_name }}</li>
-                        {% endfor %}
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
+    <div id="access-tree"></div>
 </div>
+<!-- Correct use of json_script -->
+{{ products_structure|json_script:"productsStructureData" }}
+
 
 {% block javascript %}
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Include jQuery -->
+<script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+
+<!-- Include jstree library from CDN -->
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.3.12/themes/default/style.min.css" />
+
+
+<script>
+$(document).ready(function() {
+    // Correctly retrieving the JSON data embedded by json_script
+    var productsStructure = JSON.parse(document.getElementById('productsStructureData').textContent);
+
+    console.log("Products Structure:", productsStructure);
+
+    var data = convertToJSTreeFormat(productsStructure);
+
+    $('#access-tree').jstree({
+        'core': {
+            'data': data
+        }
+    });
+});
+
+function convertToJSTreeFormat(productsStructure) {
+    var data = [];
+    
+    for (var productId in productsStructure) {
+        var product = productsStructure[productId];
+        // Initialize an array to hold child nodes for the jstree
+        var children = [];
+
+        // Iterate over folders to construct the tree, checking for root folders
+        for (var folderId in product.folders) {
+            var folder = product.folders[folderId];
+
+            // Check if the folder is marked as root
+            if (folder.is_root) {
+                // For root folders, directly add their contents to the product node
+                // Convert subfolders
+                var subFolders = convertFoldersToJSTree(folder.subfolders);
+                children = children.concat(subFolders);
+
+                // Add documents directly
+                folder.documents.forEach(function(doc) {
+                    children.push({"text": doc, "icon": "jstree-file"});
+                });
+            } else {
+                // If not a root folder, process normally
+                var folderNode = {
+                    "text": folder.name,
+                    "children": convertFoldersToJSTree(folder.subfolders)
+                };
+
+                folder.documents.forEach(function(doc) {
+                    folderNode.children.push({"text": doc, "icon": "jstree-file"});
+                });
+
+                children.push(folderNode);
+            }
+        }
+
+        // Adding root-level documents directly under the product, if any
+        product.documents.forEach(function(doc) {
+            children.push({"text": doc, "icon": "jstree-file"});
+        });
+
+        // Add the product as a top-level node with the constructed children
+        data.push({
+            "text": product.name + " by " + product.exporter,
+            "children": children
+        });
+    }
+
+    return data;
+}
+
+function convertFoldersToJSTree(subfolders) {
+    var children = [];
+    for (var subfolderId in subfolders) {
+        var subfolder = subfolders[subfolderId];
+        var subfolderNode = {
+            "text": subfolder.name,
+            "children": []
+        };
+
+        // Adding documents to subfolders
+        subfolder.documents.forEach(function(doc) {
+            subfolderNode.children.push({"text": doc, "icon": "jstree-file"});
+        });
+
+        // Recursively convert subfolders
+        var subSubfolders = convertFoldersToJSTree(subfolder.subfolders);
+        subfolderNode.children = subfolderNode.children.concat(subSubfolders);
+
+        children.push(subfolderNode);
+    }
+    return children;
+}
+
+
+</script>
 {% endblock %}
+
 {% endblock %}
