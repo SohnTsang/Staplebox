@@ -2,81 +2,133 @@
 {% load static %}
 {% load crispy_forms_tags %}
 {% load crispy_forms_filters %}
-
 {% block title %}Sign Up{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/styles.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'users/css/user_auth.css' %}">
+<style>
+    .btn-group {
+        display: flex; /* Or inline-flex, depending on your layout needs */
+        flex-wrap: wrap; /* Allows button labels to wrap if needed */
+    }
+    .btn-group .btn {
+        padding: .375rem .75rem; /* Increase padding for bigger size, adjust as needed */
+        font-size: 1rem; /* Larger font size, adjust as needed */
+    }
+    .invalid-feedback {
+        display: block; /* Ensure error message takes up its own line */
+        width: 100%; /* Ensures it spans the full container width */
+        margin-bottom:0px !important;
+    }
+    .invalid-feedback p{
+        margin-bottom:0px !important;
+    }
+    .form-check {
+        padding-left:0px;
+    }
+    
+    .invalid-feedback {
+        display: none !important; /* Hide by default */
+    }
+    
+</style>
 {% endblock extra_css %}
 
-
 {% block content %}
-<div class="container mt-5 custom-signup-container">
-    <div class="signuplogin-form-wrapper">
-        <h2>Sign Up</h2>
-        <form method="post" id="signupForm" class="needs-validation" novalidate>
-            {% csrf_token %}
-            <div class="form-group needs-validation" novalidate>
-                {{ form.username|as_crispy_field }}
-            </div>
-            <div class="form-group">
-                {{ form.email|as_crispy_field }}
-            </div>
-            <div class="form-group">
-                <div id="div_id_password1" class="mb3">
-                    <label for="{{ form.password1.id_for_label }}" class="form-label requiredField">Password</label>
-                    <input type="{{ form.password1.field.widget.input_type }}" name="{{ form.password1.name }}" class="form-control {% if form.password1.errors %}is-invalid{% endif %}" id="{{ form.password1.id_for_label }}">
-
-                    <div id="passwordStrength" class="progress mt-2" style="height: 5px;">
-                        <div class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-                    </div>
-                    {% if form.password1.errors %}
-                        {% for error in form.password1.errors %}
-                            <p id="error_{{ forloop.counter }}_id_{{ form.password1.name }}" class="invalid-feedback">
-                                <strong>{{ error }}</strong>
+<!-- Similar design structure as login.html, with adjustments for signup content -->
+<div class="content-wrapper">
+    <div class="centered-section">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-10">
+                    <div class="row gx-5 align-items-center">
+                        <div class="col-md-7">
+                            <div class="mb-4 d-flex align-items-center"> <!-- Container for icon and name -->
+                                <img src="{% static 'images/favicon.ico' %}" alt="Staplebox" style="width: 50px; height: 50px; margin-right: 10px;"> <!-- Company Icon -->
+                                <span class="fw-bold fs-5">Staplebox</span> <!-- Company Name -->
+                            </div>
+                            <h1 class="my-4 display-4 fw-bold ls-tight" style="margin-bottom: 0.5rem;">  
+                                Streamlining Global Food Trade <br />
+                                <span class="text-primary">Simple & Secure</span>
+                            </h1>
+                            <p style="color: hsl(217, 10%, 50.8%); margin-top: 0.5rem;" class="mb-4">
+                                Join us today and start simplifying your global food trade experience. Sign up now to get started!
                             </p>
-                        {% endfor %}
-                    {% endif %}
-                </div>
-            </div>
-            <div class="form-group">
-                {{ form.password2|as_crispy_field }}
-            </div>
-            <div class="form-group">
-                {% for value, label in form.role.field.choices %}
-                    <div class="form-check is-invalid">
-                        <input class="form-check-input" type="radio" name="{{ form.role.name }}" id="{{ form.role.name }}_{{ forloop.counter }}" value="{{ value }}" {% if forloop.first %}required{% endif %}>
-                        <label class="form-check-label" for="{{ form.role.name }}_{{ forloop.counter }}">
-                            {{ label }}
-                        </label>
+                        </div>
+                        <div class="col-md-5">
+                            <div class="login-container">
+                                <!-- Adjust the form action and method as needed -->
+                                <form method="post" id="signupForm" class="login-form" novalidate>
+                                    <h2>Sign Up</h2>
+                                    {% csrf_token %}
+                                    <!-- Add form fields for signup here -->
+                                    <div class="form-group " role="group">
+                                        <div id="div_id_role">
+                                            <div class="btn-group">
+                                                {% for value, label in form.role.field.choices %}
+                                                        <input type="radio" class="btn-check is-invalid" name="{{ form.role.name }}" id="{{ form.role.name }}_{{ forloop.counter }}" value="{{ value }}" {% if forloop.first %}required{% endif %} autocomplete="off">
+                                                        <label class="btn btn-outline-primary form-label mb-0 requiredField" for="{{ form.role.name }}_{{ forloop.counter }}">{{ label }}</label> 
+                                                {% endfor %}
+                                                {% if form.role.errors %}
+                                                    <p id="error_{{ forloop.counter }}_id_{{ form.role.name }}" class="invalid-feedback">
+                                                        {% for error in form.role.errors %}
+                                                            <strong>{{ error }}</strong>
+                                                        {% endfor %}
+                                                    </p>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        {{ form.email|as_crispy_field }}
+                                    </div>
+                                    <div class="form-group">
+                                        {{ form.username|as_crispy_field }}
+                                    </div>
+                                    <div class="inline-fields">
+                                        <div class="form-group">
+                                            <div id="div_id_password1" class="mb3">
+                                                <label for="{{ form.password1.id_for_label }}" class="form-label requiredField">Password</label>
+                                                <input type="{{ form.password1.field.widget.input_type }}" name="{{ form.password1.name }}" class="form-control {% if form.password1.errors %}is-invalid{% endif %}" id="{{ form.password1.id_for_label }}">
+                            
+                                                <div id="passwordStrength" class="progress mt-2" style="height: 5px;">
+                                                    <div class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                                                </div>
+                                                {% if form.password1.errors %}
+                                                    {% for error in form.password1.errors %}
+                                                        <p id="error_{{ forloop.counter }}_id_{{ form.password1.name }}" class="invalid-feedback">
+                                                            <strong>{{ error }}</strong>
+                                                        </p>
+                                                    {% endfor %}
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            {{ form.password2|as_crispy_field }}
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="btn-login">Sign Up</button>
+                                    <div class="login-link mt-3 text-center">
+                                        Already a member? <a href="{% url 'account_login' %}" class="switch-form">Login here</a>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
                     </div>
-                {% endfor %}
-                {% if form.role.errors %}
-                    <p id="error_{{ forloop.counter }}_id_{{ form.role.name }}" class="invalid-feedback">
-                        {% for error in form.role.errors %}
-                            <strong>{{ error }}</strong>
-                        {% endfor %}
-                    </p>
-                {% endif %}
-
-            </div>
-            <!--
-            {% if form.errors %}
-                <div class="alert alert-danger" role="alert">
-                    Please correct the errors below.
                 </div>
-            {% endif %}
-            -->
-            <button type="submit" class="btn btn-primary">Sign Up</button>
-        </form>
-        <a href="{% url 'account_login' %}"><button type="submit" class="btn btn-primary">Login</button></a>
+            </div>
+        </div>
     </div>
 </div>
 
+
+    
+
+{% block javascript %}
+<script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
+<script src="{% static 'users/js/error_message.js' %}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/zxcvbn/4.4.2/zxcvbn.js"></script>
+<script src="{% static 'users/js/password_strength.js' %}"></script>
+
 {% endblock %}
-
-{% block extra_js %}
-<script src="{% static 'users/js/password-strength.js' %}"></script>
-
-
-{% endblock extra_js %}
+{% endblock %}

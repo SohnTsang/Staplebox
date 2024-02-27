@@ -3,18 +3,14 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="uploadDocumentModalLabel">Upload Document</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <form id="upload-document-form" enctype="multipart/form-data">
-                    <!-- File input to allow multiple file selections -->
                     <div class="form-group">
                         <label for="documentFile">Select Documents</label>
                         <input type="file" class="form-control-file" id="documentFile" name="files[]" multiple required>
                     </div>
-                    <!-- Container where dynamic forms for document type selection will be appended -->
                     <div id="dynamicFormsContainer"></div>
                     <input type="hidden" id="folderId" name="folder_id">
                     <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
@@ -22,7 +18,7 @@
             </div>
             <div class="modal-footer">
                 <button type="submit" class="btn btn-primary" form="upload-document-form">Upload Documents</button>
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>

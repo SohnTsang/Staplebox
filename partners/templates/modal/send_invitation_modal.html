@@ -1,25 +1,23 @@
-<div class="modal fade" id="sendInvitationModal" tabindex="-1" role="dialog" aria-labelledby="sendInvitationModalLabel" aria-hidden="true">
+<div class="modal fade" id="sendInvitationModal" tabindex="-1" aria-labelledby="sendInvitationModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="sendInvitationModalLabel">Send Invitation</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <form id="send-invitation-form" method="post" action="{% url 'invitations:send_invitation' %}">
                     {% csrf_token %}
-                    <div class="form-group">
-                        <label for="email">Email address</label>
+                    <div class="mb-3"> <!-- Updated class from form-group to mb-3 for spacing -->
+                        <label for="email" class="form-label">Email address</label> <!-- Added form-label class -->
                         <input type="email" class="form-control" id="email" name="email" placeholder="Enter email">
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                        <button type="submit" class="btn btn-primary">Send Invitation</button>
-                    </div>
-                </form>
-            </div>
+                </div> <!-- Moved modal-footer out of the form for proper Bootstrap 5 structure -->
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Send Invitation</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

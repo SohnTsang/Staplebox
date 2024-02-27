@@ -5,6 +5,7 @@ from folder.models import Folder  # Update this import based on your app structu
 from document_types.models import DocumentType
 import os
 from django.utils.timezone import localtime
+from django.conf import settings
 
 
 
@@ -16,6 +17,9 @@ class Document(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
     deleted_at = models.DateTimeField(null=True, blank=True)
+    uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='uploaded_documents')
+
+
 
     @property
     def file_name(self):

@@ -1,9 +1,17 @@
 {% extends "base.html" %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% load crispy_forms_filters %}
 
 {% block title %}View Access{% endblock %}
 
 {% block content %}
 <div class="container">
+    <div id="folder-actions">
+        <a href="{% url 'home' %}" class="btn btn-secondary">Back to Home</a>
+        <button id="downloadBtn" class="btn btn-primary" disabled>Download Selected Document</button>
+    </div>
+
     <h2>Access Granted To Me</h2>
     <div id="access-tree"></div>
 </div>
@@ -19,68 +27,95 @@
 
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.3.12/themes/default/style.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
 
 
 <script>
 $(document).ready(function() {
-    // Correctly retrieving the JSON data embedded by json_script
     var productsStructure = JSON.parse(document.getElementById('productsStructureData').textContent);
-
-    console.log("Products Structure:", productsStructure);
 
     var data = convertToJSTreeFormat(productsStructure);
 
     $('#access-tree').jstree({
         'core': {
             'data': data
+        },
+        "types": {
+            "default": {
+                "icon": "fas fa-folder"
+            },
+            "document": {
+                "icon": "fas fa-file"
+            },
+            "folder": {
+                "icon": "fas fa-folder"
+            }
+        },
+        "plugins": ["types"]
+    }).on('select_node.jstree', function(e, data) {
+        var node = data.instance.get_node(data.selected[0]);
+        // Utilize the node type to determine if it's a document
+        if (node && node.type === 'document') {
+            $('#downloadBtn').prop('disabled', false).data('href', node.a_attr.href);
+        } else {
+            $('#downloadBtn').prop('disabled', true).data('href', '#');
+        }
+    });
+
+    $('#downloadBtn').click(function() {
+        var href = $(this).data('href');
+        if (href && href !== '#') {
+            window.open(href, '_blank');
         }
     });
 });
+
 
 function convertToJSTreeFormat(productsStructure) {
     var data = [];
     
     for (var productId in productsStructure) {
         var product = productsStructure[productId];
-        // Initialize an array to hold child nodes for the jstree
         var children = [];
 
-        // Iterate over folders to construct the tree, checking for root folders
         for (var folderId in product.folders) {
             var folder = product.folders[folderId];
+            var folderNode = {
+                "text": folder.name,
+                "children": convertFoldersToJSTree(folder.subfolders),
+                "type": "folder"
+            };
 
-            // Check if the folder is marked as root
-            if (folder.is_root) {
-                // For root folders, directly add their contents to the product node
-                // Convert subfolders
-                var subFolders = convertFoldersToJSTree(folder.subfolders);
-                children = children.concat(subFolders);
-
-                // Add documents directly
-                folder.documents.forEach(function(doc) {
-                    children.push({"text": doc, "icon": "jstree-file"});
-                });
-            } else {
-                // If not a root folder, process normally
-                var folderNode = {
-                    "text": folder.name,
-                    "children": convertFoldersToJSTree(folder.subfolders)
+            // Adjusted to include download links for documents
+            folder.documents.forEach(function(doc) {
+                var docNode = {
+                    "text": doc.name, // Assuming each doc has a 'name' property
+                    "icon": "jstree-file",
+                    "a_attr": {
+                        "href": `/documents/download/${doc.id}/`, // Adjusted for download URL
+                        "target": "_blank"
+                    },
+                    "type": "document"
                 };
+                folderNode.children.push(docNode);
+            });
 
-                folder.documents.forEach(function(doc) {
-                    folderNode.children.push({"text": doc, "icon": "jstree-file"});
-                });
-
-                children.push(folderNode);
-            }
+            children.push(folderNode);
         }
 
-        // Adding root-level documents directly under the product, if any
         product.documents.forEach(function(doc) {
-            children.push({"text": doc, "icon": "jstree-file"});
+            var docNode = {
+                "text": doc.name,
+                "icon": "jstree-file",
+                "a_attr": {
+                    "href": doc.download_url,
+                    "target": "_blank"
+                },
+                "type": "document"
+            };
+            children.push(docNode);
         });
 
-        // Add the product as a top-level node with the constructed children
         data.push({
             "text": product.name + " by " + product.exporter,
             "children": children
@@ -96,15 +131,25 @@ function convertFoldersToJSTree(subfolders) {
         var subfolder = subfolders[subfolderId];
         var subfolderNode = {
             "text": subfolder.name,
-            "children": []
+            "children": [],
+            "type": "folder"
         };
 
-        // Adding documents to subfolders
+        // Adjusted to include download links for documents
         subfolder.documents.forEach(function(doc) {
-            subfolderNode.children.push({"text": doc, "icon": "jstree-file"});
+            console.log(doc);
+            var docNode = {
+                "text": doc.name,
+                "icon": "jstree-file",
+                "a_attr": {
+                    "href": doc.download_url,
+                    "target": "_blank"
+                },
+                "type": "document"
+            };
+            subfolderNode.children.push(docNode);
         });
 
-        // Recursively convert subfolders
         var subSubfolders = convertFoldersToJSTree(subfolder.subfolders);
         subfolderNode.children = subfolderNode.children.concat(subSubfolders);
 
@@ -112,6 +157,7 @@ function convertFoldersToJSTree(subfolders) {
     }
     return children;
 }
+
 
 
 </script>

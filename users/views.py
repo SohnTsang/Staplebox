@@ -14,18 +14,73 @@ from django.template.loader import render_to_string
 from django.urls import reverse_lazy
 from django.contrib.auth.views import PasswordResetView, PasswordResetConfirmView, PasswordResetCompleteView
 from django.contrib.auth import views as auth_views
+from django.contrib.auth.forms import AuthenticationForm
+from .forms import CustomLoginForm, SignupForm
+from allauth.account.utils import perform_login, send_email_confirmation
 
 
 def home(request):
     return render(request, 'home.html')
 
-class LoginView(LoginView):
-    def get_form(self, *args, **kwargs):
-        form = super().get_form(*args, **kwargs)
-        # Change the label of the 'login' field to 'Email'
-        form.fields['login'].label = "Email"
-        return form
 
+def login_signup_view(request):
+    login_form = CustomLoginForm()
+    signup_form = SignupForm()
+
+    if request.user.is_authenticated:
+        return redirect('home')
+    
+    # Determine the default form to show based on the request path
+    default_form = 'signup' if request.path == '/accounts/signup/' else 'login'
+
+    if request.method == "POST":
+        if 'action' in request.POST and request.POST['action'] == 'login':
+            login_form = CustomLoginForm(request.POST)
+            if login_form.is_valid():
+                login_form.login(request)
+                return redirect('home')
+            signup_form = SignupForm()  # Reinitialize to clear previous data
+            default_form = 'login'
+        elif 'action' in request.POST and request.POST['action'] == 'signup':
+            signup_form = SignupForm(request.POST)
+            if signup_form.is_valid():
+                user = signup_form.save(request)
+                user.backend = 'django.contrib.auth.backends.ModelBackend'
+                send_email_confirmation(request, user, signup=True)
+                return redirect('account_email_verification_sent')
+            login_form = CustomLoginForm()  # Reinitialize to clear previous data
+            default_form = 'signup'
+    else:
+        # Use the default form determined by the URL path
+        login_form = CustomLoginForm()
+        signup_form = SignupForm()
+
+    context = {
+        'login_form': login_form,
+        'signup_form': signup_form,
+        'show_form': default_form,  # Use the variable to control which form to show
+    }
+    return render(request, 'account/login_signup.html', context)
+
+def login_view(request):
+    # Check if the user is already logged in
+    if request.user.is_authenticated:
+        # Redirect them to the home page
+        return redirect('home')  # Make sure 'home' is the name of your home page URL
+
+    # Handle the form submission
+    if request.method == 'POST':
+        form = CustomLoginForm(request.POST, request=request)
+        if form.is_valid():
+            # Assuming 'form.login()' handles the login logic
+            form.login(request=request)
+            # Redirect to the home page after login
+            return redirect('home')
+    else:
+        form = CustomLoginForm()
+
+    return render(request, 'account/login.html', {'form': form})
+    
 
 def password_reset_request(request):
     if request.method == 'POST':

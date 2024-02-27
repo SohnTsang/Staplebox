@@ -1,5 +1,7 @@
 from django.urls import path
 from . import views
+from documents.views import download_document
+
 
 
 app_name = 'access_control'
@@ -11,4 +13,5 @@ urlpatterns = [
     path('api/get_access_details/<int:product_id>/', views.get_access_details, name='get_access_details'),
     path('api/remove_access/<int:access_id>/', views.remove_access, name='remove_access'),
     path('view-access/', views.view_access, name='view_access'),
+
 ]

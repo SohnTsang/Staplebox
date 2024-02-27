@@ -19,7 +19,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from users import views as user_views  # Import the view function from your users app
-from users.views import LoginView
+from users.views import login_view, login_signup_view
 from users.views import password_reset_request
 from django.contrib.auth import views as auth_views
 from users.views import CustomPasswordResetCompleteView
@@ -34,7 +34,8 @@ urlpatterns = [
     path('folder/', include(('folder.urls', 'folder'), namespace='folder')),
     path('documents/', include(('documents.urls', 'documents'), namespace='documents')),
     path('products/', include('products.urls')),
-    path('accounts/login/', LoginView.as_view(), name='account_login'),
+    path('accounts/login/', login_signup_view, name='account_login'),
+    path('accounts/signup/', login_signup_view, name='account_signup'),
     path('password/reset/complete/', CustomPasswordResetCompleteView.as_view(), name='password_reset_complete'),
     #path('password/reset/', password_reset_request, name='password_reset_request'),
     path('admin/', admin.site.urls),

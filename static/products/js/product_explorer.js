@@ -7,6 +7,10 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentFolderId = new URLSearchParams(window.location.search).get('folderId') || rootFolderId;
 
 
+    const createFolderModal = new bootstrap.Modal(document.getElementById('createFolderModal'));
+    const uploadDocumentModal = new bootstrap.Modal(document.getElementById('uploadDocumentModal'));
+
+    
     function navigateToFolder(folderId) {
 
         const productId = document.getElementById('product-explorer').getAttribute('data-product-id');
@@ -197,7 +201,13 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(data => {
             if(data.success) {
-                $('#createFolderModal').modal('hide')
+                $('#createFolderModal').modal('hide').on('hidden.bs.modal', function () {
+                    // Check if a backdrop remains and remove it
+                    $(".modal-backdrop").remove(); // For Bootstrap 5
+                });
+                createFolderModal.hide();
+                
+                
                 fetchFolderContents(currentFolderId); // Optionally, refresh the folder list
 
             } else {
@@ -410,7 +420,12 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
             if(data.success) {
                 // Handle success, e.g., append the new document to the DOM.
-                $('#uploadDocumentModal').modal('hide')
+                
+                $('#uploadDocumentModal').modal('hide').on('hidden.bs.modal', function () {
+                    // Check if a backdrop remains and remove it
+                    $(".modal-backdrop").remove(); // For Bootstrap 5
+                });
+                uploadDocumentModal.hide();
                 data.documents.forEach(document => appendDocumentToFolder(document, currentFolderId));
 
             } else {

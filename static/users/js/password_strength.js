@@ -1,3 +1,5 @@
+
+
 document.addEventListener("DOMContentLoaded", function() {
     var passwordInput = document.querySelector('input[name="password1"]');
     var progressBar = document.querySelector('#passwordStrength .progress-bar');

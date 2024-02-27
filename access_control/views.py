@@ -16,6 +16,8 @@ from django.core.cache import cache
 from django.db.models import Q
 from collections import defaultdict
 from django.db.models import Prefetch
+from django.urls import reverse
+
 
 
 
@@ -135,15 +137,30 @@ def view_access(request):
             # Assuming Document model has 'folder' ForeignKey to Folder
             # If document is directly associated with a permission, find its folder
             document_folder = perm.document.folder
+            document_name = os.path.basename(perm.document.file.name)
+            document_id = perm.document.id
+            download_url = reverse('documents:download_document', kwargs={'document_id': document_id})
+            document_data = {
+                'name': os.path.basename(perm.document.file.name),
+                'id': document_id,
+                'download_url': download_url  # Add this line to include the download URL
+            }
+
             if document_folder:
-                # If document has an associated folder, ensure it's initialized in product_structure
+        # If document has an associated folder, ensure it's initialized in product_structure
                 folder_struct = initialize_folder_hierarchy(document_folder, product_entry['folders'])
-                document_name = os.path.basename(perm.document.file.name)
-                folder_struct['documents'].append(document_name)
+                folder_struct['documents'].append({
+                    'name': document_name,
+                    'id': document_id,
+                    'download_url': download_url  # Optional: include if you prefer to pass URLs directly
+                })
             else:
                 # Document without a folder gets added directly under the product
-                document_name = os.path.basename(perm.document.file.name)
-                product_entry['documents'].append(document_name)
+                product_entry['documents'].append({
+                    'name': document_name,
+                    'id': document_id,
+                    'download_url': download_url
+                })
 
     products_structure = convert_defaultdict_to_dict(product_structure)
     context = {'products_structure': products_structure}
@@ -158,13 +175,21 @@ def manage_access(request, product_id):
     # Ensure the user requesting this page is the product owner
     if product.user != user:
         messages.error(request, "You are not authorized to manage access for this product.")
-        return redirect('products/product_form.html')  # Replace with your actual redirect destination
+        return redirect('your_redirect_destination')  # Update with your actual redirect
 
-    # Fetching active partnerships where the current user is the exporter
-    active_partnerships = Partnership.objects.filter(exporter=user, is_active=True)
+    # Fetching active partnerships where the current user is either the exporter or importer
+    active_partnerships = Partnership.objects.filter(
+        Q(exporter=user) | Q(importer=user),
+        is_active=True
+    ).distinct()
 
-    # Extracting importers from those active partnerships
-    active_partners = [partnership.importer for partnership in active_partnerships]
+    # Preparing partners list to include both importers and exporters related to the user
+    active_partners = set()
+    for partnership in active_partnerships:
+        if partnership.exporter == user:
+            active_partners.add(partnership.importer)
+        else:
+            active_partners.add(partnership.exporter)
 
     # Fetch folders and documents related to the product
     folders = Folder.objects.filter(product=product)
@@ -175,7 +200,7 @@ def manage_access(request, product_id):
 
     context = {
         'product': product,
-        'partners': active_partners,
+        'partners': list(active_partners),  # Convert the set to a list for the template
         'folders_data': folders_data,
     }
 

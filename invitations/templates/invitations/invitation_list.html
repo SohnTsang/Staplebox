@@ -15,7 +15,7 @@
         {% for invitation in received_invitations %}
         <div class="list-group-item list-group-item-action">
 
-            From: {{ invitation.sender.username }} - {{ invitation.email }}
+            From: {{ invitation.sender.username }} - {{ invitation.sender.email }}
             <br>
             Status: {{ invitation.accepted|yesno:"Accepted,Pending" }} |
             Received: {{ invitation.created_at|date:"g:i, Y-M-d" }} <!-- Displaying received timing -->

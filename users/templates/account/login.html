@@ -5,39 +5,99 @@
 {% block title %}Log in{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/styles.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'users/css/user_auth.css' %}">
+<style>
+    .invalid-feedback {
+        display: none !important; /* Hide by default */
+    }
+</style>
 {% endblock extra_css %}
-
+a
 {% block content %}
-<div class="container mt-5 custom-signup-container">
-    <div class="signuplogin-form-wrapper">
-        <h2>Login</h2>
-        {% if form.errors %}
-                <div class="alert alert-danger" role="alert">
-                    Your username and/or password were incorrect.
+<!-- Section: Design Block -->
+<div class="content-wrapper">
+    <!-- Centered Section -->
+    <div class="centered-section">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-10">
+                    <!-- Aligned Row for Text and Form -->
+                    <div class="row gx-5 align-items-center">
+                        <!-- Left Column with Info Text -->
+                        <div class="col-md-7">
+                            <div class="mb-4 d-flex align-items-center"> <!-- Container for icon and name -->
+                                <img src="{% static 'images/favicon.ico' %}" alt="Staplebox" style="width: 50px; height: 50px; margin-right: 10px;"> <!-- Company Icon -->
+                                <span class="fw-bold fs-5">Staplebox</span> <!-- Company Name -->
+                            </div>
+                            <h1 class="my-4 display-4 fw-bold ls-tight" style="margin-bottom: 0.5rem;">  
+                                Streamlining Global Food Trade <br />
+                                <span class="text-primary">Simple & Secure</span>
+                            </h1>
+                            <p style="color: hsl(217, 10%, 50.8%); margin-top: 0.5rem;" class="mb-4">
+                                Elevate global food trading with Staplebox. Our platform streamlines document management, ensuring secure and efficient international operations.
+                            </p>
+                        </div>
+
+                        <!-- Right Column with Form -->
+                        <div class="col-md-5">
+                            <div class="login-container">
+                                <form method="post" id="loginForm" class="login-form" novalidate>
+                                    <h2>Login</h2>
+                                    {% csrf_token %}
+                                    {% if form.non_field_errors %}
+                                        <div class="custom-alert invalid-feedback" role="alert">
+                                            {{ form.non_field_errors }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-group">
+                                        {{ form.login|as_crispy_field }}
+                                    </div>
+                                    <div class="form-group">
+                                        {{ form.password|as_crispy_field }}
+                                    </div>
+                                    <button type="submit" class="btn-login">Login</button>
+                                    <div class="signup-link">
+                                        Not a member? <a href="{% url 'account_signup' %}" class="switch-form">Signup now</a>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            {% endif %}
-        {% if messages %}
-            <div id="messages-container">
-                {% for message in messages %}
-                    <div class="{{ message.tags }}">{{ message }}</div>
-                {% endfor %}
             </div>
-        {% endif %}
-        <form method="post">
-            {% csrf_token %}
-            <div class="form-group">
-                {{ form.login|as_crispy_field }}
-            </div>
-            <div class="form-group">
-                {{ form.password|as_crispy_field }}
-            </div>
-
-            <button type="submit" class="btn btn-primary">Login</button>
-
-        </form>
-        <a href="{% url 'account_signup' %}"><button type="submit" class="btn btn-primary">Signup</button></a>
+        </div>
     </div>
 </div>
+<!-- Section: Design Block -->
+
+
+
+{% block javascript %}
+<script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
+<script src="{% static 'users/js/error_message.js' %}"></script>
+{% endblock %}
 {% endblock %}
 
+
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login/Signup</title>
+</head>
+<body>
+    <h2>Login</h2>
+    <form method="post" action="">
+        {% csrf_token %}
+        {{ login_form.as_p }}
+        <button type="submit" name="submit_login">Login</button>
+    </form>
+
+    <h2>Signup</h2>
+    <form method="post" action="">
+        {% csrf_token %}
+        {{ signup_form.as_p }}
+        <button type="submit" name="submit_signup">Signup</button>
+    </form>
+</body>
+</html>

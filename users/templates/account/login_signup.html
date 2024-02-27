@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% load crispy_forms_filters %}
+{% block title %}Log in{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" type="text/css" href="{% static 'users/css/user_auth.css' %}">
+
+<style>
+    
+    .invalid-feedback {
+        display: none !important; /* Hide by default */
+    }
+    .form-container {
+        display: none; /* Hide signup form by default */
+    }
+    .active-form {
+        display: block !important; /* Show active form */
+    }
+    .btn-group {
+        display: flex; /* Or inline-flex, depending on your layout needs */
+        flex-wrap: wrap; /* Allows button labels to wrap if needed */
+    }
+    
+    .btn-group .btn {
+        padding: .375rem .75rem; /* Increase padding for bigger size, adjust as needed */
+        font-size: 1rem; /* Larger font size, adjust as needed */
+    }
+    .invalid-feedback {
+        display: block; /* Ensure error message takes up its own line */
+        width: 100%; /* Ensures it spans the full container width */
+        margin-bottom:0px !important;
+    }
+    .invalid-feedback p{
+        margin-bottom:0px !important;
+    }
+    .form-check {
+        padding-left:0px;
+    }
+    
+    
+
+</style>
+{% endblock extra_css %}
+
+{% block content %}
+<!-- Section: Design Block -->
+
+<div class="content-wrapper">
+    <!-- Centered Section -->
+    <div class="centered-section">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-10">
+                    <!-- Aligned Row for Text and Form -->
+                    <div class="row gx-5 align-items-center">
+                        <!-- Left Column with Info Text -->
+                        <div class="col-md-7">
+                            <div class="mb-4 d-flex align-items-center">
+                                <img src="{% static 'images/favicon.ico' %}" alt="Staplebox" style="width: 50px; height: 50px; margin-right: 10px;">
+                                <span class="fw-bold fs-5">Staplebox</span>
+                            </div>
+                            <h1 class="my-4 display-4 fw-bold ls-tight" style="margin-bottom: 0.5rem;">  
+                                Streamlining Global Food Trade <br />
+                                <span class="text-primary">Simple & Secure</span>
+                            </h1>
+                            <p style="color: hsl(217, 10%, 50.8%); margin-top: 0.5rem;" class="mb-4">
+                                Elevate global food trading with Staplebox. Our platform streamlines document management, ensuring secure and efficient international operations.
+                            </p>
+                        </div>
+
+                        <!-- Right Column with Form -->
+                        <div class="col-md-5">
+                            <div class="login-container {{ show_form|default:"login" }}" id="login-form" 
+                                style="{% if show_form|default:'login' == 'login' %}display: block;{% else %}display: none;{% endif %}">
+                                                       <form method="post" id="loginForm" class="login-form" novalidate>
+                                    <h2>Login</h2>
+                                    {% csrf_token %}
+                                    {% if login_form.non_field_errors %}
+                                        <div class="custom-alert invalid-feedback" role="alert">
+                                            {{ login_form.non_field_errors }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-group">
+                                        {{ login_form.login|as_crispy_field }}
+                                    </div>
+                                    <div class="form-group">
+                                        {{ login_form.password|as_crispy_field }}
+                                    </div>
+                                    <button type="submit" name="action" value="login" class="btn-login">Login</button>
+                                    <div class="signup-link">
+                                        <span id="js-enabled-login-link" style="display: none;">   
+                                            Not a member? <a href="javascript:void(0);" class="switch-form" id="show-signup-js" style="display: none;">Signup now</a>
+                                        </span>
+                                        <noscript>
+                                            Not a member? <a href="{% url 'account_signup' %}" class="switch-form">Signup now</a>
+                                        </noscript>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="login-container {{ show_form|default:"signup" }}" id="signup-form" 
+                                style="{% if show_form|default:'signup' == 'signup' %}display: block;{% else %}display: none;{% endif %}">
+                                                       <form method="post" id="signupForm" class="login-form" novalidate>
+                                    <h2>Sign Up</h2>
+                                    {% csrf_token %}
+                                    <!-- Add form fields for signup here -->
+                                    <div class="form-group " role="group">
+                                        <div id="div_id_role">
+                                            <div class="btn-group">
+                                                {% for value, label in signup_form.role.field.choices %}
+                                                        <input type="radio" class="btn-check is-invalid" name="{{ signup_form.role.name }}" id="{{ signup_form.role.name }}_{{ forloop.counter }}" value="{{ value }}" {% if forloop.first %}required{% endif %} autocomplete="off">
+                                                        <label class="btn btn-outline-primary form-label mb-0 requiredField" for="{{ signup_form.role.name }}_{{ forloop.counter }}">{{ label }}</label> 
+                                                {% endfor %}
+                                                {% if signup_form.role.errors %}
+                                                    <p id="error_{{ forloop.counter }}_id_{{ signup_form.role.name }}" class="invalid-feedback">
+                                                        {% for error in signup_form.role.errors %}
+                                                            <strong>{{ error }}</strong>
+                                                        {% endfor %}
+                                                    </p>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        {{ signup_form.email|as_crispy_field }}
+                                    </div>
+                                    <div class="form-group">
+                                        {{ signup_form.username|as_crispy_field }}
+                                    </div>
+                                    <div class="inline-fields">
+                                        <div class="form-group">
+                                            <div id="div_id_password1" class="mb3">
+                                                <label for="{{ signup_form.password1.id_for_label }}" class="form-label requiredField">Password</label>
+                                                <input type="{{ signup_form.password1.field.widget.input_type }}" name="{{ signup_form.password1.name }}" class="form-control {% if signup_form.password1.errors %}is-invalid{% endif %}" id="{{ signup_form.password1.id_for_label }}">
+                            
+                                                <div id="passwordStrength" class="progress mt-2" style="height: 5px;">
+                                                    <div class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                                                </div>
+                                                {% if signup_form.password1.errors %}
+                                                    {% for error in signup_form.password1.errors %}
+                                                        <p id="error_{{ forloop.counter }}_id_{{ signup_form.password1.name }}" class="invalid-feedback">
+                                                            <strong>{{ error }}</strong>
+                                                        </p>
+                                                    {% endfor %}
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            {{ signup_form.password2|as_crispy_field }}
+                                        </div>
+                                    </div>
+                                    <button type="submit" name="action" value="signup" class="btn-login">Sign Up</button>
+                                    <div class="login-link mt-3 text-center">
+                                        <span id="js-enabled-signup-link" style="display: none;">
+                                            Already a member? <a href="javascript:void(0);" class="switch-form" id="show-login-js">Login here</a>
+                                        </span>
+                                    
+                                        <noscript>
+                                            Already a member? <a href="{% url 'account_login' %}" class="switch-form">Login here</a>
+                                        </noscript>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Section: Design Block -->
+
+
+{% block javascript %}
+<script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
+<script src="{% static 'users/js/error_message.js' %}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/zxcvbn/4.4.2/zxcvbn.js"></script>
+<script src="{% static 'users/js/password_strength.js' %}"></script>
+<script src="{% static 'users/js/dynamic_form_switching.js' %}"></script>
+<script>
+$(document).ready(function() {
+    $("#show-signup-js").click(function() {
+        if (!$("#signup-form").hasClass("active-form")) {
+            $("#login-form").animate({
+                height: "toggle",
+                opacity: "toggle"
+            }, "slow", function() {
+                // Only start showing the signup form after the login form is fully hidden
+                $("#signup-form").animate({
+                    height: "toggle",
+                    opacity: "toggle"
+                }, "slow").addClass("active-form");
+                $("#login-form").removeClass("active-form");
+            });
+        }
+    });
+
+    $("#show-login-js").click(function() {
+        if (!$("#login-form").hasClass("active-form")) {
+            $("#signup-form").animate({
+                height: "toggle",
+                opacity: "toggle"
+            }, "slow", function() {
+                // Only start showing the login form after the signup form is fully hidden
+                $("#login-form").animate({
+                    height: "toggle",
+                    opacity: "toggle"
+                }, "slow").addClass("active-form");
+                $("#signup-form").removeClass("active-form");
+            });
+        }
+    });
+
+    // Initial display based on the show_form variable
+    var showForm = "{{ show_form }}";
+    if (showForm === "signup") {
+        $("#login-form").removeClass("active-form").hide();
+        $("#signup-form").show().addClass("active-form");
+    } else {
+        $("#signup-form").removeClass("active-form").hide();
+        $("#login-form").show().addClass("active-form");
+    }
+});
+
+</script>
+{% endblock %}
+{% endblock %}

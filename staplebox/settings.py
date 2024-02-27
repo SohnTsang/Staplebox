@@ -93,7 +93,15 @@ ACCOUNT_AUTHENTICATION_METHOD = 'username_email'  # Allow users to log in using 
 ACCOUNT_EMAIL_REQUIRED = True   # Make email a mandatory field
 ACCOUNT_EMAIL_VERIFICATION = 'mandatory'  # Email verification is mandatory to avoid fake users
 LOGIN_REDIRECT_URL = '/'  # Redirect users to the homepage after login
-
+ACCOUNT_LOGOUT_REDIRECT_URL = '/'
+ACCOUNT_EMAIL_CONFIRMATION_SUCCESS_URL = '/'
+ACCOUNT_EMAIL_CONFIRMATION_ANONYMOUS_REDIRECT_URL = 'account_login'
+ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
+ACCOUNT_LOGOUT_ON_GET = True
+ACCOUNT_SESSION_REMEMBER = True
+ACCOUNT_SIGNUP_PASSWORD_ENTER_TWICE = True
+ACCOUNT_USERNAME_MIN_LENGTH = 4
+ACCOUNT_USERNAME_BLACKLIST = ['admin', 'superuser', 'user', 'users', 'staplebox', 'stapleboxadmin', 'stapleboxuser']
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 #EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -105,6 +113,7 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 
 ACCOUNT_FORMS = {
+    'login': 'users.forms.CustomLoginForm',
     'signup': 'users.forms.SignupForm',
     'reset_password': 'users.forms.PasswordResetRequestForm',
 }
@@ -132,7 +141,7 @@ TEMPLATES = [
     },
 ]
 
-ACCOUNT_LOGOUT_REDIRECT_URL = 'home'
+
 
 
 WSGI_APPLICATION = 'staplebox.wsgi.application'
@@ -253,3 +262,5 @@ MESSAGE_STORAGE = 'staplebox.message_storage.FilteredMessagesStorage'
 
 CRISPY_TEMPLATE_PACK = 'bootstrap5'
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
+
+

@@ -1,10 +1,22 @@
 from django import forms
 from .models import UserProfile
-from allauth.account.forms import SignupForm
+from allauth.account.forms import SignupForm, LoginForm
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.password_validation import validate_password
+
+
+class CustomLoginForm(LoginForm):
+    def __init__(self, *args, **kwargs):
+        self.request = kwargs.pop('request', None)
+        super(CustomLoginForm, self).__init__(*args, **kwargs)
+        self.fields['login'].error_messages = {'required': 'Please enter your email or username.'}
+        self.fields['login'].label = 'Email or Username'
+        self.fields['password'].error_messages = {'required': 'Please enter your password.'}
+
+
+
 
 
 class SignupForm(SignupForm):
@@ -27,6 +39,7 @@ class SignupForm(SignupForm):
 
 
 
+
 class PasswordResetRequestForm(forms.Form):
     username_or_email = forms.CharField(label="Username or Email")
 
@@ -45,3 +58,6 @@ class CustomPasswordChangeForm(PasswordChangeForm):
         user = self.user
         validate_password(password2, user=user)  # Pass the user to the validator
         return password2
+    
+
+

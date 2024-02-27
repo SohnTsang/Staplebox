@@ -79,7 +79,7 @@ def accept_invitation(request, token):
 
 @login_required
 def invitation_list(request):
-    received_invitations = Invitation.objects.filter(email=request.user.email, accepted=False)
+    received_invitations = Invitation.objects.filter(email=request.user.email)
     sent_invitations = Invitation.objects.filter(sender=request.user)
 
     context = {

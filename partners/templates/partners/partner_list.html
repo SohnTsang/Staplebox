@@ -10,37 +10,27 @@
 <div class="container mt-5">
     <h2>My Partners</h2>
 
-    <!--
-    {% if messages %}
-    <div class="alert-messages">
-        {% for message in messages %}
-        <div class="alert {{ message.tags }}">
-            {{ message }}
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-    -->
-
     <div class="mb-3">
         <a href="{% url 'home' %}" class="btn btn-secondary">Back to Home</a>
-        <button type="button" class="btn btn-success" data-toggle="modal" data-target="#sendInvitationModal">
+        <!-- Updated for Bootstrap 5: data-bs-toggle and data-bs-target -->
+        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#sendInvitationModal">
             Send Invitation
         </button>
     </div>
     <div class="list-group">
         {% for partnership in partnerships %}
-        <a href="#" class="list-group-item list-group-item-action flex-column align-items-start" id="partner-{{ partnership.id }}">
+        <div class="list-group-item list-group-item-action flex-column align-items-start" id="partner-{{ partnership.id }}">
             <div class="d-flex w-100 justify-content-between">
                 {% if request.user.username == partnership.exporter.username %}
-                    <h5 class="mb-1">{{ partnership.importer.username }}</h5>  {# Display importer if current user is the exporter #}
+                    <h5 class="mb-1">{{ partnership.importer.username }}</h5>
                 {% else %}
-                    <h5 class="mb-1">{{ partnership.exporter.username }}</h5>  {# Display exporter if current user is the importer #}
+                    <h5 class="mb-1">{{ partnership.exporter.username }}</h5>
                 {% endif %}
                 <small>Partnership since: {{ partnership.created_at|date:"M d, Y" }}</small>
-                <button class="btn btn-danger btn-sm" onclick="deletePartner({{ partnership.id }})">Delete</button>
+                <!-- Removed inline JavaScript for better practices -->
+                <button class="btn btn-danger btn-sm" data-partner-id="{{ partnership.id }}">Delete</button>
             </div>
-        </a>
+        </div>
         {% empty %}
         <p>No partners yet.</p>
         {% endfor %}
@@ -50,24 +40,30 @@
 {% include "modal/send_invitation_modal.html" %}
 
 {% block javascript %}
-
 <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.btn-danger').forEach(button => {
+            button.addEventListener('click', function() {
+                const partnerId = this.getAttribute('data-partner-id');
+                deletePartner(partnerId);
+            });
+        });
+    });
+
     function deletePartner(partnerId) {
         if (!confirm('Are you sure you want to delete this partner? This action cannot be undone.')) {
-            return; // Early return if the user cancels the confirmation
+            return;
         }
 
-        // Proceed with deletion
         fetch(`/partners/delete/${partnerId}/`, {
             method: 'POST',
             headers: {
-                'X-CSRFToken': getCookie('csrftoken'), // Ensure CSRF token is sent; this function is assumed to exist
+                'X-CSRFToken': getCSRFToken(), // Use the function to get CSRFToken
                 'Content-Type': 'application/json',
             },
-            credentials: 'include',
+            credentials: 'same-origin', // Ensures cookies are sent with the request
         })
         .then(response => {
-            console.log(response);
             if (!response.ok) {
                 throw new Error('Network response was not ok.');
             }
@@ -75,33 +71,31 @@
         })
         .then(data => {
             if (data.success) {
-                // Remove the partner element from the DOM
                 const element = document.getElementById(`partner-${partnerId}`);
-                element.parentNode.removeChild(element);
+                if (element) element.remove();
             } else {
                 alert('Error deleting partner.');
             }
         })
-        .catch(error => {
-            console.error('Error:', error);
-        });
+        .catch(error => console.error('Error:', error));
     }
-    function getCookie(name) {
-        let cookieValue = null;
+
+    // Function to get CSRF token from the cookie
+    function getCSRFToken() {
+        let csrfToken = null;
         if (document.cookie && document.cookie !== '') {
             const cookies = document.cookie.split(';');
             for (let i = 0; i < cookies.length; i++) {
                 const cookie = cookies[i].trim();
-                // Does this cookie string begin with the name we want?
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                if (cookie.substring(0, 10) === ('csrftoken=')) {
+                    csrfToken = decodeURIComponent(cookie.substring(10));
                     break;
                 }
             }
         }
-        return cookieValue;
+        return csrfToken;
     }
+
 </script>
 {% endblock %}
-
 {% endblock %}

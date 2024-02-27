@@ -1,10 +1,15 @@
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 from .models import Document
+from access_control.models import AccessPermission
+from products.models import Product
 from folder.models import Folder
 from document_types.models import DocumentType
 from django.views.decorators.csrf import csrf_exempt
 from django.http import FileResponse
+from django.http import HttpResponse, Http404
+from django.contrib.auth.decorators import login_required
+
 
 @csrf_exempt
 def upload_document(request, product_id, folder_id):
@@ -55,10 +60,27 @@ def delete_document(request, document_id):
     except Document.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Document not found'}, status=404)
 
+@login_required
 def download_document(request, document_id):
-    document = get_object_or_404(Document, id=document_id)
-    response = FileResponse(document.file.open(), as_attachment=True, filename=document.file.name)
-    return response
+    # Retrieve the document instance
+    document = get_object_or_404(Document, pk=document_id)
+
+    # Ensure the user has access to the document
+    if not user_has_access(request.user, document):
+        # Handle unauthorized access, e.g., by returning an HttpResponseForbidden
+        from django.http import HttpResponseForbidden
+        return HttpResponseForbidden("You do not have permission to download this document.")
+
+    # Assuming 'file' is the FileField in your Document model
+    file_path = document.file.path  # Use .path to get the actual file path
+
+    # Open the file for reading, 'rb' means read in binary mode
+    with open(file_path, 'rb') as file:
+        # Create an HTTP response with the file content
+        response = HttpResponse(file.read(), content_type='application/force-download')
+        # Set the 'Content-Disposition' header to prompt a download with the filename
+        response['Content-Disposition'] = f'attachment; filename="{document.file.name}"'
+        return response
 
 
 def get_documents(request, product_id, folder_id):
@@ -72,3 +94,28 @@ def get_documents(request, product_id, folder_id):
         'document_type': doc.document_type.type_name
     } for doc in documents]
     return JsonResponse({'documents': documents_data})
+
+
+def user_has_access(user, document):
+    # Check if the user is the uploader of the document
+    # Assuming your Document model has a field linking to the uploader (adjust as necessary)
+    if document.uploaded_by == user:
+        return True
+
+    # Adjust the logic below based on your model's relationships and fields
+    # If the document is associated with a folder, and that folder with a product
+    if hasattr(document, 'folder') and document.folder and hasattr(document.folder, 'product'):
+        product = document.folder.product
+    # Direct association with a product (if applicable)
+    elif hasattr(document, 'product') and document.product:
+        product = document.product
+    else:
+        product = None
+
+    if product:
+        # For example, if AccessPermission links users to products they can access
+        if AccessPermission.objects.filter(importer=user, product=product).exists():
+            return True
+
+    # If no conditions are met, the user does not have access
+    return False
