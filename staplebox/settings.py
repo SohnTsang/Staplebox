@@ -89,8 +89,9 @@ DOMAIN = 'localhost:8000'
 PROTOCOL = 'http'
 
 # Optional settings for allauth
-ACCOUNT_AUTHENTICATION_METHOD = 'username_email'  # Allow users to log in using either usernames or emails
+ACCOUNT_AUTHENTICATION_METHOD = 'email'  # Allow users to log in using emails only
 ACCOUNT_EMAIL_REQUIRED = True   # Make email a mandatory field
+ACCOUNT_USERNAME_REQUIRED = False
 ACCOUNT_EMAIL_VERIFICATION = 'mandatory'  # Email verification is mandatory to avoid fake users
 LOGIN_REDIRECT_URL = '/'  # Redirect users to the homepage after login
 ACCOUNT_LOGOUT_REDIRECT_URL = '/'

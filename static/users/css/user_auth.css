@@ -82,7 +82,7 @@
     .btn-login {
         width: 100%;
         padding: 10px;
-        background-color: #007bff;
+        background-color: #295893;
         color: #fff;
         border: none;
         border-radius: 5px;
@@ -95,7 +95,7 @@
     }
 
     .signup-link a {
-        color: #007bff;
+        color: #295893;
     }
 
     .custom-alert ul {

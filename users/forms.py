@@ -11,8 +11,8 @@ class CustomLoginForm(LoginForm):
     def __init__(self, *args, **kwargs):
         self.request = kwargs.pop('request', None)
         super(CustomLoginForm, self).__init__(*args, **kwargs)
-        self.fields['login'].error_messages = {'required': 'Please enter your email or username.'}
-        self.fields['login'].label = 'Email or Username'
+        self.fields['login'].error_messages = {'required': 'Please enter your email.'}
+        self.fields['login'].label = 'Email'
         self.fields['password'].error_messages = {'required': 'Please enter your password.'}
 
 

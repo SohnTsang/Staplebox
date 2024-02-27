@@ -1,0 +1,13 @@
+
+label {
+    font-weight: 500;
+}
+
+a {
+    text-decoration: none !important;
+    color: #2f82c0 !important;
+}
+
+.text-primary-custom{
+    color: #2f82c0 !important;
+}

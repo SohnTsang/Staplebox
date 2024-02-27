@@ -19,7 +19,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from users import views as user_views  # Import the view function from your users app
-from users.views import login_view, login_signup_view
+from users.views import login_signup_view
 from users.views import password_reset_request
 from django.contrib.auth import views as auth_views
 from users.views import CustomPasswordResetCompleteView

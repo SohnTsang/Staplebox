@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from allauth.account.views import LoginView
 from django.contrib.auth.models import User
 from django.contrib import messages
@@ -17,6 +17,9 @@ from django.contrib.auth import views as auth_views
 from django.contrib.auth.forms import AuthenticationForm
 from .forms import CustomLoginForm, SignupForm
 from allauth.account.utils import perform_login, send_email_confirmation
+from allauth.account.views import ConfirmEmailView
+from allauth.account.models import EmailConfirmationHMAC, EmailConfirmation
+from django.http import Http404
 
 
 def home(request):
@@ -62,24 +65,6 @@ def login_signup_view(request):
     }
     return render(request, 'account/login_signup.html', context)
 
-def login_view(request):
-    # Check if the user is already logged in
-    if request.user.is_authenticated:
-        # Redirect them to the home page
-        return redirect('home')  # Make sure 'home' is the name of your home page URL
-
-    # Handle the form submission
-    if request.method == 'POST':
-        form = CustomLoginForm(request.POST, request=request)
-        if form.is_valid():
-            # Assuming 'form.login()' handles the login logic
-            form.login(request=request)
-            # Redirect to the home page after login
-            return redirect('home')
-    else:
-        form = CustomLoginForm()
-
-    return render(request, 'account/login.html', {'form': form})
     
 
 def password_reset_request(request):
