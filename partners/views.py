@@ -6,6 +6,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
+from invitations.models import Invitation
 
 
 @login_required
@@ -16,7 +17,15 @@ def partner_list_view(request):
         Q(exporter=user) | Q(importer=user),
         is_active=True
     ).distinct()
-    context = {'partnerships': active_partnerships}
+
+    received_invitations = Invitation.objects.filter(email=user.email)
+    sent_invitations = Invitation.objects.filter(sender=user)
+
+    context = {
+        'partnerships': active_partnerships,
+        'received_invitations': received_invitations,
+        'sent_invitations': sent_invitations,
+    }
     return render(request, 'partners/partner_list.html', context)
 
 @login_required

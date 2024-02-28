@@ -76,6 +76,13 @@
                                 style="{% if show_form|default:'login' == 'login' %}display: block;{% else %}display: none;{% endif %}">
                                                        <form method="post" id="loginForm" class="login-form" novalidate>
                                     <h2>Login</h2>
+                                    {% if messages %}
+                                        {% for message in messages %}
+                                            <div class="alert {{ message.tags }} text-primary-custom">
+                                                {{ message }}
+                                            </div>
+                                        {% endfor %}
+                                    {% endif %}
                                     {% csrf_token %}
                                     {% if login_form.non_field_errors %}
                                         <div class="custom-alert invalid-feedback" role="alert">
