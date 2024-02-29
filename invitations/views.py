@@ -22,7 +22,7 @@ User = get_user_model()
 
 def send_invitation(request):
     if request.method == 'POST':
-        form = InvitationForm(request.POST)
+        form = InvitationForm(request.POST, request=request)
         if form.is_valid():
             invitation = form.save(commit=False)
             invitation.sender = request.user
@@ -37,12 +37,14 @@ def send_invitation(request):
             )
             messages.success(request, 'Invitation sent successfully.')
             return redirect('partners:partner_list')  # Update this to the correct URL name for your partner list page
+        else:
+            # If form is not valid, render the partner_list page and pass the invalid form
+            messages.error(request, 'There was an error sending the invitation.')
+            return render(request, 'partners/partner_list.html', {'form': form})
     else:
-        form = InvitationForm()
         # If accessing this URL directly, you might want to redirect or handle differently
-        messages.error(request, 'Invalid request method.')
-        return redirect('partners:partner_list')
-
+        return render(request, 'partners/partner_list.html', {'form': form})
+    
 
 def accept_invitation(request, token):
     try:

@@ -6,11 +6,19 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form id="send-invitation-form" method="post" action="{% url 'invitations:send_invitation' %}">
+                <form id="send-invitation-form" method="post" action="{% url 'partners:partner_list' %}">
                     {% csrf_token %}
+                    {{ form.non_field_errors }}
                     <div class="mb-3"> <!-- Updated class from form-group to mb-3 for spacing -->
                         <label for="email" class="form-label">Email address</label> <!-- Added form-label class -->
                         <input type="email" class="form-control" id="email" name="email" placeholder="Enter email">
+                        <!--{% if form.email.errors %}
+                            <div class="invalid-feedback" style="display: block;">
+                                {% for error in form.email.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}-->
                     </div>
                 </div> <!-- Moved modal-footer out of the form for proper Bootstrap 5 structure -->
                 <div class="modal-footer">
@@ -21,3 +29,4 @@
         </div>
     </div>
 </div>
+

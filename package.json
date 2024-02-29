@@ -11,6 +11,6 @@
   "license": "ISC",
   "dependencies": {
     "bootstrap": "^5.3.3",
-    "sass": "^1.71.1"
+    "bootstrap-icons": "^1.11.3"
   }
 }

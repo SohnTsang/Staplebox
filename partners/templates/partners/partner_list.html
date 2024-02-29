@@ -6,7 +6,6 @@
 {% block title %}Partner List{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/bootstrap-icons.css' %}">
 <style>
 	.sidebar {
 		min-width: 250px;
@@ -42,9 +41,13 @@
 		border-bottom: none !important;
 	}
 
-	.invitation-list {
-		max-height: 700px; /* or your preferred height */
-		overflow-y: scroll; /* Always shows vertical scrollbar */
+
+	.dropdown a:hover {
+		background-color:rgba(92, 154, 209, 0.1);
+	}
+
+	.btn:active, .btn:focus, .btn:hover, .btn:visited, .btn:link, .btn:active:focus, .btn:active:hover {
+		border: none;
 	}
 
 </style>
@@ -57,13 +60,31 @@
 		<div class="col-md-8">
             <div class="bg-white rounded-3 wrapper border">
                 <h3 class="text-primary-custom mb-3 fw-bold px-5 py-3 border-bottom">My Partners</h3>
-                <button type="button" class="btn btn-primary mb-3 ms-5" data-bs-toggle="modal" data-bs-target="#sendInvitationModal">
-                    Send Invitation
-                </button>
+                <div class="d-flex align-items-center">
+					<button type="button" class="btn btn-primary mb-0 me-3 ms-5" data-bs-toggle="modal" data-bs-target="#sendInvitationModal">
+						Send Invitation
+					</button>
+					<div id="alert-message" class="text-primary-custom">
+						{% if form.errors %}
+							{% for field in form %}
+								{% if field.errors %}
+									{{ field.errors|first }}
+								{% endif %}
+							{% endfor %}
+						{% endif %}
+						{% if messages %}
+							{% for message in messages %}
+								{% if 'invitation_action' in message.extra_tags %}
+									{{ message }}
+								{% endif %}
+							{% endfor %}
+						{% endif %}
+					</div>
+				</div>
                 <div class="list-group">
                     {% for partnership in partnerships %}
                     <div class="list-group-item flex-column align-items-start px-5">
-                        <div class="d-flex justify-content-between align-items-center py-1">
+                        <div class="d-flex justify-content-between align-items-center py-3">
                             <div class="">
 								{% if request.user.username == partnership.exporter.username %}
 									<h5 class="mb-1">{{ partnership.importer.username }}</h5>
@@ -73,8 +94,8 @@
                                 <small>Partnership since: {{ partnership.created_at|date:"M d, Y" }}</small>
                             </div>
                             <div class="dropdown">
-                                <button class="btn btn-primary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
-                                    Actions
+                                <button class="btn btn-primary dropdown-toggle btn-sm" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <span>Actions</span>
                                 </button>
                                 <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
                                     <li><a id="delete-partner" class="dropdown-item" href="#" data-partner-id="{{ partnership.id }}">Delete</a></li>
@@ -104,14 +125,14 @@
 				</ul>
 				<div class="tab-content" id="invitationTabContent">
 					<div class="tab-pane fade show active" id="received" role="tabpanel" aria-labelledby="received-tab">
-						<div class="list-group">
+						<div class="list-group" id="receivedInvitations">
 							{% for invitation in received_invitations %}
 							<div class="list-group-item list-group-item-action px-5 py-3">
 					
 								From: {{ invitation.sender.email }}
 								<br>
 								Status: {{ invitation.accepted|yesno:"Accepted,Pending" }} <br>
-								Received: {{ invitation.created_at|date:"g:i, Y-M-d" }} <!-- Displaying received timing -->
+								Received: {{ invitation.created_at|date:"H:i, Y-M-d" }} <!-- Displaying received timing -->
 					
 								<!-- Check if the invitation is not yet accepted and display the Accept link -->
 								{% if not invitation.accepted %}
@@ -122,27 +143,32 @@
 							{% empty %}
 							<p>No invitations received.</p>
 							{% endfor %}
+							{% if has_more_received_invitations %}
+							<button class="btn see-more-invitations fw-bold py-3" data-type="received" id="seeMoreReceived">See More</button>
+							{% endif %}
 						</div>
 					</div>
 					<div class="tab-pane fade" id="sent" role="tabpanel" aria-labelledby="sent-tab">
-						<div class="list-group">
+						<div class="list-group" id="sentInvitations">
 							{% for invitation in sent_invitations %}
 							<div class="list-group-item list-group-item-action px-5 py-3" id="invitation-{{ invitation.id }}">
 								To: {{ invitation.email }}
 								<br>
 				
 								Status: {{ invitation.accepted|yesno:"Accepted,Pending" }} <br>
-								Received: {{ invitation.created_at|date:"g:i, Y-M-d" }}<!-- Displaying received timing -->
+								Received: {{ invitation.created_at|date:"H:i, Y-M-d" }}<!-- Displaying received timing -->
 				
 								{% if not invitation.accepted %}
-								<br>
-								<button id="delete-invitation" class="btn btn-danger btn-sm" data-invitation-id="{{ invitation.id }}">Delete</button>
+								<button id="delete-invitation" class="btn btn-danger btn-sm py-3" data-invitation-id="{{ invitation.id }}">Delete</button>
 								{% endif %}
 				
 							</div>
 							{% empty %}
 							<p>No invitations sent.</p>
 							{% endfor %}
+							{% if has_more_sent_invitations %}
+							<button class="btn see-more-invitations fw-bold" data-type="sent" id="seeMoreSent">See More</button>
+							{% endif %}
 						</div>
 					</div>
 				</div>
@@ -157,82 +183,41 @@
 
 <script>
 	document.addEventListener('DOMContentLoaded', function() {
-		// Event listener for deleting partners
-		document.querySelectorAll('#delete-partner').forEach(button => {
-			button.addEventListener('click', function() {
-				const partnerId = this.getAttribute('data-partner-id');
-				if(partnerId) {
-					deleteEntity('partner', partnerId);
-				}
-			});
-		});
+		const seeMoreButtons = document.querySelectorAll('.see-more-invitations');
 	
-		// Event listener for deleting invitations
-		document.querySelectorAll('#delete-invitation').forEach(button => { // Assuming a class for invitation delete buttons
+		seeMoreButtons.forEach(button => {
 			button.addEventListener('click', function() {
-				const invitationId = this.getAttribute('data-invitation-id');
-				if(invitationId) {
-					deleteEntity('invitation', invitationId);
-				}
+				const type = this.dataset.type;  // 'received' or 'sent'
+				const listSelector = `#${type}Invitations`;
+				const list = document.querySelector(listSelector);
+				const start = list.children.length - 1;
+				const url = `/partners/partners/?type=${type}&start=${start}`;
+	
+				fetch(url, {
+					method: 'GET',
+					headers: { 'X-Requested-With': 'XMLHttpRequest' },
+				})
+				.then(response => response.json())
+				.then(data => {
+					data.invitations.forEach(invitation => {
+						const item = document.createElement('div');
+						item.classList.add('list-group-item', 'list-group-item-action', 'px-5', 'py-3');
+						item.innerHTML = `To/From: ${invitation.email}<br>Status: ${invitation.accepted ? 'Accepted' : 'Pending'}<br>Received: ${invitation.created_at}`;
+						list.appendChild(item);
+					});
+	
+					if (!data.has_more) {
+						this.remove(); // Remove "See More" button if no more invitations
+					}
+				})
+				.catch(error => console.error('Error:', error));
 			});
 		});
 	});
-	
-	// Unified delete function for both partners and invitations
-	function deleteEntity(entityType, entityId) {
-		let confirmMessage = entityType === 'partner' 
-			? 'Are you sure you want to delete this partner? This action cannot be undone.' 
-			: 'Are you sure you want to delete this invitation? This action cannot be undone.';
-		let deleteUrl = entityType === 'partner' 
-			? `/partners/delete/${entityId}/` 
-			: `/invitations/delete/${entityId}/`;
-	
-		if (!confirm(confirmMessage)) {
-			return; // Early return if the user cancels the confirmation
-		}
-	
-		fetch(deleteUrl, {
-			method: 'POST',
-			headers: {
-				'X-CSRFToken': getCSRFToken(),
-				'Content-Type': 'application/json',
-			},
-			credentials: 'same-origin',
-		})
-		.then(response => {
-			if (!response.ok) {
-				throw new Error('Network response was not ok.');
-			}
-			return response.json();
-		})
-		.then(data => {
-			if (data.success) {
-				const elementId = entityType === 'partner' ? `partner-${entityId}` : `invitation-${entityId}`;
-				const element = document.getElementById(elementId);
-				if (element) element.remove();
-			} else {
-				alert(`Error deleting ${entityType}.`);
-			}
-		})
-		.catch(error => console.error('Error:', error));
-	}
-	
-	// Function to get CSRF token from the cookie
-	function getCSRFToken() {
-		let csrfToken = null;
-		if (document.cookie && document.cookie !== '') {
-			const cookies = document.cookie.split(';');
-			for (let i = 0; i < cookies.length; i++) {
-				const cookie = cookies[i].trim();
-				if (cookie.substring(0, 10) === ('csrftoken=')) {
-					csrfToken = decodeURIComponent(cookie.substring(10));
-					break;
-				}
-			}
-		}
-		return csrfToken;
-	}
 	</script>
-	
+<script src="{% static 'partners/js/partner_list.js' %}"></script>
+
+
+
 {% endblock %}
 {% endblock %}
