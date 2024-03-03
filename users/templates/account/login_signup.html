@@ -78,9 +78,11 @@
                                     <h2>Login</h2>
                                     {% if messages %}
                                         {% for message in messages %}
-                                            <div class="alert {{ message.tags }} text-primary-custom">
-                                                {{ message }}
-                                            </div>
+                                            {% if 'invalid_user' in message.extra_tags %}
+                                                <p class="alert {{ message.tags }} mb-0 custom-alert py-2 ps-0">
+                                                    {{ message }}
+                                                </p>
+                                            {% endif %}
                                         {% endfor %}
                                     {% endif %}
                                     {% csrf_token %}

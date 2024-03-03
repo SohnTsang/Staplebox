@@ -14,6 +14,7 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.shortcuts import get_object_or_404
+from django.db.models import Q
 
 
 
@@ -84,6 +85,19 @@ def invitation_list(request):
     received_invitations = Invitation.objects.filter(email=request.user.email)
     sent_invitations = Invitation.objects.filter(sender=request.user)
 
+    partnerships = Partnership.objects.filter(Q(exporter=request.user) | Q(importer=request.user))
+
+    partners = set()
+    for partnership in partnerships:
+        partners.add(partnership.exporter)
+        partners.add(partnership.importer)
+
+
+    # Delete sent invitations if the user is already a partner with the recipient
+    for invitation in sent_invitations:
+        if invitation.email in partners:
+            invitation.delete()
+    
     context = {
         'received_invitations': received_invitations,
         'sent_invitations': sent_invitations,

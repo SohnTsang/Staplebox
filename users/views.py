@@ -42,6 +42,8 @@ def login_signup_view(request):
             if login_form.is_valid():
                 login_form.login(request)
                 return redirect('home')
+            else:
+                messages.error(request, 'Invalid email or password.', extra_tags='invalid_user')
             signup_form = SignupForm()  # Reinitialize to clear previous data
             default_form = 'login'
         elif 'action' in request.POST and request.POST['action'] == 'signup':

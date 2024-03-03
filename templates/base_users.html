@@ -1,0 +1,147 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Your Site Title{% endblock %}</title>
+    <!-- Bootstrap CSS -->
+    <link rel="icon" href="{% static 'images/favicon.ico' %}" type="image/x-icon">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" type="text/css" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'css/styles.css' %}">
+    <style>
+        .asteriskField {
+            display: none;
+        }
+        .form-control.is-invalid{
+            background-image: none;
+        }
+        .container-fluid {
+            padding: 0;
+        }
+        .text-primary-custom {
+            color: var(--bs-primary) !important;
+        }
+        .sidebar {
+            min-width: 250px;
+            max-width: 250px;
+        }
+        .bg-primary-custom {
+            background-color: var(--bs-primary);
+        }
+        
+        .wrapper {
+            width: 100%;
+            box-shadow: 2px 4px 20px rgba(0,0,0,.08);
+        }
+        .list-group-item {
+            border-left: none !important;
+            border-right: none !important;
+            border-top: 1px solid #dee2e6 !important; /* Bootstrap's default border color */
+            border-bottom: 1px solid #dee2e6 !important;
+            width: 100%; /* Ensure full width */
+            margin-left: 0; /* Align with parent's left edge */
+            margin-right: 0; /* Align with parent's right edge */
+        }
+
+        /* Remove top border for the first item */
+        .list-group-item:first-child {
+            border-top: none !important;
+        }
+
+        /* Optionally, if you want no border on the last item, use this */
+        .list-group-item:last-child {
+            border-bottom: none !important;
+        }
+        
+        .dropdown a:hover {
+            background-color:rgba(92, 154, 209, 0.1);
+        }
+
+        .btn:visited, .btn:link, .btn:active:focus, .btn:active:hover, .btn {
+            border: none;
+        }
+        .btn-danger {
+            color:white;
+        }
+        .btn-danger:hover {
+            background-color: #be2f2f;
+            color:white;
+        }
+        .btn-danger:active:focus  {
+            color:white;
+        }
+
+        @media (max-width: 300px) {
+            main {
+                min-width: 300px; /* Set minimum width for content */
+            }
+        }
+
+    </style>
+    {% block extra_css %}
+    {% endblock extra_css %}
+</head>
+<body>
+    <div class="container-fluid overflow-hidden">
+        <div id="main-content" class="row vh-100 overflow-auto">
+                <!-- Sidebar -->
+            {% include 'left_navbar.html' %}
+            <div class="col d-flex flex-column h-sm-100 ps-0">
+                <!-- Your main content goes here -->
+                <main class="overflow-auto">
+                    {% block content %}{% endblock %}
+                    <footer class="row bg-light py-4 px-5 mt-5 overflow-hidden mx-0">
+                        <div class="col"> Footer content here... </div>
+                    </footer>
+                    <footer class="row bg-light py-4 px-5 mt-5 overflow-hidden mx-0">
+                        <div class="col"> Footer content here... </div>
+                    </footer>
+                    <footer class="row bg-light py-4 px-5 mt-5 overflow-hidden mx-0">
+                        <div class="col"> Footer content here... </div>
+                    </footer>
+                    <footer class="row bg-light py-4 px-5 mt-5 overflow-hidden mx-0">
+                        <div class="col"> Footer content here... </div>
+                    </footer>
+                    <footer class="row bg-light py-4 px-5 mt-5 overflow-hidden mx-0">
+                        <div class="col"> Footer content here... </div>
+                    </footer>
+                    <footer class="row bg-light py-4 px-5 mt-5 overflow-hidden mx-0">
+                        <div class="col"> Footer content here... </div>
+                    </footer>
+                    <footer class="row bg-light py-4 px-5 mt-5 overflow-hidden mx-0">
+                        <div class="col"> Footer content here... </div>
+                    </footer>
+                    <footer class="row bg-light py-4 px-5 mt-5 overflow-hidden mx-0">
+                        <div class="col"> Footer content here... </div>
+                    </footer>
+                </main>
+                
+            </div>
+        </div>
+    </div>
+
+
+
+<!-- Optional: Include the jQuery library -->
+<script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.3.12/jstree.min.js"></script>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js" integrity="sha384-7+zCNj/IqJ95wo16oMtfsKbZ9ccEh31eOz1HGyDuCQ6wgnyJNSYdrPa03rtR1zdB" crossorigin="anonymous"></script>
+
+{% block extra_js %}
+<script>
+    
+</script>
+
+{% endblock extra_js %}
+</body>
+</html>

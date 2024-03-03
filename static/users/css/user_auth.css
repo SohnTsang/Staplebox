@@ -105,8 +105,12 @@
         text-align: center;
     }
 
-    .custom-alert ul li {
-        color: red;
+    .custom-alert ul li{
+        color: #dc3545;
+    }
+
+    .custom-alert{
+        color: #dc3545;
     }
 
     .custom-signup-container .signuplogin-form-wrapper {

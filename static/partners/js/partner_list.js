@@ -3,7 +3,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Function to hide messages after 3 seconds
     setTimeout(function() {
-        var messages = document.querySelectorAll('#alert-message');
+        var messages = document.querySelectorAll('#alert-message, #success-message');
         messages.forEach(function(message) {
             message.style.display = 'none';
         });

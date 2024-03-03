@@ -1,40 +1,66 @@
-{% extends "base.html" %}
+{% extends "base_users.html" %}
 {% load static %}
 {% load crispy_forms_tags %}
 {% load crispy_forms_filters %}
 
 {% block title %}Home{% endblock %}
+{% block extra_css %}
+<style>
+
+</style>
+{% endblock extra_css %}
 
 {% block content %}
-<div class="container mt-5">
-    <h1 class="mb-4">Welcome to the Information Sharing System!</h1>
-    {% if user.is_authenticated %}
-    <div class="mb-3">
-        {% if request.user.is_authenticated and request.user.userprofile.role != 'importer' %}
-            <a href="{% url 'create_product' %}" class="btn btn-primary">Create New Product</a>
-        {% endif %}
-        <a href="{% url 'partners:partner_list' %}" class="btn btn-primary">View My Partners</a>
-        <a href="{% url 'invitations:invitation_list' %}" class="btn btn-primary">View Invitations</a>
-        {% if request.user.is_authenticated and request.user.userprofile.role == 'importer' %}
-            <a href="{% url 'access_control:view_access' %}" class="btn btn-primary">View My Access</a>
-        {% endif %}
-    </div>
-    <div class="list-group">
-        {% for item in products_with_root %}
-        <!-- Use the root_folder_id from each item -->
-        <a href="{% url 'product_explorer' item.product.id %}?folderId={{ item.root_folder_id }}" class="list-group-item list-group-item-action">
-            {{ item.product.product_name }} - {{ item.product.product_description|default:"No Description" }}
-        </a>
-        {% empty %}
-        <div class="alert alert-info">No products found.</div>
-        {% endfor %}
-    </div>
-    <form action="{% url 'account_logout' %}" method="post" class="mt-4">
-        {% csrf_token %}
-        <button type="submit" class="btn btn-danger">Logout</button>
-    </form>
-    {% else %}
-    <a href="{% url 'account_login' %}" class="btn btn-primary">Login</a>
-    {% endif %}
+<div class="container-fluid custom-container-fluid mt-5">
+    <!-- Centered Section -->
+
+            <h1 class="mb-4">Welcome to the Information Sharing System!</h1>
+            {% if user.is_authenticated %}
+            <div class="mb-3">
+                {% if request.user.is_authenticated and request.user.userprofile.role != 'importer' %}
+                    <a href="{% url 'create_product' %}" class="btn btn-primary">Create New Product</a>
+                {% endif %}
+                <a href="{% url 'partners:partner_list' %}" class="btn btn-primary">View My Partners</a>
+                <a href="{% url 'invitations:invitation_list' %}" class="btn btn-primary">View Invitations</a>
+                {% if request.user.is_authenticated and request.user.userprofile.role == 'importer' %}
+                    <a href="{% url 'access_control:view_access' %}" class="btn btn-primary">View My Access</a>
+                {% endif %}
+            </div>
+            <div class="list-group">
+                {% for item in products_with_root %}
+                <!-- Use the root_folder_id from each item -->
+                <a href="{% url 'product_explorer' item.product.id %}?folderId={{ item.root_folder_id }}" class="list-group-item list-group-item-action">
+                    {{ item.product.product_name }} - {{ item.product.product_description|default:"No Description" }}
+                </a>
+                {% empty %}
+                <div class="alert alert-info">No products found.</div>
+                {% endfor %}
+            </div>
+            <form action="{% url 'account_logout' %}" method="post" class="mt-4">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">Logout</button>
+            </form>
+            {% else %}
+            <a href="{% url 'account_login' %}" class="btn btn-primary">Login</a>
+            {% endif %}
 </div>
+
+
+{% block javascript %}
+
+<script>
+
+	document.addEventListener("DOMContentLoaded", function() {
+		// Get the current page variable from the template
+	
+		// Find the navigation item corresponding to the current page and add the "active" class
+		const navItems = document.querySelectorAll(".nav-bar-item");
+		navItems.forEach(item => {
+			if (item.querySelector("span").textContent.trim() === "Dashboard") {
+				item.classList.add("active");
+			}
+		});
+	});
+	</script>
+{% endblock %}
 {% endblock %}

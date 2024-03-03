@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "base_users.html" %}
 {% load static %}
 {% load crispy_forms_tags %}
 {% load crispy_forms_filters %}
@@ -7,91 +7,105 @@
 
 {% block extra_css %}
 <style>
-	.sidebar {
-		min-width: 250px;
-		max-width: 250px;
-	}
-	.bg-primary-custom {
-		background-color: var(--bs-primary);
-	}
-	.text-primary-custom {
-		color: var(--bs-primary) !important;
-	}
-	.wrapper {
-		width: 100%;
-		box-shadow: 2px 4px 20px rgba(0,0,0,.08);
-	}
-	.list-group-item {
-		border-left: none !important;
-		border-right: none !important;
-		border-top: 1px solid #dee2e6 !important; /* Bootstrap's default border color */
-		border-bottom: 1px solid #dee2e6 !important;
-		width: 100%; /* Ensure full width */
-		margin-left: 0; /* Align with parent's left edge */
-		margin-right: 0; /* Align with parent's right edge */
+	@media (min-width: 462px) and (max-width: 576px) {
+		.custom-flex-sm-row {
+			flex-direction: row !important;
+		}
+		.custom-me-2 {
+			margin-right: 0.5rem !important;
+		}
 	}
 
-	/* Remove top border for the first item */
-	.list-group-item:first-child {
-		border-top: none !important;
+	@media (max-width: 992px) {
+		#mypartners {
+			margin-bottom: 2rem;
+		}
 	}
 
-	/* Optionally, if you want no border on the last item, use this */
-	.list-group-item:last-child {
-		border-bottom: none !important;
+	.custom-input-height {
+		height: 40px;
+		width:200px;
 	}
-
-
-	.dropdown a:hover {
-		background-color:rgba(92, 154, 209, 0.1);
+	.custom-button-height {
+		height: 40px;
+		min-width: fit-content;
 	}
-
-	.btn:active, .btn:focus, .btn:hover, .btn:visited, .btn:link, .btn:active:focus, .btn:active:hover {
+	#alert-message {
+		font-size: 0.95rem;
+		color: red;
+	}
+	.modern-tabs .nav-link {
+		background-color: transparent;
 		border: none;
+		border-radius: 0;
+		padding: 0.5rem 1rem;
+		font-size: 1rem;
+		color: #000; /* Change the color as needed */
 	}
 
+	.modern-tabs .nav-link.active,
+	.modern-tabs .nav-link:hover {
+		background-color: #eef5fa; /* Change the background color on hover */
+		color: #295893; /* Change the text color on hover */
+	}
+
+	.modern-tabs .nav-link.active {
+		font-weight: bold;
+	}
+	.tab-link {
+		width: 100%;
+	}
 </style>
 {% endblock extra_css %}
 
 {% block content %}
-<div class="container mt-5">
+<div class="container-fluid custom-container-fluid mt-5">
 	<div class="row">
 		<!-- Main Content -->
-		<div class="col-md-8">
+		<div id="mypartners" class="col-12 col-lg-8">
             <div class="bg-white rounded-3 wrapper border">
-                <h3 class="text-primary-custom mb-3 fw-bold px-5 py-3 border-bottom">My Partners</h3>
-                <div class="d-flex align-items-center">
-					<button type="button" class="btn btn-primary mb-0 me-3 ms-5" data-bs-toggle="modal" data-bs-target="#sendInvitationModal">
-						Send Invitation
-					</button>
-					<div id="alert-message" class="text-primary-custom">
-						{% if form.errors %}
-							{% for field in form %}
-								{% if field.errors %}
-									{{ field.errors|first }}
-								{% endif %}
-							{% endfor %}
-						{% endif %}
-						{% if messages %}
-							{% for message in messages %}
-								{% if 'invitation_action' in message.extra_tags %}
-									{{ message }}
-								{% endif %}
-							{% endfor %}
-						{% endif %}
-					</div>
+                <h4 class="text-primary-custom mb-3 fw-bold px-5 py-3 border-bottom">My Partners</h4>
+
+				<div id="alert-message" class="ps-5"> <!-- Added margin-top for spacing -->
+					{% if form.errors %}
+						{% for field in form %}
+							{% if field.errors %}
+								{{ field.errors|first }}
+							{% endif %}
+						{% endfor %}
+					{% endif %}
 				</div>
+				{% if messages %}
+					{% for message in messages %}
+						{% if 'invitation_action' in message.extra_tags %}
+						<div id="success-message" class="text-primary-custom ps-5">
+							{{ message }}
+						</div>
+						{% elif 'error' in message.tags %}
+						<div id="alert-message" class="ps-5">
+							{{ message }}
+						</div>
+						{% endif %}
+					{% endfor %}
+				{% endif %}
+                <button type="button" class="btn btn-primary mb-0 me-3 ms-5" data-bs-toggle="modal" data-bs-target="#sendInvitationModal">
+					Send Invitation
+				</button>
+				
+				
                 <div class="list-group">
                     {% for partnership in partnerships %}
                     <div class="list-group-item flex-column align-items-start px-5">
                         <div class="d-flex justify-content-between align-items-center py-3">
                             <div class="">
 								{% if request.user.username == partnership.exporter.username %}
-									<h5 class="mb-1">{{ partnership.importer.username }}</h5>
+									<!--<h5 class="mb-1">{{ partnership.importer.username }}</h5>-->
+									<h6 class="mb-1">{{ partnership.importer.email }}</h6>
 								{% else %}
-									<h5 class="mb-1">{{ partnership.exporter.username }}</h5>
+									<!--<h5 class="mb-1">{{ partnership.exporter.username }}</h5>-->
+									<h6 class="mb-1">{{ partnership.exporter.email }}</h6>
 								{% endif %}
-                                <small>Partnership since: {{ partnership.created_at|date:"M d, Y" }}</small>
+                                <small class="text-muted">Partnership since: {{ partnership.created_at|date:"M d, Y" }}</small>
                             </div>
                             <div class="dropdown">
                                 <button class="btn btn-primary dropdown-toggle btn-sm" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
@@ -105,66 +119,100 @@
                         </div>
                     </div>
                     {% empty %}
-                    <p>No partners yet.</p>
+					<div class="list-group-item flex-column align-items-start px-5">
+                        <div class="d-flex justify-content-between align-items-center py-3">
+                            <p>No Partners Added</p>
+                        </div>
+                    </div>
+                    
                     {% endfor %}
                 </div>
             </div>
         </div>
 
 		<!-- Right Sidebar for Invitations -->
-		<div class="col-md-4 invitation-list">
+		<div class="col-12 col-lg-4 invitation-list">
             <div class="bg-white rounded-3 wrapper border">
-				<h4 class="text-primary-custom fw-bold px-5 py-3 border-bottom">Partner Invitation</h4>
-				<ul class="nav nav-tabs px-4" id="invitationTab" role="tablist">
-					<li class="nav-item" role="presentation">
-						<button class="nav-link active" id="received-tab" data-bs-toggle="tab" data-bs-target="#received" type="button" role="tab" aria-controls="received" aria-selected="true">Received</button>
-					</li>
-					<li class="nav-item" role="presentation">
-						<button class="nav-link" id="sent-tab" data-bs-toggle="tab" data-bs-target="#sent" type="button" role="tab" aria-controls="sent" aria-selected="false">Sent</button>
-					</li>
-				</ul>
+				<h4 class="text-primary-custom fw-bold px-5 py-3 border-bottom mb-0">Pending Invitation</h4>
+				<div class="">
+					<ul class="nav nav-tabs modern-tabs col-12" id="invitationTab" role="tablist">
+						<li class="nav-item col-6" role="presentation">
+							<button class="nav-link active tab-link" id="received-tab" data-bs-toggle="tab" data-bs-target="#received" type="button" role="tab" aria-controls="received" aria-selected="true">
+								<div class="button-text">Received</div>
+							</button>
+						</li>
+						<li class="nav-item col-6" role="presentation">
+							<button class="nav-link tab-link" id="sent-tab" data-bs-toggle="tab" data-bs-target="#sent" type="button" role="tab" aria-controls="sent" aria-selected="false">
+								<div class="button-text">Sent</div>
+							</button>
+						</li>
+					</ul>
+				</div>
 				<div class="tab-content" id="invitationTabContent">
 					<div class="tab-pane fade show active" id="received" role="tabpanel" aria-labelledby="received-tab">
 						<div class="list-group" id="receivedInvitations">
-							{% for invitation in received_invitations %}
-							<div class="list-group-item list-group-item-action px-5 py-3">
-					
-								From: {{ invitation.sender.email }}
-								<br>
-								Status: {{ invitation.accepted|yesno:"Accepted,Pending" }} <br>
-								Received: {{ invitation.created_at|date:"H:i, Y-M-d" }} <!-- Displaying received timing -->
-					
-								<!-- Check if the invitation is not yet accepted and display the Accept link -->
-								{% if not invitation.accepted %}
-								<br>
-								<a href="{% url 'invitations:accept_invitation' token=invitation.token %}" class="btn btn-success">Accept Invitation</a>
-								{% endif %}
-							</div>
-							{% empty %}
-							<p>No invitations received.</p>
-							{% endfor %}
-							{% if has_more_received_invitations %}
-							<button class="btn see-more-invitations fw-bold py-3" data-type="received" id="seeMoreReceived">See More</button>
+							{% if not has_received_pending_invitations %}
+								<div class="list-group-item list-group-item-action px-5 py-3">
+									<div class="d-flex justify-content-between align-items-center flex-wrap">
+										<div class="mb-2 mb-sm-0">
+											<p class="mb-0">No Pending Invitations</p>
+										</div>
+									</div>
+								</div>
+							{% else %}
+								{% for invitation in received_invitations %}
+									{% if not invitation.accepted %}
+										<div class="list-group-item list-group-item-action px-5 py-3">
+											<div class="d-flex justify-content-between align-items-center flex-wrap">
+												<div class="mb-2 mb-sm-0">
+													<h6 class="mb-0">{{ invitation.sender.email }}</h6>
+													<small class="text-muted">{{ invitation.created_at|date:"Y-M-d" }}</small>
+												</div>
+												{% if not invitation.accepted %}
+												<a href="{% url 'invitations:accept_invitation' token=invitation.token %}" class="btn btn-success btn-sm">Accept Invitation</a>
+												{% endif %}
+											</div>
+										</div>
+									{% endif %}
+								{% empty %}
+									<div class="list-group-item list-group-item-action px-5 py-3">
+										<div class="d-flex justify-content-between align-items-center flex-wrap">
+											<div class="mb-2 mb-sm-0">
+												<p class="mb-0">No invitations received</p>
+											</div>
+										</div>
+									</div>
+								{% endfor %}
+							{% endif %}
+							{% if has_more_received_pending_invitations %}
+								<button class="btn see-more-invitations fw-bold py-3 text-black" data-type="received" id="seeMoreReceived">See More</button>
 							{% endif %}
 						</div>
 					</div>
 					<div class="tab-pane fade" id="sent" role="tabpanel" aria-labelledby="sent-tab">
 						<div class="list-group" id="sentInvitations">
 							{% for invitation in sent_invitations %}
+							{% if not invitation.accepted %}
 							<div class="list-group-item list-group-item-action px-5 py-3" id="invitation-{{ invitation.id }}">
-								To: {{ invitation.email }}
-								<br>
-				
-								Status: {{ invitation.accepted|yesno:"Accepted,Pending" }} <br>
-								Received: {{ invitation.created_at|date:"H:i, Y-M-d" }}<!-- Displaying received timing -->
-				
-								{% if not invitation.accepted %}
-								<button id="delete-invitation" class="btn btn-danger btn-sm py-3" data-invitation-id="{{ invitation.id }}">Delete</button>
-								{% endif %}
-				
+								<div class="d-flex justify-content-between align-items-center flex-wrap">
+									<div class="mb-2 mb-sm-0">
+										<h6 class="mb-0">{{ invitation.email }}</h6>
+										<small class="text-muted">{{ invitation.created_at|date:"Y-M-d" }}</small>
+									</div>
+									{% if not invitation.accepted %}
+									<button id="delete-invitation" class="btn btn-danger btn-sm" data-invitation-id="{{ invitation.id }}">Delete</button>
+									{% endif %}
+								</div>
 							</div>
+							{% endif %}
 							{% empty %}
-							<p>No invitations sent.</p>
+							<div class="list-group-item list-group-item-action px-5 py-3">
+								<div class="d-flex justify-content-between align-items-center flex-wrap">
+									<div class="mb-2 mb-sm-0">
+										<p class="mb-0">No invitations sent</p>
+									</div>
+								</div>
+							</div>
 							{% endfor %}
 							{% if has_more_sent_invitations %}
 							<button class="btn see-more-invitations fw-bold" data-type="sent" id="seeMoreSent">See More</button>
@@ -180,6 +228,20 @@
 {% include "modal/send_invitation_modal.html" %}
 
 {% block javascript %}
+<script>
+
+	document.addEventListener("DOMContentLoaded", function() {
+		// Get the current page variable from the template
+	
+		// Find the navigation item corresponding to the current page and add the "active" class
+		const navItems = document.querySelectorAll(".nav-bar-item");
+		navItems.forEach(item => {
+			if (item.querySelector("span").textContent.trim() === "Partners") {
+				item.classList.add("active");
+			}
+		});
+	});
+	</script>
 
 <script>
 	document.addEventListener('DOMContentLoaded', function() {
@@ -216,8 +278,6 @@
 	});
 	</script>
 <script src="{% static 'partners/js/partner_list.js' %}"></script>
-
-
 
 {% endblock %}
 {% endblock %}

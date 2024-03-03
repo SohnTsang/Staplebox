@@ -1,0 +1,243 @@
+{% load static %}
+
+{% block extra_css %}
+<style>
+    
+    @media (min-width: 576px) {
+        .h-sm-100 {
+            height: 100%;
+        }
+    }
+
+    @media (max-width: 499px) {
+        .nav-link span {
+            display: none;
+        }
+    }
+
+    @media (max-width: 575px) {
+        #sidebar {
+            width: 100% !important;
+            max-width: none;
+            top: 0;
+            height: 70px;
+            overflow-x: hidden;
+            padding-left: 1.5rem !important;
+            padding-right: 1.5rem !important;
+        }
+        #separator {
+            display: none !important;
+        }
+        .custom-sm-text-center {
+            text-align: center !important;
+        }
+        .vh-100 {
+            height: auto !important;
+        }
+        #company {
+            display: none;
+        }
+        .dropdown {
+            align-self: center;
+        }
+        
+
+    }
+
+    @media (min-width: 576px) and (max-width: 800px) {
+        .custom-d-sm-inline {
+            display: none !important; /* Your custom display property */
+        }
+        #sidebar {
+            width: 6rem !important;
+            text-align: center;
+            padding: 0px !important;
+            padding-left: 10px !important;
+        }
+        .custom-px-xs {
+            padding-left: 0px !important;
+            padding-right: 0px !important;
+        }
+        #company {
+            align-self: center;
+            margin-top: 1rem;
+        }
+    
+    }
+
+    @media (min-width: 801px) and (max-width: 1150px) {
+        #sidebar {
+            width: 12rem !important;
+        }
+    }
+
+    #sidebar {
+        width: 15rem;
+    }
+
+    ul, li.nav-bar-item {
+        width: 100% !important;
+    }
+
+    :root {
+        --container-width: 90%;
+    }
+
+    .custom-container-fluid {
+        width: var(--container-width);
+        max-width: none !important;
+        
+    }
+    .custom-fw-bold {
+        font-weight: 600 !important;
+    
+    }
+    
+    .nav-item.nav-bar-item.custom-svg-collapse:hover {
+        background-color: #eef5fa; /* Change this to your desired background color */
+    }
+
+    .nav-item.nav-bar-item.active {
+        background-color: #eef5fa; /* Change this to your desired background color */
+        /* Add other styles for active navigation item */
+        a {
+            color: #295893 !important;
+            font-weight: 700;
+        }
+        path {
+            stroke: #295893 !important;
+            stroke-width: 0.15rem;
+        }
+    }
+
+    #separator{
+        margin: 10px;
+        align-self: center;
+    }
+</style>
+{% endblock extra_css %}
+
+
+<div id="sidebar" class="px-3 py-sm-3 bg-white d-flex sticky-top shadow">
+    <div class="d-flex flex-sm-column flex-row flex-grow-1 px-sm-3 custom-px-xs custom-fw-bold">
+        <div id="company" class="mb-sm-3">
+            <a href="/" class="d-flex align-items-center pb-sm-3 mb-sm-3 mb-md-3 me-md-auto custom-center">
+                <img src="{% static 'images/favicon.ico' %}" alt="Company Logo" class="d-inline-block align-top" width="32" height="32"> <!-- Icon always shown -->
+                <span class="h5 fw-bold text-primary-custom d-none custom-d-sm-inline d-sm-inline mb-0 px-2">Staplebox</span> <!-- Text hidden on xs to sm, shown md and up -->
+            </a>
+        </div>
+        <ul class="nav nav-pills custom-sm-text-center flex-sm-column flex-row flex-nowrap flex-shrink-1 flex-sm-grow-0 flex-grow-1 mb-sm-auto mb-0 justify-content-center align-items-center align-items-sm-start" id="menu">
+            
+            <li class="nav-item nav-bar-item custom-svg-collapse">
+                <a href="/" class="nav-link px-sm-0 px-1">
+                    <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <symbol id="home" viewBox="0 0 24 24">
+                            <!-- Paths with adjusted position for centering -->
+                            <path d="M9 21V13.6C9 13.0399 9 12.7599 9.109 12.546C9.20487 12.3578 9.35785 12.2049 9.54601 12.109C9.75993 12 10.04 12 10.6 12H13.4C13.9601 12 14.2401 12 14.454 12.109C14.6422 12.2049 14.7951 12.3578 14.891 12.546C15 12.7599 15 13.0399 15 13.6V21M2 9.5L11.04 2.72C11.3843 2.46181 11.5564 2.33271 11.7454 2.28294C11.9123 2.23902 12.0877 2.23902 12.2546 2.28295C12.4436 2.33271 12.6157 2.46181 12.96 2.72L22 9.5M4 8V17.8C4 18.9201 4 19.4802 4.21799 19.908C4.40974 20.2843 4.7157 20.5903 5.09202 20.782C5.51985 21 6.0799 21 7.2 21H16.8C17.9201 21 18.4802 21 18.908 20.782C19.2843 20.5903 19.5903 20.2843 19.782 19.908C20 19.4802 20 18.9201 20 17.8V8L13.92 3.44C13.2315 2.92361 12.8872 2.66542 12.5091 2.56589C12.1754 2.47804 11.8246 2.47804 11.4909 2.56589C11.1128 2.66542 10.7685 2.92361 10.08 3.44L4 8Z" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" stroke="#295893" stroke-opacity="0.8"/>
+                        </symbol>
+                    
+                        <!-- Rectangle background -->
+                        <rect width="40" height="40" rx="8" fill="none"/>
+                    
+                        <!-- Use the icon and position it at the center of the viewBox -->
+                        <use xlink:href="#home" width="24" height="24" x="8" y="8" stroke="black" stroke-width="2" fill="none"/>
+                    </svg>
+                        
+                    <span class="d-none d-sm-inline custom-d-sm-inline align-middle">Dashboard</span> 
+                </a>
+            </li>
+            <li class="nav-item nav-bar-item custom-svg-collapse">
+                <a href="#submenu1" data-bs-toggle="collapse" class="nav-link px-sm-0 px-1">
+                    <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <symbol id="product" viewBox="0 0 24 24">
+                            <!-- Paths with stroke only -->
+                                <path d="M20.5 7.27783L12 12.0001M12 12.0001L3.49997 7.27783M12 12.0001L12 21.5001M21 16.0586V7.94153C21 7.59889 21 7.42757 20.9495 7.27477C20.9049 7.13959 20.8318 7.01551 20.7354 6.91082C20.6263 6.79248 20.4766 6.70928 20.177 6.54288L12.777 2.43177C12.4934 2.27421 12.3516 2.19543 12.2015 2.16454C12.0685 2.13721 11.9315 2.13721 11.7986 2.16454C11.6484 2.19543 11.5066 2.27421 11.223 2.43177L3.82297 6.54288C3.52345 6.70928 3.37369 6.79248 3.26463 6.91082C3.16816 7.01551 3.09515 7.13959 3.05048 7.27477C3 7.42757 3 7.59889 3 7.94153V16.0586C3 16.4013 3 16.5726 3.05048 16.7254C3.09515 16.8606 3.16816 16.9847 3.26463 17.0893C3.37369 17.2077 3.52345 17.2909 3.82297 17.4573L11.223 21.5684C11.5066 21.726 11.6484 21.8047 11.7986 21.8356C11.9315 21.863 12.0685 21.863 12.2015 21.8356C12.3516 21.8047 12.4934 21.726 12.777 21.5684L20.177 17.4573C20.4766 17.2909 20.6263 17.2077 20.7354 17.0893C20.8318 16.9847 20.9049 16.8606 20.9495 16.7254C21 16.5726 21 16.4013 21 16.0586Z" stroke="#295893" stroke-opacity="0.8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M16.5 9.5L7.5 4.5" stroke="#295893" stroke-opacity="0.8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  
+                        </symbol>
+                    
+                        <!-- Rectangle background -->
+                        <rect width="40" height="40" rx="8" fill="none"/>
+                    
+                        <!-- Use the icon and apply the color to the stroke only -->
+                        <use xlink:href="#product" width="24" height="24" x="8" y="8" stroke="#295893" stroke-opacity="0.8" stroke-width="2" fill="none"/>
+                    </svg>
+                        
+                    <span class="d-none d-sm-inline custom-d-sm-inline align-middle">Products</span>
+                </a>
+            </li>
+            <li class="nav-item nav-bar-item custom-svg-collapse">
+                <a href="{% url 'partners:partner_list' %}" class="nav-link px-sm-0 px-1">
+                    <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <symbol id="partners" viewBox="0 0 24 24">
+                            <!-- Paths with adjusted position for centering -->
+                            <path d="M4.5 17H4C3.44772 17 3 16.5523 3 16C3 14.3431 4.34315 13 6 13H7M7 9.94999C5.85888 9.71836 5 8.70948 5 7.5C5 6.11929 6.11929 5 7.5 5C8.06291 5 8.58237 5.18604 9.00024 5.5M19.5002 17H20.0002C20.5525 17 21.0002 16.5523 21.0002 16C21.0002 14.3431 19.6571 13 18.0002 13H17.0002M17.0002 9.94999C18.1414 9.71836 19.0002 8.70948 19.0002 7.5C19.0002 6.11929 17.881 5 16.5002 5C15.9373 5 15.4179 5.18604 15 5.5M15.5 19H8.5C7.94771 19 7.5 18.5523 7.5 18C7.5 16.3431 8.84314 15 10.5 15H13.5C15.1569 15 16.5 16.3431 16.5 18C16.5 18.5523 16.0523 19 15.5 19ZM14.5 9.5C14.5 10.8807 13.3807 12 12 12C10.6193 12 9.5 10.8807 9.5 9.5C9.5 8.11929 10.6193 7 12 7C13.3807 7 14.5 8.11929 14.5 9.5Z" stroke="#295893" stroke-opacity="0.8" stroke-width="1.8" stroke-linecap="round"/>
+                        </symbol>
+                    
+                        <!-- Rectangle background -->
+                        <rect width="40" height="40" fill="none"/>
+                    
+                        <!-- Use the icon and position it at the center of the viewBox -->
+                        <use xlink:href="#partners" width="24" height="24" x="8" y="8" stroke="#295893" stroke-opacity="0.8" stroke-width="2" fill="none"/>
+                    </svg>
+                        
+                    <span class="d-none d-sm-inline custom-d-sm-inline align-middle">Partners</span>
+                </a>
+            </li>
+            <li class="nav-item nav-bar-item custom-svg-collapse">
+                <a href="#submenu1" data-bs-toggle="collapse" class="nav-link px-sm-0 px-1">
+                    <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <symbol id="notification" viewBox="0 0 24 24">
+                            <!-- Paths with adjusted position for centering -->
+                            <path d="M14.9997 19C14.9997 20.6569 13.6566 22 11.9997 22C10.3429 22 8.99972 20.6569 8.99972 19M13.7962 6.23856C14.2317 5.78864 14.4997 5.17562 14.4997 4.5C14.4997 3.11929 13.3804 2 11.9997 2C10.619 2 9.49972 3.11929 9.49972 4.5C9.49972 5.17562 9.76772 5.78864 10.2032 6.23856M17.9997 11.2C17.9997 9.82087 17.3676 8.49823 16.2424 7.52304C15.1171 6.54786 13.591 6 11.9997 6C10.4084 6 8.8823 6.54786 7.75708 7.52304C6.63186 8.49823 5.99972 9.82087 5.99972 11.2C5.99972 13.4818 5.43385 15.1506 4.72778 16.3447C3.92306 17.7056 3.5207 18.3861 3.53659 18.5486C3.55476 18.7346 3.58824 18.7933 3.73906 18.9036C3.87089 19 4.53323 19 5.85791 19H18.1415C19.4662 19 20.1286 19 20.2604 18.9036C20.4112 18.7933 20.4447 18.7346 20.4629 18.5486C20.4787 18.3861 20.0764 17.7056 19.2717 16.3447C18.5656 15.1506 17.9997 13.4818 17.9997 11.2Z" stroke="#295893" stroke-opacity="0.8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                        </symbol>
+                    
+                        <!-- Rectangle background -->
+                        <rect width="40" height="40" fill="none"/>
+                    
+                        <!-- Use the icon and position it at the center of the viewBox -->
+                        <use xlink:href="#notification" width="24" height="24" x="8" y="8" stroke="#295893" stroke-opacity="0.8" stroke-width="2" fill="none"/>
+                    </svg>
+                        
+                    <span class="d-none d-sm-inline custom-d-sm-inline align-middle">Notification</span>
+                </a>
+            </li>
+            <li class="nav-item nav-bar-item custom-svg-collapse">
+                <a href="#submenu1" data-bs-toggle="collapse" class="nav-link px-sm-0 px-1">
+                    <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <symbol id="setting" viewBox="0 0 24 24">
+                            <!-- Paths with adjusted position for centering -->
+                            <path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z" stroke="#295893" stroke-opacity="0.8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M18.7273 14.7273C18.6063 15.0015 18.5702 15.3056 18.6236 15.6005C18.6771 15.8954 18.8177 16.1676 19.0273 16.3818L19.0818 16.4364C19.2509 16.6052 19.385 16.8057 19.4765 17.0265C19.568 17.2472 19.6151 17.4838 19.6151 17.7227C19.6151 17.9617 19.568 18.1983 19.4765 18.419C19.385 18.6397 19.2509 18.8402 19.0818 19.0091C18.913 19.1781 18.7124 19.3122 18.4917 19.4037C18.271 19.4952 18.0344 19.5423 17.7955 19.5423C17.5565 19.5423 17.3199 19.4952 17.0992 19.4037C16.8785 19.3122 16.678 19.1781 16.5091 19.0091L16.4545 18.9545C16.2403 18.745 15.9682 18.6044 15.6733 18.5509C15.3784 18.4974 15.0742 18.5335 14.8 18.6545C14.5311 18.7698 14.3018 18.9611 14.1403 19.205C13.9788 19.4489 13.8921 19.7347 13.8909 20.0273V20.1818C13.8909 20.664 13.6994 21.1265 13.3584 21.4675C13.0174 21.8084 12.5549 22 12.0727 22C11.5905 22 11.1281 21.8084 10.7871 21.4675C10.4461 21.1265 10.2545 20.664 10.2545 20.1818V20.1C10.2475 19.7991 10.1501 19.5073 9.97501 19.2625C9.79991 19.0176 9.55521 18.8312 9.27273 18.7273C8.99853 18.6063 8.69437 18.5702 8.39947 18.6236C8.10456 18.6771 7.83244 18.8177 7.61818 19.0273L7.56364 19.0818C7.39478 19.2509 7.19425 19.385 6.97353 19.4765C6.7528 19.568 6.51621 19.6151 6.27727 19.6151C6.03834 19.6151 5.80174 19.568 5.58102 19.4765C5.36029 19.385 5.15977 19.2509 4.99091 19.0818C4.82186 18.913 4.68775 18.7124 4.59626 18.4917C4.50476 18.271 4.45766 18.0344 4.45766 17.7955C4.45766 17.5565 4.50476 17.3199 4.59626 17.0992C4.68775 16.8785 4.82186 16.678 4.99091 16.5091L5.04545 16.4545C5.25503 16.2403 5.39562 15.9682 5.4491 15.6733C5.50257 15.3784 5.46647 15.0742 5.34545 14.8C5.23022 14.5311 5.03887 14.3018 4.79497 14.1403C4.55107 13.9788 4.26526 13.8921 3.97273 13.8909H3.81818C3.33597 13.8909 2.87351 13.6994 2.53253 13.3584C2.19156 13.0174 2 12.5549 2 12.0727C2 11.5905 2.19156 11.1281 2.53253 10.7871C2.87351 10.4461 3.33597 10.2545 3.81818 10.2545H3.9C4.2009 10.2475 4.49273 10.1501 4.73754 9.97501C4.98236 9.79991 5.16883 9.55521 5.27273 9.27273C5.39374 8.99853 5.42984 8.69437 5.37637 8.39947C5.3229 8.10456 5.18231 7.83244 4.97273 7.61818L4.91818 7.56364C4.74913 7.39478 4.61503 7.19425 4.52353 6.97353C4.43203 6.7528 4.38493 6.51621 4.38493 6.27727C4.38493 6.03834 4.43203 5.80174 4.52353 5.58102C4.61503 5.36029 4.74913 5.15977 4.91818 4.99091C5.08704 4.82186 5.28757 4.68775 5.50829 4.59626C5.72901 4.50476 5.96561 4.45766 6.20455 4.45766C6.44348 4.45766 6.68008 4.50476 6.9008 4.59626C7.12152 4.68775 7.32205 4.82186 7.49091 4.99091L7.54545 5.04545C7.75971 5.25503 8.03183 5.39562 8.32674 5.4491C8.62164 5.50257 8.9258 5.46647 9.2 5.34545H9.27273C9.54161 5.23022 9.77093 5.03887 9.93245 4.79497C10.094 4.55107 10.1807 4.26526 10.1818 3.97273V3.81818C10.1818 3.33597 10.3734 2.87351 10.7144 2.53253C11.0553 2.19156 11.5178 2 12 2C12.4822 2 12.9447 2.19156 13.2856 2.53253C13.6266 2.87351 13.8182 3.33597 13.8182 3.81818V3.9C13.8193 4.19253 13.906 4.47834 14.0676 4.72224C14.2291 4.96614 14.4584 5.15749 14.7273 5.27273C15.0015 5.39374 15.3056 5.42984 15.6005 5.37637C15.8954 5.3229 16.1676 5.18231 16.3818 4.97273L16.4364 4.91818C16.6052 4.74913 16.8057 4.61503 17.0265 4.52353C17.2472 4.43203 17.4838 4.38493 17.7227 4.38493C17.9617 4.38493 18.1983 4.43203 18.419 4.52353C18.6397 4.61503 18.8402 4.74913 19.0091 4.91818C19.1781 5.08704 19.3122 5.28757 19.4037 5.50829C19.4952 5.72901 19.5423 5.96561 19.5423 6.20455C19.5423 6.44348 19.4952 6.68008 19.4037 6.9008C19.3122 7.12152 19.1781 7.32205 19.0091 7.49091L18.9545 7.54545C18.745 7.75971 18.6044 8.03183 18.5509 8.32674C18.4974 8.62164 18.5335 8.9258 18.6545 9.2V9.27273C18.7698 9.54161 18.9611 9.77093 19.205 9.93245C19.4489 10.094 19.7347 10.1807 20.0273 10.1818H20.1818C20.664 10.1818 21.1265 10.3734 21.4675 10.7144C21.8084 11.0553 22 11.5178 22 12C22 12.4822 21.8084 12.9447 21.4675 13.2856C21.1265 13.6266 20.664 13.8182 20.1818 13.8182H20.1C19.8075 13.8193 19.5217 13.906 19.2778 14.0676C19.0339 14.2291 18.8425 14.4584 18.7273 14.7273Z" stroke="#295893" stroke-opacity="0.8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+
+                        </symbol>
+                        <rect width="40" height="40" fill="none"/>
+                        <use xlink:href="#setting" width="24" height="24" x="8" y="8" stroke="#295893" stroke-opacity="0.8" stroke-opacity="0.8" stroke-width="2" fill="none"/>
+
+                    </svg>
+                        
+                    <span class="d-none d-sm-inline custom-d-sm-inline align-middle">Setting</span>
+                </a>
+            </li>
+        </ul>
+        <div id="separator" class="d-flex flex-column justify-content-center align-items-center w-100 custom-margin-5 p-0">
+            <hr class="w-100">
+        </div>
+        <div class="dropdown py-sm-4 ms-auto ms-sm-0 flex-shrink-1 d-none custom-d-sm-inline d-sm-inline">
+            <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle" id="dropdownUser1" data-bs-toggle="dropdown" aria-expanded="false">
+                <img src="{% static 'images/navbar_icon/Avatars.png' %}" alt="Avatar" class="d-inline-block align-top rounded-circle" width="32" height="32">
+                <span class="d-none d-sm-inline mx-1 custom-fw-bold ps-2">{{ user_name }}</span>
+            </a>
+            
+            <ul class="dropdown-menu dropdown-menu-white text-small shadow" aria-labelledby="dropdownUser1">
+                <li><a class="dropdown-item" href="#">Settings</a></li>
+                <li><a class="dropdown-item" href="#">Profile</a></li>
+                <li>
+                    <hr class="dropdown-divider">
+                </li>
+                <li><a class="dropdown-item" href="{% url 'account_logout' %}">Sign out</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+

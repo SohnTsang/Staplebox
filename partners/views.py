@@ -58,6 +58,18 @@ def partner_list_view(request):
     if request.method == 'POST':
         form = InvitationForm(request.POST, request=request)
         if form.is_valid():
+            email = form.cleaned_data['email']
+
+            if Invitation.objects.filter(sender=user, email=email, accepted=False).exists():
+                messages.error(request, f"Invitation to {email} is already pending.")
+                return redirect('partners:partner_list')
+            elif Partnership.objects.filter(Q(exporter=user, importer__email=email) | Q(importer=user, exporter__email=email)).exists():
+                messages.error(request, f"A partnership with {email} already exists.")
+                return redirect('partners:partner_list')
+            elif Partnership.objects.filter(Q(exporter=user, importer__email=email) | Q(importer=user, exporter__email=email)).exists():
+                messages.error(request, f"A partnership with {email} already exists.")
+                return redirect('partners:partner_list')
+            
             invitation = form.save(commit=False)
             invitation.sender = user
             # Prevent sending to self logic here
@@ -81,8 +93,21 @@ def partner_list_view(request):
     received_invitations = Invitation.objects.filter(email=user.email).order_by('-created_at')[:5]
     sent_invitations = Invitation.objects.filter(sender=user).order_by('-created_at')[:5]
 
+
+    partners = set()
+    for partnership in active_partnerships:
+        partners.add(partnership.exporter.email)
+        partners.add(partnership.importer.email)
+
+    # Delete sent invitations if the user is already a partner with the recipient
+    for invitation in sent_invitations:
+        if invitation.email in partners:
+            invitation.delete()
+    
+
     # Now check if there are more than 5 invitations to decide whether to show "See More" buttons
-    has_more_received_invitations = Invitation.objects.filter(email=user.email).count() > 5
+    has_received_pending_invitations = Invitation.objects.filter(email=user.email, accepted=False)
+    has_more_received_pending_invitations = Invitation.objects.filter(email=user.email, accepted=False).count() > 5
     has_more_sent_invitations = Invitation.objects.filter(sender=user).count() > 5
 
 
@@ -91,9 +116,11 @@ def partner_list_view(request):
         'partnerships': active_partnerships,
         'received_invitations': received_invitations,
         'sent_invitations': sent_invitations,
-        'has_more_received_invitations': has_more_received_invitations,
+        'has_more_received_pending_invitations': has_more_received_pending_invitations,
+        'has_received_pending_invitations': has_received_pending_invitations,
         'has_more_sent_invitations': has_more_sent_invitations,
-        'form_errors': form_errors  # Pass any errors to the template
+        'form_errors': form_errors,  # Pass any errors to the template
+        'current_page': 'partners',
     }
     return render(request, 'partners/partner_list.html', context)
 

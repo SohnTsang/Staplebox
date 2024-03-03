@@ -1,8 +1,8 @@
 <div class="modal fade" id="sendInvitationModal" tabindex="-1" aria-labelledby="sendInvitationModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
+    <div class="modal-dialog p-3" role="document">
+        <div class="modal-content px-3">
             <div class="modal-header">
-                <h5 class="modal-title" id="sendInvitationModalLabel">Send Invitation</h5>
+                <h5 class="modal-title fw-bold text-primary-custom" id="sendInvitationModalLabel">Send Invitation</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -11,7 +11,7 @@
                     {{ form.non_field_errors }}
                     <div class="mb-3"> <!-- Updated class from form-group to mb-3 for spacing -->
                         <label for="email" class="form-label">Email address</label> <!-- Added form-label class -->
-                        <input type="email" class="form-control" id="email" name="email" placeholder="Enter email">
+                        <input type="email" class="form-control" id="email" name="email" placeholder="Enter Partner's Email">
                         <!--{% if form.email.errors %}
                             <div class="invalid-feedback" style="display: block;">
                                 {% for error in form.email.errors %}
@@ -22,8 +22,7 @@
                     </div>
                 </div> <!-- Moved modal-footer out of the form for proper Bootstrap 5 structure -->
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary">Send Invitation</button>
+                    <button type="submit" class="btn btn-primary">Send</button>
                 </div>
             </form>
         </div>
