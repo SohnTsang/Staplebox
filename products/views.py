@@ -19,10 +19,6 @@ def product_list(request):
 
 @login_required
 def create_product(request):
-    if request.user.userprofile.role != 'exporter':
-        messages.error(request, "Only exporters can create products.")
-        return redirect('home')
-
     if request.method == 'POST':
         form = ProductForm(request.POST)
         if form.is_valid():
@@ -39,9 +35,6 @@ def create_product(request):
 @login_required
 def edit_product(request, pk):
     product = get_object_or_404(Product, pk=pk, user=request.user)
-    if request.user.userprofile.role != 'exporter':
-        messages.error(request, "Only exporters can edit products.")
-        return redirect('product_list')
 
     if request.method == 'POST':
         form = ProductForm(request.POST, instance=product)

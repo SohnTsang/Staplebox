@@ -20,7 +20,6 @@ class CustomLoginForm(LoginForm):
 
 
 class SignupForm(SignupForm):
-    role = forms.ChoiceField(choices=UserProfile.ROLE_CHOICES, required=True)
 
     def save(self, user):
         # Call the original save method to save the user and get the user object
@@ -28,7 +27,6 @@ class SignupForm(SignupForm):
 
         # Create or update the UserProfile instance
         userProfile, created = UserProfile.objects.get_or_create(user=user)
-        userProfile.role = self.cleaned_data['role']
         userProfile.save()
 
         return user

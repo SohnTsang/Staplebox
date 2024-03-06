@@ -20,7 +20,8 @@
     
     .login-container {
         max-width: 450px; /* Maximum width */
-        min-width: 450px; /* Minimum width */
+        width: 400px;
+        min-width: 270px; /* Minimum width */
         width: 100%; /* Responsive width */
         margin: 0 auto;
         padding: 50px;
@@ -31,7 +32,7 @@
     /* Adjustments for smaller screens */
     @media (max-width: 1296px) {
         .centered-section, .login-container {
-            max-width: 90%; /* Adjusts max width for smaller screens */
+            max-width: 100%; /* Adjusts max width for smaller screens */
             padding: 2rem 1rem; /* Adjusts padding for smaller screens */
         }
     }

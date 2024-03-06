@@ -1,0 +1,111 @@
+@media (min-width: 576px) {
+    .h-sm-100 {
+        height: 100%;
+    }
+}
+
+@media (max-width: 499px) {
+    .nav-link span {
+        display: none;
+    }
+}
+
+@media (max-width: 575px) {
+    #sidebar {
+        width: 100% !important;
+        max-width: none;
+        top: 0;
+        height: 70px;
+        overflow-x: hidden;
+        padding-left: 1.5rem !important;
+        padding-right: 1.5rem !important;
+    }
+    #separator {
+        display: none !important;
+    }
+    .custom-sm-text-center {
+        text-align: center !important;
+    }
+    .vh-100 {
+        height: auto !important;
+    }
+    #company {
+        display: none;
+    }
+    .dropdown {
+        align-self: center;
+    }
+    
+
+}
+
+@media (min-width: 576px) and (max-width: 800px) {
+    .custom-d-sm-inline {
+        display: none !important; /* Your custom display property */
+    }
+    #sidebar {
+        width: 6rem !important;
+        text-align: center;
+        padding: 0px !important;
+        padding-left: 10px !important;
+    }
+    .custom-px-xs {
+        padding-left: 0px !important;
+        padding-right: 0px !important;
+    }
+    #company {
+        align-self: center;
+        margin-top: 1rem;
+    }
+
+}
+
+@media (min-width: 801px) and (max-width: 1150px) {
+    #sidebar {
+        width: 12rem !important;
+    }
+}
+
+#sidebar {
+    width: 15rem;
+}
+
+ul, li.nav-bar-item {
+    width: 100% !important;
+}
+
+:root {
+    --container-width: 90%;
+}
+
+.custom-container-fluid {
+    width: var(--container-width);
+    max-width: none !important;
+    
+}
+.custom-fw-bold {
+    font-weight: 600 !important;
+
+}
+
+.nav-item.nav-bar-item.custom-svg-collapse:hover {
+    background-color: #eef5fa; /* Change this to your desired background color */
+}
+
+.nav-item.nav-bar-item.active {
+    background-color: #eef5fa; /* Change this to your desired background color */
+    /* Add other styles for active navigation item */
+    a {
+        color: #295893 !important;
+        font-weight: 700;
+    }
+    path {
+        stroke: #295893 !important;
+        stroke-width: 0.15rem;
+    }
+}
+
+#separator{
+    margin: 10px;
+    align-self: center;
+}

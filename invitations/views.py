@@ -61,7 +61,7 @@ def accept_invitation(request, token):
         if request.user.is_authenticated and request.user == user:
             # User is logged in and matches the invited user
             # Create or update partnership
-            partnership, created = Partnership.objects.get_or_create(exporter=invitation.sender, importer=user)
+            partnership, created = Partnership.objects.get_or_create(partner1=invitation.sender, partner2=user)
             if not created:
                 partnership.is_active = True  # Reactivate the partnership if it was previously deactivated
                 partnership.save()
@@ -85,12 +85,12 @@ def invitation_list(request):
     received_invitations = Invitation.objects.filter(email=request.user.email)
     sent_invitations = Invitation.objects.filter(sender=request.user)
 
-    partnerships = Partnership.objects.filter(Q(exporter=request.user) | Q(importer=request.user))
+    partnerships = Partnership.objects.filter(Q(partner1=request.user) | Q(partner2=request.user))
 
     partners = set()
     for partnership in partnerships:
-        partners.add(partnership.exporter)
-        partners.add(partnership.importer)
+        partners.add(partnership.partner1)
+        partners.add(partnership.partner2)
 
 
     # Delete sent invitations if the user is already a partner with the recipient

@@ -1,0 +1,55 @@
+{% extends "base_users.html" %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% load crispy_forms_filters %}
+
+{% block title %}company_profile.name{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <!-- Company Profile Card -->
+            <div class="card">
+                <div class="card-header">
+                    {% if company_profile.name %}
+                        <h4>{{ company_profile.name }}</h4>
+                    {% else %}
+                        <h4>Company Name</h4>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <p><strong>Role:</strong> {{ company_profile.get_role_display }}</p>
+                    <p><strong>Address:</strong> {{ company_profile.address }}</p>
+                    <p><strong>Phone Number:</strong> {{ company_profile.phone_number }}</p>
+                    <p><strong>Email:</strong> <a href="mailto:{{ company_profile.email }}">{{ company_profile.email }}</a></p>
+                    <p><strong>Website:</strong> <a href="{{ company_profile.website }}" target="_blank">{{ company_profile.website }}</a></p>
+                    <p><strong>Description:</strong> {{ company_profile.description }}</p>
+                </div>
+                <div class="card-footer text-muted">
+                    <div class="float-end">
+                        <a href="{% url 'companies:edit_company_profile' %}" class="btn btn-primary">Edit Profile</a>
+                    </div>
+                    Updated at {{ company_profile.updated_at|date:"F d, Y" }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block javascript %}
+<script>
+	document.addEventListener("DOMContentLoaded", function() {
+		// Get the current page variable from the template
+	
+		// Find the navigation item corresponding to the current page and add the "active" class
+		const navItems = document.querySelectorAll(".nav-bar-item");
+		navItems.forEach(item => {
+			if (item.querySelector("span").textContent.trim() === "Company") {
+				item.classList.add("active");
+			}
+		});
+	});
+</script>
+{% endblock %}
+{% endblock %}

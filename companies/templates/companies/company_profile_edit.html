@@ -1,0 +1,118 @@
+{% extends "base_users.html" %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% load crispy_forms_filters %}
+
+{% block title %}Edit company_profile.name Info{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/css/intlTelInput.css" />
+<style>
+    .iti {
+        width: 100%;
+		
+    }
+
+    .iti__flag-container {
+        width: auto;
+    }
+
+    .iti__selected-flag {
+        display: flex;
+        align-items: center;
+    }
+
+    .iti__country-list {
+        min-width: 400px !important;
+    }
+
+
+	@media (max-width: 464px) {
+		.iti__country-list {
+			min-width: 300px !important;
+		}
+	}
+
+</style>
+{% endblock extra_css %}
+
+{% block content %}
+<div class="container-fluid py-5">
+	<div class="row">
+		<div class="col-md-8 mx-auto">
+			<div class="card">
+				<div class="card-header">
+					<h4>Edit Company Profile</h4>
+				</div>
+				<div class="card-body">
+					<form method="POST">
+						{% csrf_token %}
+						<div class="mb-3">
+							<label for="name" class="form-label">Company Name</label>
+							<input type="text" class="form-control" id="name" name="name" value="{{ form.name.value }}" required>
+						</div>
+						<div class="mb-3">
+							<label for="role" class="form-label">Role</label>
+							<select class="form-select" id="role" name="role">
+								{% for choice, display in form.role.field.choices %}
+								<option value="{{ choice }}" {% if form.role.value == choice %}selected{% endif %}>{{ display }}</option>
+								{% endfor %}
+							</select>
+						</div>
+						<div class="mb-3">
+							<label for="address" class="form-label">Address</label>
+							<textarea class="form-control" id="address" name="address" rows="3" required>{{ form.address.value }}</textarea>
+						</div>
+						<div class="mb-3">
+							<label for="phone_number" class="form-label">Phone Number</label>
+							<input type="tel" class="form-control" id="phone_number" name="phone_number" value="{{ form.phone_number.value }}" required>
+						</div>
+						<div class="mb-3">
+							<label for="email" class="form-label">Email</label>
+							<input type="email" class="form-control" id="email" name="email" value="{{ form.email.value }}" required>
+						</div>
+						<div class="mb-3">
+							<label for="website" class="form-label">Website</label>
+							<input type="url" class="form-control" id="website" name="website" value="{{ form.website.value }}">
+						</div>
+						<div class="mb-3">
+							<label for="description" class="form-label">Description</label>
+							<textarea class="form-control" id="description" name="description" rows="3">{{ form.description.value }}</textarea>
+						</div>
+						<!-- Add other fields as necessary -->
+						<div class="text-center">
+							<button type="submit" class="btn btn-primary">Save Changes</button>
+						</div>
+					</form>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+
+{% block javascript %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/intlTelInput.min.js"></script>
+
+<script>
+	document.addEventListener("DOMContentLoaded", function() {
+		// Get the current page variable from the template
+	
+		// Find the navigation item corresponding to the current page and add the "active" class
+		const navItems = document.querySelectorAll(".nav-bar-item");
+		navItems.forEach(item => {
+			if (item.querySelector("span").textContent.trim() === "Company") {
+				item.classList.add("active");
+			}
+		});
+	});
+</script>
+
+<script>
+    var input = document.querySelector("#phone_number");
+    intlTelInput(input, {
+        utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/utils.js", // just for formatting/placeholders etc
+    });
+</script>
+{% endblock %}
+{% endblock %}

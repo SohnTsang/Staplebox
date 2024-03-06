@@ -63,10 +63,10 @@ def partner_list_view(request):
             if Invitation.objects.filter(sender=user, email=email, accepted=False).exists():
                 messages.error(request, f"Invitation to {email} is already pending.")
                 return redirect('partners:partner_list')
-            elif Partnership.objects.filter(Q(exporter=user, importer__email=email) | Q(importer=user, exporter__email=email)).exists():
+            elif Partnership.objects.filter(Q(partner1=user, partner2__email=email) | Q(partner2=user, partner1__email=email)).exists():
                 messages.error(request, f"A partnership with {email} already exists.")
                 return redirect('partners:partner_list')
-            elif Partnership.objects.filter(Q(exporter=user, importer__email=email) | Q(importer=user, exporter__email=email)).exists():
+            elif Partnership.objects.filter(Q(partner1=user, partner2__email=email) | Q(partner2=user, partner1__email=email)).exists():
                 messages.error(request, f"A partnership with {email} already exists.")
                 return redirect('partners:partner_list')
             
@@ -89,15 +89,15 @@ def partner_list_view(request):
             request.session['form_data'] = request.POST
             return redirect('partners:partner_list')
 
-    active_partnerships = Partnership.objects.filter(Q(exporter=user) | Q(importer=user), is_active=True).distinct()
+    active_partnerships = Partnership.objects.filter(Q(partner1=user) | Q(partner2=user), is_active=True).distinct()
     received_invitations = Invitation.objects.filter(email=user.email).order_by('-created_at')[:5]
     sent_invitations = Invitation.objects.filter(sender=user).order_by('-created_at')[:5]
 
 
     partners = set()
     for partnership in active_partnerships:
-        partners.add(partnership.exporter.email)
-        partners.add(partnership.importer.email)
+        partners.add(partnership.partner1.email)
+        partners.add(partnership.partner2.email)
 
     # Delete sent invitations if the user is already a partner with the recipient
     for invitation in sent_invitations:
@@ -140,17 +140,17 @@ def delete_partner(request, partner_id):
     try:
         partner = get_object_or_404(Partnership, id=partner_id)
         # Check if the current user is part of the partnership
-        if request.user == partner.exporter or request.user == partner.importer:
+        if request.user == partner.partner1 or request.user == partner.partner2:
             # Identify the other user in the partnership
-            other_user = partner.importer if request.user == partner.exporter else partner.exporter
+            other_user = partner.partner2 if request.user == partner.partner1 else partner.partner1
             
             # Delete the partnership
             partner.delete()
 
             # Remove related access permissions for any direction of the partnership
             AccessPermission.objects.filter(
-                (Q(exporter=request.user) & Q(importer=other_user)) |
-                (Q(importer=request.user) & Q(exporter=other_user))
+                (Q(partner1=request.user) & Q(partner2=other_user)) |
+                (Q(partner2=request.user) & Q(partner1=other_user))
             ).delete()
 
             return JsonResponse({'success': True})

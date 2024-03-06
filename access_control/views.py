@@ -30,7 +30,7 @@ def get_access_details(request, product_id):
             Q(product_id=product_id) |
             Q(folder__product_id=product_id) |
             Q(document__folder__product_id=product_id)
-        ).distinct().select_related('importer', 'folder', 'document')        
+        ).distinct().select_related('partner2', 'folder', 'document')        
 
     access_details = []
     for access in access_permissions:
@@ -44,7 +44,7 @@ def get_access_details(request, product_id):
 
         access_details.append({
             'id': access.id,
-            'partnerName': access.importer.username,
+            'partnerName': access.partner2.username,
             'accessLevel': access_level
         })
     data = {'accessDetails': access_details}
@@ -101,7 +101,7 @@ def view_access(request):
     user = request.user
     # Fetch permissions with optimized queries for folders and documents
     permissions = AccessPermission.objects.filter(
-        importer=user
+        partner2=user
     ).prefetch_related(
         Prefetch('product'),
         Prefetch('folder'),
@@ -110,7 +110,7 @@ def view_access(request):
 
     product_structure = defaultdict(lambda: {
         'name': '',
-        'exporter': '',
+        'partner1': '',
         'folders': defaultdict(lambda: {  # Nested defaultdict for folders
             'name': '',
             'documents': [],
@@ -127,7 +127,7 @@ def view_access(request):
 
         if perm.product:
             product_entry['name'] = perm.product.product_name
-            product_entry['exporter'] = perm.exporter.username if perm.exporter else 'N/A'
+            product_entry['partner1'] = perm.partner1.username if perm.partner1 else 'N/A'
 
         if perm.folder:
             # Initialize folder hierarchy
@@ -177,19 +177,19 @@ def manage_access(request, product_id):
         messages.error(request, "You are not authorized to manage access for this product.")
         return redirect('your_redirect_destination')  # Update with your actual redirect
 
-    # Fetching active partnerships where the current user is either the exporter or importer
+    # Fetching active partnerships where the current user is either the partner1 or partner2
     active_partnerships = Partnership.objects.filter(
-        Q(exporter=user) | Q(importer=user),
+        Q(partner1=user) | Q(partner2=user),
         is_active=True
     ).distinct()
 
-    # Preparing partners list to include both importers and exporters related to the user
+    # Preparing partners list to include both partner2s and partner1s related to the user
     active_partners = set()
     for partnership in active_partnerships:
-        if partnership.exporter == user:
-            active_partners.add(partnership.importer)
+        if partnership.partner1 == user:
+            active_partners.add(partnership.partner2)
         else:
-            active_partners.add(partnership.exporter)
+            active_partners.add(partnership.partner1)
 
     # Fetch folders and documents related to the product
     folders = Folder.objects.filter(product=product)
@@ -235,7 +235,7 @@ def grant_access(request):
 def grant_access_to_product(user, partner, product_id):
     product = get_object_or_404(Product, pk=product_id)
     # Ensure a Product instance is used for the 'product' parameter
-    AccessPermission.objects.get_or_create(exporter=user, importer=partner, product=product)
+    AccessPermission.objects.get_or_create(partner1=user, partner2=partner, product=product)
     
     # Keep track of root folder IDs to avoid duplicates
     root_folder_ids = set()
@@ -298,7 +298,7 @@ def grant_specific_access(user, partner, product_id, folder_ids, document_ids):
                     grant_access_upwards(user, partner, document.folder, product)
                     
                 # Grant access to the document itself
-                AccessPermission.objects.get_or_create(exporter=user, importer=partner, document=document, product=product)
+                AccessPermission.objects.get_or_create(partner1=user, partner2=partner, document=document, product=product)
 
     # Grant access to specific documents
     if document_ids:
@@ -308,33 +308,33 @@ def grant_specific_access(user, partner, product_id, folder_ids, document_ids):
             if document.folder:
                 grant_access_upwards(user, partner, document.folder, product)
             # Grant access to the document itself.
-            AccessPermission.objects.get_or_create(exporter=user, importer=partner, document=document, product=product)
+            AccessPermission.objects.get_or_create(partner1=user, partner2=partner, document=document, product=product)
 
 
 def grant_access_upwards(user, partner, folder, product):
     # Recursively grant access to the folder and its ancestors.
     current_folder = folder
     while current_folder:
-        AccessPermission.objects.get_or_create(exporter=user, importer=partner, folder=current_folder, product=product)
+        AccessPermission.objects.get_or_create(partner1=user, partner2=partner, folder=current_folder, product=product)
         current_folder = current_folder.parent
 
 def grant_access_downwards(user, partner, folder):
     # Recursively grant access to subfolders and their documents.
-    AccessPermission.objects.get_or_create(exporter=user, importer=partner, folder=folder, product=folder.product)
+    AccessPermission.objects.get_or_create(partner1=user, partner2=partner, folder=folder, product=folder.product)
     for document in folder.documents.all():
-        AccessPermission.objects.get_or_create(exporter=user, importer=partner, document=document, product=folder.product)
+        AccessPermission.objects.get_or_create(partner1=user, partner2=partner, document=document, product=folder.product)
     for subfolder in folder.subfolders.all():
         grant_access_downwards(user, partner, subfolder)
 
 def grant_access_to_folder(user, partner, folder, product):
     # Create access permission for the folder
-    AccessPermission.objects.get_or_create(exporter=user, importer=partner, folder=folder, product=product)
+    AccessPermission.objects.get_or_create(partner1=user, partner2=partner, folder=folder, product=product)
     
     # Fetch and create access permissions for all documents within the folder
     document_ids = fetch_all_document_ids_within_folder(folder.id)
     for doc_id in document_ids:
         document = Document.objects.get(id=doc_id)
-        AccessPermission.objects.get_or_create(exporter=user, importer=partner, document=document, product=product)
+        AccessPermission.objects.get_or_create(partner1=user, partner2=partner, document=document, product=product)
         
         
     
@@ -346,7 +346,7 @@ def grant_access_to_folder(user, partner, folder, product):
 @require_POST
 def remove_access(request, access_id):
     try:
-        access_permission = AccessPermission.objects.get(id=access_id, exporter=request.user)
+        access_permission = AccessPermission.objects.get(id=access_id, partner1=request.user)
         access_permission.delete()
         return JsonResponse({'success': True, 'message': 'Access successfully removed.'})
     except AccessPermission.DoesNotExist:

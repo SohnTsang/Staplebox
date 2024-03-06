@@ -40,6 +40,7 @@ CACHES = {
 
 INSTALLED_APPS = [
     'access_control',
+    'companies',
     'invitations',
     'compliance',
     'folder',

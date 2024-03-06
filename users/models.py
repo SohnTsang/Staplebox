@@ -5,11 +5,6 @@ from django.dispatch import receiver
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='userprofile')
-    ROLE_CHOICES = [
-        ('exporter', 'Exporter'),
-        ('importer', 'Importer'),
-    ]
-    role = models.CharField(max_length=10, choices=ROLE_CHOICES)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     deleted_at = models.DateTimeField(null=True, blank=True)
