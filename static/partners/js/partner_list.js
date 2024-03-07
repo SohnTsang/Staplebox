@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const partnerId = this.getAttribute('data-partner-id');
             if(partnerId) {
                 deleteEntity('partner', partnerId);
+                window.location.reload();
             }
         });
     });

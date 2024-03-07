@@ -1,5 +1,7 @@
 from django.shortcuts import render, redirect
 from .models import Partnership
+from users.models import User
+from companies.models import CompanyProfile
 from access_control.models import AccessPermission
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
@@ -55,9 +57,20 @@ def partner_list_view(request):
     # Initialize form
     form = InvitationForm(request=request) if not form_errors else InvitationForm(request=request, data=request.session.pop('form_data', {}))
 
+
     if request.method == 'POST':
         form = InvitationForm(request.POST, request=request)
         if form.is_valid():
+
+            user_profile = request.user.userprofile
+
+            company_profile, created = CompanyProfile.objects.get_or_create(user_profile=user_profile)
+
+            # Check if the user's company profile is complete
+            if not company_profile.name or not company_profile.role:
+                messages.error(request, "Please complete your company profile before adding partners.")
+                return redirect('partners:partner_list')
+            
             email = form.cleaned_data['email']
 
             if Invitation.objects.filter(sender=user, email=email, accepted=False).exists():
@@ -68,6 +81,9 @@ def partner_list_view(request):
                 return redirect('partners:partner_list')
             elif Partnership.objects.filter(Q(partner1=user, partner2__email=email) | Q(partner2=user, partner1__email=email)).exists():
                 messages.error(request, f"A partnership with {email} already exists.")
+                return redirect('partners:partner_list')
+            elif not User.objects.filter(email=email).exists():
+                messages.error(request, "The user with this email does not exist.")
                 return redirect('partners:partner_list')
             
             invitation = form.save(commit=False)
@@ -90,19 +106,32 @@ def partner_list_view(request):
             return redirect('partners:partner_list')
 
     active_partnerships = Partnership.objects.filter(Q(partner1=user) | Q(partner2=user), is_active=True).distinct()
+    partner_info = []
     received_invitations = Invitation.objects.filter(email=user.email).order_by('-created_at')[:5]
     sent_invitations = Invitation.objects.filter(sender=user).order_by('-created_at')[:5]
 
 
     partners = set()
+    
+    #for partnership in active_partnerships:
+    #    partners.add(partnership.partner1.email)
+    #    partners.add(partnership.partner2.email)
     for partnership in active_partnerships:
+
         partners.add(partnership.partner1.email)
         partners.add(partnership.partner2.email)
 
-    # Delete sent invitations if the user is already a partner with the recipient
-    for invitation in sent_invitations:
-        if invitation.email in partners:
-            invitation.delete()
+        partner_user = partnership.partner2 if partnership.partner1 == user else partnership.partner1
+        try:
+            company_profile = CompanyProfile.objects.get(user_profile=partner_user.userprofile)
+            partner_info.append({'id': partnership.id, 'email': partner_user.email, 'created_at': partnership.created_at, 'company_name': company_profile.name, 'company_email': company_profile.email, 'company_role': company_profile.role})
+        except CompanyProfile.DoesNotExist:
+            partner_info.append({'email': partner_user.email, 'created_at': partnership.created_at, 'company_name': 'No company profile'})
+
+        # Delete sent invitations if the user is already a partner with the recipient
+        for invitation in sent_invitations:
+            if invitation.email in partners:
+                invitation.delete()
     
 
     # Now check if there are more than 5 invitations to decide whether to show "See More" buttons
@@ -114,6 +143,7 @@ def partner_list_view(request):
     context = {
         'form': form,
         'partnerships': active_partnerships,
+        'partner_info': partner_info,
         'received_invitations': received_invitations,
         'sent_invitations': sent_invitations,
         'has_more_received_pending_invitations': has_more_received_pending_invitations,

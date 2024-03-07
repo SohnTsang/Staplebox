@@ -61,6 +61,9 @@
 	.tab-link {
 		width: 100%;
 	}
+	.fw-medium {
+		font-weight: 500;
+	}
 </style>
 {% endblock extra_css %}
 
@@ -94,30 +97,30 @@
 					{% endfor %}
 				{% endif %}
                 <button type="button" class="btn btn-primary mb-0 me-3 ms-5" data-bs-toggle="modal" data-bs-target="#sendInvitationModal">
+					<small>
 					Send Invitation
+					</small>
 				</button>
 				
 				
                 <div class="list-group">
-                    {% for partnership in partnerships %}
+					{% for partner in partner_info %}
                     <div class="list-group-item flex-column align-items-start px-5">
                         <div class="d-flex justify-content-between align-items-center py-3">
                             <div class="">
-								{% if request.user.username == partnership.partner1.username %}
 									<!--<h5 class="mb-1">{{ partnership.importer.username }}</h5>-->
-									<h6 class="mb-1">{{ partnership.partner2.email }}</h6>
-								{% else %}
-									<!--<h5 class="mb-1">{{ partnership.exporter.username }}</h5>-->
-									<h6 class="mb-1">{{ partnership.partner1.email }}</h6>
-								{% endif %}
-                                <small class="text-muted">Partnership since: {{ partnership.created_at|date:"M d, Y" }}</small>
+								<div class="fw-bold">{{ partner.company_name }}</div>
+								<div class="text-primary-custom fw-medium">{{ partner.company_role }}</div>
+								<div>{{ partner.email }}</div>
+                                <small class="text-muted">Partnership since: {{ partner.created_at|date:"M d, Y" }}</small>
                             </div>
                             <div class="dropdown">
                                 <button class="btn btn-primary dropdown-toggle btn-sm" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
                                     <span>Actions</span>
                                 </button>
                                 <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                                    <li><a id="delete-partner" class="dropdown-item" href="#" data-partner-id="{{ partnership.id }}">Delete</a></li>
+                                    <li><a id="delete-partner" class="dropdown-item" href="#" data-partner-id="{{ partner.id }}">Delete</a></li>
+									
                                     <!-- Add more actions here -->
                                 </ul>
                             </div>
@@ -197,27 +200,27 @@
 					<div class="tab-pane fade" id="sent" role="tabpanel" aria-labelledby="sent-tab">
 						<div class="list-group" id="sentInvitations">
 							{% for invitation in sent_invitations %}
-							{% if not invitation.accepted %}
-							<div class="list-group-item list-group-item-action px-5 py-3" id="invitation-{{ invitation.id }}">
-								<div class="d-flex justify-content-between align-items-center flex-wrap">
-									<div class="mb-2 mb-sm-0">
-										<h6 class="mb-0">{{ invitation.email }}</h6>
-										<small class="text-muted">{{ invitation.created_at|date:"Y-M-d" }}</small>
+								{% if not invitation.accepted %}
+									<div class="list-group-item list-group-item-action px-5 py-3" id="invitation-{{ invitation.id }}">
+										<div class="d-flex justify-content-between align-items-center flex-wrap">
+											<div class="mb-2 mb-sm-0">
+												<h6 class="mb-0">{{ invitation.email }}</h6>
+												<small class="text-muted">{{ invitation.created_at|date:"Y-M-d" }}</small>
+											</div>
+											{% if not invitation.accepted %}
+											<button id="delete-invitation" class="btn btn-danger btn-sm" data-invitation-id="{{ invitation.id }}">Delete</button>
+											{% endif %}
+										</div>
 									</div>
-									{% if not invitation.accepted %}
-									<button id="delete-invitation" class="btn btn-danger btn-sm" data-invitation-id="{{ invitation.id }}">Delete</button>
-									{% endif %}
-								</div>
-							</div>
-							{% endif %}
+								{% endif %}
 							{% empty %}
-							<div class="list-group-item list-group-item-action px-5 py-3">
-								<div class="d-flex justify-content-between align-items-center flex-wrap">
-									<div class="mb-2 mb-sm-0">
-										<p class="mb-0">No invitations sent</p>
+								<div class="list-group-item list-group-item-action px-5 py-3">
+									<div class="d-flex justify-content-between align-items-center flex-wrap">
+										<div class="mb-2 mb-sm-0">
+											<p class="mb-0">No invitations sent</p>
+										</div>
 									</div>
 								</div>
-							</div>
 							{% endfor %}
 							{% if has_more_sent_invitations %}
 							<button class="btn see-more-invitations fw-bold" data-type="sent" id="seeMoreSent">See More</button>

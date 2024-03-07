@@ -1,0 +1,55 @@
+.iti {
+    width: 100%;
+}
+
+.iti__flag-container {
+    width: auto;
+}
+
+.iti__selected-flag {
+    display: flex;
+    align-items: center;
+}
+
+.iti__country-list {
+    min-width: 400px !important;
+    z-index: 9999 !important;
+    
+}
+
+
+@media (max-width: 464px) {
+    .iti__country-list {
+        min-width: 300px !important;
+    }
+}
+
+.profile-card {
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px #E6DDDD solid;
+}
+
+.fw-medium {
+    font-weight: 600;
+}
+.info-item {
+    display: flex;
+    align-items: flex-start; /* Align items at the start, accommodating wrapped text */
+    gap: 8px; /* Space between label and value */
+}
+
+.label {
+    min-width: 80px; /* Adjust based on the widest label you have */
+    flex-shrink: 0; /* Prevent the label from shrinking */
+    white-space: nowrap; /* Keep the label on a single line */
+}
+
+.value {
+    flex-grow: 1; /* Allow the value to take up the remaining space */
+    word-break: break-word; /* Ensure long words can break and wrap to the next line */
+}
+.text-custom{
+    color: #295893 !important;
+}
