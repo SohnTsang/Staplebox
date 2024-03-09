@@ -15,12 +15,8 @@ class UserProfileInline(admin.StackedInline):
 
 class UserAdmin(BaseUserAdmin):
     inlines = (UserProfileInline, )
-    list_display = ('username', 'email', 'get_role', 'is_staff', 'is_active', 'date_joined', 'last_login', 'get_verified')
+    list_display = ('username', 'email', 'is_staff', 'is_active', 'date_joined', 'last_login', 'get_verified')
     list_select_related = ('userprofile', )
-
-    def get_role(self, instance):
-        return instance.userprofile.role
-    get_role.short_description = 'Role'
 
     def get_verified(self, instance):
         # Check if there is a verified email for the user

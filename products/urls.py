@@ -8,6 +8,8 @@ from . import views
 
 #products/urls.py
 
+app_name = 'products'
+
 urlpatterns = [
     path('', product_list, name='product_list'),
     path('new/', create_product, name='create_product'),

@@ -105,40 +105,84 @@ def partner_list_view(request):
             request.session['form_data'] = request.POST
             return redirect('partners:partner_list')
 
+
+
+    filter_value = request.GET.get('filter_value', '')
+    filter_type = request.GET.get('filter_type', 'company_name')  # Default to 'company_name'
+    sort_by = request.GET.get('sort', 'created_at')  # Default sorting by created_at
+
     active_partnerships = Partnership.objects.filter(Q(partner1=user) | Q(partner2=user), is_active=True).distinct()
     partner_info = []
+    filtered_partnerships = []
+
     received_invitations = Invitation.objects.filter(email=user.email).order_by('-created_at')[:5]
     sent_invitations = Invitation.objects.filter(sender=user).order_by('-created_at')[:5]
-
 
     partners = set()
     
     #for partnership in active_partnerships:
     #    partners.add(partnership.partner1.email)
     #    partners.add(partnership.partner2.email)
+
     for partnership in active_partnerships:
-
-        partners.add(partnership.partner1.email)
-        partners.add(partnership.partner2.email)
-
         partner_user = partnership.partner2 if partnership.partner1 == user else partnership.partner1
         try:
             company_profile = CompanyProfile.objects.get(user_profile=partner_user.userprofile)
-            partner_info.append({'id': partnership.id, 'email': partner_user.email, 'created_at': partnership.created_at, 'company_name': company_profile.name, 'company_email': company_profile.email, 'company_role': company_profile.role})
+            # Apply filters based on filter_type and filter_value
+            should_add = False
+            if filter_type == 'company_name' and filter_value.lower() in company_profile.name.lower():
+                should_add = True
+            elif filter_type == 'email' and filter_value.lower() in company_profile.email.lower():
+                should_add = True
+            elif filter_type == 'role' and filter_value.lower() in company_profile.role.lower():
+                should_add = True
+            elif not filter_type:
+                # If no filter_type is provided, add all active partnerships
+                should_add = True
+            if should_add:
+                filtered_partnerships.append(partnership)
+
         except CompanyProfile.DoesNotExist:
-            partner_info.append({'email': partner_user.email, 'created_at': partnership.created_at, 'company_name': 'No company profile'})
+            # Handle case where a partner does not have a company profile
+            continue
 
         # Delete sent invitations if the user is already a partner with the recipient
         for invitation in sent_invitations:
             if invitation.email in partners:
                 invitation.delete()
     
+    # Now, sort the filtered partnerships if applicable
+    if sort_by in ['name', 'email', 'role', 'created_at']:
+        # You might need a more complex logic for sorting based on attributes in CompanyProfile
+        # For simplicity, this example doesn't implement detailed sorting logic
+        filtered_partnerships.sort(key=lambda x: getattr(x.partner2.userprofile.companyprofile if x.partner1 == user else x.partner1.userprofile.companyprofile, sort_by, ''))
 
+    for partnership in filtered_partnerships:
+        partner_user = partnership.partner2 if partnership.partner1 == user else partnership.partner1
+        try:
+            company_profile = CompanyProfile.objects.get(user_profile=partner_user.userprofile)
+            partner_info.append({
+                'id': partnership.id,
+                'email': partner_user.email,
+                'created_at': partnership.created_at.strftime('%d-%b-%Y'),
+                'company_name': company_profile.name,
+                'company_email': company_profile.email,
+                'company_role': company_profile.role
+            })
+        except CompanyProfile.DoesNotExist:
+            partner_info.append({
+                'id': partnership.id,
+                'email': partner_user.email,
+                'created_at': partnership.created_at.strftime('%d-%b-%Y'),
+                'company_name': 'No company profile',
+                'company_email': '',
+                'company_role': ''
+            })
+   
     # Now check if there are more than 5 invitations to decide whether to show "See More" buttons
     has_received_pending_invitations = Invitation.objects.filter(email=user.email, accepted=False)
     has_more_received_pending_invitations = Invitation.objects.filter(email=user.email, accepted=False).count() > 5
     has_more_sent_invitations = Invitation.objects.filter(sender=user).count() > 5
-
 
     context = {
         'form': form,

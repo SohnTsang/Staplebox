@@ -78,11 +78,7 @@ ul, li.nav-bar-item {
     --container-width: 90%;
 }
 
-.custom-container-fluid {
-    width: var(--container-width);
-    max-width: none !important;
-    
-}
+
 .custom-fw-bold {
     font-weight: 600 !important;
 

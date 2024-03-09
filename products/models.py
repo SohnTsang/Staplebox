@@ -18,6 +18,7 @@ class Product(models.Model):
         ('processed_foods', 'Processed Foods'),
     ]
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='products')
+    product_code = models.IntegerField()
     product_name = models.CharField(max_length=255)
     product_description = models.TextField(blank=True, null=True)
     product_type = models.CharField(max_length=20, choices=PRODUCT_TYPES)  # New field
@@ -25,6 +26,9 @@ class Product(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     deleted_at = models.DateTimeField(null=True, blank=True)
 
+    class Meta:
+        unique_together = ('user', 'product_code')
+        
     def save(self, *args, **kwargs):
         is_new = self._state.adding
         super().save(*args, **kwargs)

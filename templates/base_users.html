@@ -46,6 +46,12 @@
             margin-right: 0; /* Align with parent's right edge */
         }
 
+        input, textarea, select{
+            box-shadow: none !important;
+            outline: none !important;
+        }
+
+
         /* Remove top border for the first item */
         .list-group-item:first-child {
             border-top: none !important;
@@ -66,7 +72,7 @@
         .btn-danger {
             color:white;
         }
-        .btn-primary {
+        .btn-primary, .btn {
             color:white !important;
         }
         .btn-danger:hover {
@@ -83,6 +89,12 @@
             }
         }
 
+        
+        .custom-container-fluid {
+            width: var(--container-width);
+            max-width: none !important;
+        }
+
     </style>
     {% block extra_css %}
     {% endblock extra_css %}
@@ -92,7 +104,7 @@
         <div id="main-content" class="row vh-100 overflow-auto">
                 <!-- Sidebar -->
             {% include 'left_navbar.html' %}
-            <div class="col d-flex flex-column h-sm-100 ps-0">
+            <div class="col d-flex flex-column h-sm-100 ps-0" style="background-color: #fafafa;">
                 <!-- Your main content goes here -->
                 <main class="overflow-auto">
                     {% block content %}{% endblock %}

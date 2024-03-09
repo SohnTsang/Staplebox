@@ -1,22 +1,265 @@
-{% extends "base.html" %}
+{% extends "base_users.html" %}
 {% load static %}
 {% load crispy_forms_tags %}
 {% load crispy_forms_filters %}
+
 {% block title %}Product List{% endblock %}
 
+{% block extra_css %}
+<style>
+    .truncate {
+        max-width: 150px !important; /* Adjust based on your layout */
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+    @media (min-width: 800px) and (max-width: 923px){
+        #product-list {
+            max-width: 600px !important;
+        }
+    }
+
+    @media (min-width: 690px) and (max-width: 799px){
+        #product-list {
+            max-width: 580px !important;
+        }
+    }
+
+    @media (min-width: 661px) and (max-width: 689px){
+        #product-list {
+            max-width: 560px !important;
+        }
+    }
+
+    @media (min-width: 601px) and (max-width: 660px){
+        #product-list {
+            max-width: 500px !important;
+        }
+    }
+
+    @media (min-width: 400px) and (max-width: 600px){
+        #product-list {
+            max-width: 450px !important;
+        }
+    }
+
+
+</style>
+{% endblock extra_css %}
 
 {% block content %}
-<div class="container">
-    <h1>Products</h1>
-    <a href="{% url 'create_product' %}" class="btn btn-primary">Create New Product</a>
-    <ul class="list-group mt-3">
-        {% for product in products %}
-        <li class="list-group-item">
-            <a href="{% url 'product_explorer' product_id=product.id %}">{{ product.name }}</a> - {{ product.get_product_type_display }}
-        </li>
-        {% empty %}
-        <li class="list-group-item">No products found.</li>
-        {% endfor %}
-    </ul>
+<div id="product-list" class="container-fluid custom-container-fluid mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-12">
+            <div class="bg-white rounded-3 wrapper border">
+                <h4 class="text-primary-custom mb-3 fw-bold px-5 py-3 border-bottom">My Products</h4>
+                <a href="{% url 'products:create_product' %}" class="btn btn-primary mb-0 mx-5"><small>Create New Product</small></a>
+
+                <div class="d-flex justify-content-start mb-3 pt-4 px-5">
+                    <form method="get" class="d-flex gap-2">
+                        <!-- Input field for filter value -->
+                        <input type="text" class="form-control form-control-sm w-100" name="filter_value" value="{{ request.GET.filter_value }}" placeholder="Filter products">
+                        <!-- Dropdown for choosing filter header -->
+                        
+                        <select class="form-select form-select-sm w-auto" name="filter_type" aria-label="Filter type">
+                            <option value="product_code" {% if request.GET.filter_type == 'product_code' %}selected{% endif %}>Code</option>
+                            <option value="product_name" {% if request.GET.filter_type == 'product_name' %}selected{% endif %}>Name</option>
+                            <option value="product_type" {% if request.GET.filter_type == 'product_type' %}selected{% endif %}>Type</option>
+                        </select>
+
+                        <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+                    </form>
+                </div>
+                <div class="table-responsive px-5">
+                    <table class="table">
+                        <thead style="background-color: #295893; color: #ffffff;">
+                            <tr>
+                                {% with current_sort=request.GET.sort|default:"product_code" current_direction=request.GET.direction|default:"asc" %}
+                                    {% if current_sort == 'product_code' %}
+                                        {% if current_direction == 'asc' %}
+                                            {% with new_direction="desc" %}
+                                                <th scope="col">
+                                                    <a href="?sort=product_code&direction={{ new_direction }}&filter_value={{ request.GET.filter_value }}&filter_type={{ request.GET.filter_type }}" class="text-decoration-none">Code
+                                                        <i class="fas fa-sort-up"></i>
+                                                    </a>
+                                                </th>
+                                            {% endwith %}
+                                        {% else %}
+                                            {% with new_direction="asc" %}
+                                                <th scope="col">
+                                                    <a href="?sort=product_code&direction={{ new_direction }}&filter_value={{ request.GET.filter_value }}&filter_type={{ request.GET.filter_type }}" class="text-decoration-none">Code
+                                                        <i class="fas fa-sort-down"></i>
+                                                    </a>
+                                                </th>
+                                            {% endwith %}
+                                        {% endif %}
+                                    {% else %}
+                                        <th scope="col">
+                                            <a href="?sort=product_code&direction={{ new_direction }}&filter_value={{ request.GET.filter_value }}&filter_type={{ request.GET.filter_type }}" class="text-decoration-none">Code</a>
+                                            </th>
+                                    {% endif %}
+                                
+                                    {% if current_sort == 'product_name' %}
+                                        {% if current_direction == 'asc' %}
+                                            {% with new_direction="desc" %}
+                                                <th scope="col">
+                                                    <a href="?sort=product_name&direction={{ new_direction }}&filter_value={{ request.GET.filter_value|urlencode }}&filter_type={{ request.GET.filter_type|urlencode }}" class="text-decoration-none">Name
+                                                        <i class="fas fa-sort-up"></i>
+                                                    </a>
+                                                </th>
+                                            {% endwith %}
+                                        {% else %}
+                                            {% with new_direction="asc" %}
+                                                <th scope="col">
+                                                    <a href="?sort=product_name&direction={{ new_direction }}&filter_value={{ request.GET.filter_value|urlencode }}&filter_type={{ request.GET.filter_type|urlencode }}" class="text-decoration-none">Name
+                                                        <i class="fas fa-sort-down"></i>
+                                                    </a>
+                                                </th>
+                                            {% endwith %}
+                                        {% endif %}
+                                    {% else %}
+                                        <th scope="col">
+                                            <a href="?sort=product_name&direction={{ new_direction }}&filter_value={{ request.GET.filter_value|urlencode }}&filter_type={{ request.GET.filter_type|urlencode }}" class="text-decoration-none">Name</a>
+                                            </th>
+                                    {% endif %}
+                                    {% if current_sort == 'product_type' %}
+                                        {% if current_direction == 'asc' %}
+                                            {% with new_direction="desc" %}
+                                                <th scope="col">
+                                                    <a href="?sort=product_type&direction={{ new_direction }}" class="text-decoration-none">Type
+                                                        <i class="fas fa-sort-up"></i>
+                                                    </a>
+                                                </th>
+                                            {% endwith %}
+                                        {% else %}
+                                            {% with new_direction="asc" %}
+                                                <th scope="col">
+                                                    <a href="?sort=product_type&direction={{ new_direction }}" class="text-decoration-none">Type
+                                                        <i class="fas fa-sort-down"></i>
+                                                    </a>
+                                                </th>
+                                            {% endwith %}
+                                        {% endif %}
+                                    {% else %}
+                                        <th scope="col">
+                                            <a href="?sort=product_type&direction=asc" class="text-decoration-none">Type</a>
+                                        </th>
+                                    {% endif %}
+                                    {% if current_sort == 'product_description' %}
+                                        {% if current_direction == 'asc' %}
+                                            {% with new_direction="desc" %}
+                                                <th scope="col">
+                                                    <a href="?sort=product_description&direction={{ new_direction }}" class="text-decoration-none">Description
+                                                        <i class="fas fa-sort-up"></i>
+                                                    </a>
+                                                </th>
+                                            {% endwith %}
+                                        {% else %}
+                                            {% with new_direction="asc" %}
+                                                <th scope="col">
+                                                    <a href="?sort=product_description&direction={{ new_direction }}" class="text-decoration-none">Description
+                                                        <i class="fas fa-sort-down"></i>
+                                                    </a>
+                                                </th>
+                                            {% endwith %}
+                                        {% endif %}
+                                    {% else %}
+                                        <th scope="col">
+                                            <a href="?sort=product_description&direction=asc" class="text-decoration-none">Description</a>
+                                        </th>
+                                    {% endif %}
+                                    {% if current_sort == 'created_at' %}
+                                        {% if current_direction == 'asc' %}
+                                            {% with new_direction="desc" %}
+                                                <th scope="col">
+                                                    <a href="?sort=created_at&direction={{ new_direction }}" class="text-decoration-none">Created At
+                                                        <i class="fas fa-sort-up"></i>
+                                                    </a>
+                                                </th>
+                                            {% endwith %}
+                                        {% else %}
+                                            {% with new_direction="asc" %}
+                                                <th scope="col">
+                                                    <a href="?sort=created_at&direction={{ new_direction }}" class="text-decoration-none">Created At
+                                                        <i class="fas fa-sort-down"></i>
+                                                    </a>
+                                                </th>
+                                            {% endwith %}
+                                        {% endif %}
+                                    {% else %}
+                                        <th scope="col">
+                                            <a href="?sort=created_at&direction=asc" class="text-decoration-none">Created At</a>
+                                        </th>
+                                    {% endif %}
+                                    {% if current_sort == 'updated_at' %}
+                                        {% if current_direction == 'asc' %}
+                                            {% with new_direction="desc" %}
+                                                <th scope="col">
+                                                    <a href="?sort=updated_at&direction={{ new_direction }}" class="text-decoration-none">Updated at
+                                                        <i class="fas fa-sort-up"></i>
+                                                    </a>
+                                                </th>
+                                            {% endwith %}
+                                        {% else %}
+                                            {% with new_direction="asc" %}
+                                                <th scope="col">
+                                                    <a href="?sort=updated_at&direction={{ new_direction }}" class="text-decoration-none">Updated at
+                                                        <i class="fas fa-sort-down"></i>
+                                                    </a>
+                                                </th>
+                                            {% endwith %}
+                                        {% endif %}
+                                    {% else %}
+                                        <th scope="col">
+                                            <a href="?sort=updated_at&direction=asc" class="text-decoration-none">Updated at</a>
+                                        </th>
+                                    {% endif %}
+                                <th scope="col">Actions</th>
+                                {% endwith %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in products_with_root %}
+                            <tr class="align-middle">
+                                <td>{{ item.product.product_code }}</td>
+                                <td>{{ item.product.product_name }}</td>
+                                <td>{{ item.product.product_type }}</td>
+                                <td class="truncate pe-3">{{ item.product.product_description|default:"" }}</td>
+                                <td>{{ item.product.created_at|date:"d-M-Y" }}</td>
+                                <td>{{ item.product.updated_at|date:"d-M-Y" }}</td>
+                                <td>
+                                    <a href="{% url 'products:product_explorer' item.product.id %}?folderId={{ item.root_folder_id }}" class="btn btn-sm" style="background-color: #295893; color: #ffffff;">View</a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+{% block javascript %}
+
+<script>
+	document.addEventListener("DOMContentLoaded", function() {
+		// Get the current page variable from the template
+	
+		// Find the navigation item corresponding to the current page and add the "active" class
+		const navItems = document.querySelectorAll(".nav-bar-item");
+		navItems.forEach(item => {
+			if (item.querySelector("span").textContent.trim() === "Products") {
+				item.classList.add("active");
+			}
+		});
+	});
+</script>
+
 {% endblock %}
+{% endblock %}
+
+

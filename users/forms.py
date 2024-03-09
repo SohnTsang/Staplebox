@@ -1,5 +1,6 @@
 from django import forms
 from .models import UserProfile
+from companies.models import CompanyProfile
 from allauth.account.forms import SignupForm, LoginForm
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
@@ -27,6 +28,12 @@ class SignupForm(SignupForm):
 
         # Create or update the UserProfile instance
         userProfile, created = UserProfile.objects.get_or_create(user=user)
+        companyProfile, company_created = CompanyProfile.objects.get_or_create(user_profile=userProfile)
+        
+        if company_created:
+            companyProfile.name = "Company Name"  # Example of setting a default value
+            companyProfile.save()
+            
         userProfile.save()
 
         return user

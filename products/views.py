@@ -13,22 +13,84 @@ from document_types.models import DocumentType
 
 @login_required
 def product_list(request):
-    products = Product.objects.filter(user=request.user)
-    return render(request, 'products/product_list.html', {'products': products})
+    
+    current_sort = request.GET.get('sort', 'product_code')
+    current_direction = request.GET.get('direction', 'asc')
+    sorting_action = request.GET.get('sorting_action', 'no')
+
+    filter_type = request.GET.get('filter_type', 'product_code')  # Default to filtering by product_name
+    filter_value = request.GET.get('filter_value', '')
+
+    
+
+    # Toggle direction if the same sort field is requested again
+    if 'sort' in request.GET and sorting_action == 'yes':
+        previous_sort = request.session.get('current_sort', None)
+        previous_direction = request.session.get('current_direction', 'asc')
+
+        if current_sort == previous_sort:
+            current_direction = 'desc' if previous_direction == 'asc' else 'asc'
+        else:
+            current_direction = 'asc'
+
+    # Save the current sort and direction in the session
+    request.session['current_sort'] = current_sort
+    request.session['current_direction'] = current_direction
+    
+    products_with_root = []  # A new list to hold products with their root folder ID
+
+    if request.user.is_authenticated:
+        filters = {f'{filter_type}__icontains': filter_value} if filter_value else {}
+        products = Product.objects.filter(**filters).filter(user=request.user).order_by(f'{"" if current_direction == "asc" else "-"}{current_sort}')
+        for product in products:
+            # Attempt to get the root folder for each product
+            root_folder = Folder.objects.filter(product=product, name='Root').first()
+            if root_folder:
+                # Append both the product and its root folder ID to the list
+                products_with_root.append({
+                    'product': product,
+                    'root_folder_id': root_folder.id
+                })
+            else:
+                # Handle case where no root folder is found
+                products_with_root.append({
+                    'product': product,
+                    'root_folder_id': None
+                })
+
+        context = {
+            'products_with_root': products_with_root,
+            'current_sort': current_sort,
+            'current_direction': current_direction,
+            'filter_value': filter_value,
+            'filter_type': filter_type,
+        }
+
+    else:
+        products_with_root = []
+        context = {
+            'products_with_root': products_with_root,
+            'current_sort': current_sort,
+            'current_direction': current_direction,
+            'filter_value': filter_value,
+            'filter_type': filter_type,
+        }
+
+    return render(request, 'products/product_list.html', context)
 
 
 @login_required
 def create_product(request):
     if request.method == 'POST':
-        form = ProductForm(request.POST)
+        form = ProductForm(request.POST, user=request.user)
         if form.is_valid():
             product = form.save(commit=False)
             product.user = request.user
             product.save()
             messages.success(request, 'Product created successfully!')
-            return redirect('home')
+            return redirect('products:product_list')
     else:
-        form = ProductForm()
+        form = ProductForm(user=request.user)
     return render(request, 'products/product_form.html', {'form': form})
 
 
@@ -37,11 +99,11 @@ def edit_product(request, pk):
     product = get_object_or_404(Product, pk=pk, user=request.user)
 
     if request.method == 'POST':
-        form = ProductForm(request.POST, instance=product)
+        form = ProductForm(request.POST, instance=product, user=request.user)
         if form.is_valid():
             form.save()
             messages.success(request, 'Product updated successfully!')
-            return redirect('home')
+            return redirect('products:product_list')
     else:
         form = ProductForm(instance=product)
     return render(request, 'products/product_form.html', {'form': form})

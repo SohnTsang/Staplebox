@@ -34,7 +34,7 @@ urlpatterns = [
     path('companies/', include(('companies.urls'), namespace='companies')),  # Include companies URLs
     path('folder/', include(('folder.urls', 'folder'), namespace='folder')),
     path('documents/', include(('documents.urls', 'documents'), namespace='documents')),
-    path('products/', include('products.urls')),
+    path('products/', include(('products.urls', 'products'), namespace='products')),
     path('accounts/login/', login_signup_view, name='account_login'),
     path('accounts/signup/', login_signup_view, name='account_signup'),
     path('password/reset/complete/', CustomPasswordResetCompleteView.as_view(), name='password_reset_complete'),

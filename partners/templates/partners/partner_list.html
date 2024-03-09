@@ -64,6 +64,53 @@
 	.fw-medium {
 		font-weight: 500;
 	}
+
+	.select-auto-width > select {
+            width: auto; /* Adjust this based on your content */
+        }
+
+	@media (max-width: 500px) {
+		.select-auto-width {
+			width: 100%;
+		}
+		#filter_value {
+			max-width: auto !important;
+		}
+	}
+
+	@media (max-width: 360px) {
+		#filter_value {
+			max-width: 200px !important;
+		}
+	}
+
+	#filter_value {
+		width: 250px !important;
+	}
+
+	@media (max-width: 536px) {
+        .responsive-wrap {
+            flex-wrap: wrap;
+        }
+        .responsive-wrap > * {
+            flex-basis: 100%;
+        }
+        /* Specific style for #sort div to add margin-top when wrapped */
+        
+    }
+	@media (max-width: 902px) {
+		#sort {
+			margin-top: 10px;
+		}
+	}
+
+	@media (min-width: 992px) and (max-width: 1316px) {
+        #sort {
+            margin-top: 10px;
+        }
+    }
+
+
 </style>
 {% endblock extra_css %}
 
@@ -101,7 +148,42 @@
 					Send Invitation
 					</small>
 				</button>
-				
+				<div class="px-5 pt-4">
+					<form method="get" action="" class="row g-3">
+						<div class="col-12 d-flex flex-wrap align-items-center justify-content-between">
+
+							<div class="d-flex gap-2 align-items-center responsive-wrap">
+								<input type="text" class="form-control form-control-sm" id="filter_value" name="filter_value" value="{{ request.GET.filter_value }}" placeholder="Search Partners" aria-label="Filter...">
+			
+								<div class="select-auto-width d-flex">
+									<select class="form-select form-select-sm" name="filter_type" aria-label="Filter type">
+										<option value="company_name" {% if request.GET.filter_type == 'company_name' %}selected{% endif %}>Name</option>
+										<option value="email" {% if request.GET.filter_type == 'email' %}selected{% endif %}>Email</option>
+										<option value="role" {% if request.GET.filter_type == 'role' %}selected{% endif %}>Role</option>
+									</select>
+								
+			
+									<button type="submit" class="btn btn-outline-secondary btn-sm" id="button-addon2">
+										<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: text-top;">
+											<path d="M21 21L16.6569 16.6569M16.6569 16.6569C18.1046 15.2091 19 13.2091 19 11C19 6.58172 15.4183 3 11 3C6.58172 3 3 6.58172 3 11C3 15.4183 6.58172 19 11 19C13.2091 19 15.2091 18.1046 16.6569 16.6569Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+										</svg>
+									</button>
+								</div>
+							</div>
+			
+							<div id="sort" class="d-flex align-items-center select-auto-width">
+								<small class="me-2">Sort by</small>
+								<select class="form-select form-select-sm" name="sort" aria-label="Sort by">
+									<option value="created_at" {% if request.GET.sort == 'created_at' %}selected{% endif %}>Created at</option>
+									<option value="name" {% if request.GET.sort == 'name' %}selected{% endif %}>Name</option>
+									<option value="email" {% if request.GET.sort == 'email' %}selected{% endif %}>Email</option>
+									<option value="role" {% if request.GET.sort == 'role' %}selected{% endif %}>Role</option>
+								</select>
+								<button type="submit" id="sort-button" class="btn btn-sm ms-2" style="color:#295893">Apply</button>
+							</div>
+						</div>
+					</form>
+				</div>
 				
                 <div class="list-group">
 					{% for partner in partner_info %}
@@ -111,8 +193,8 @@
 									<!--<h5 class="mb-1">{{ partnership.importer.username }}</h5>-->
 								<div class="fw-bold">{{ partner.company_name }}</div>
 								<div class="text-primary-custom fw-medium">{{ partner.company_role }}</div>
-								<div>{{ partner.email }}</div>
-                                <small class="text-muted">Partnership since: {{ partner.created_at|date:"M d, Y" }}</small>
+								<div>{{ partner.company_email }}</div>
+                                <small class="text-muted">Partnership since: {{ partner.created_at }}</small>
                             </div>
                             <div class="dropdown">
                                 <button class="btn btn-primary dropdown-toggle btn-sm" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
@@ -236,6 +318,17 @@
 {% include "modal/send_invitation_modal.html" %}
 
 {% block javascript %}
+
+<script>
+	document.addEventListener("DOMContentLoaded", function() {
+		document.getElementById('sort-button').style.display = 'none';
+		var sortSelect = document.querySelector('select[name="sort"]');
+		sortSelect.addEventListener('change', function() {
+			this.form.submit();
+		});
+	});
+</script>
+
 <script>
 	document.addEventListener("DOMContentLoaded", function() {
 		// Get the current page variable from the template

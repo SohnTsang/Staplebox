@@ -11,3 +11,8 @@ a {
 .text-primary-custom{
     color: #2f82c0 !important;
 }
+
+input, textarea{
+    box-shadow: none !important;
+    outline: none !important;
+}
