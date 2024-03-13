@@ -5,63 +5,355 @@
 
 {% block title %}Product Directory{% endblock %}
 
+
+{% block extra_css %}
+
+<style>
+
+.truncate-name {
+    max-width: 300px !important; /* Adjust based on your layout */
+    width: 300px !important; /* Adjust based on your layout */
+    min-width: 200px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+
+.truncate-type {
+    max-width: 250px !important; /* Adjust based on your layout */
+    width: 250px !important; /* Adjust based on your layout */
+    min-width: 100px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+.truncate-version {
+    max-width: 100px !important; /* Adjust based on your layout */
+    width: 100px !important; /* Adjust based on your layout */
+    min-width: 50px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+.truncate-modified {
+    max-width: 250px !important; /* Adjust based on your layout */
+    width: 250px !important; /* Adjust based on your layout */
+    min-width: 150px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+.clickable-row td {
+    cursor: pointer;
+    text-decoration: none;
+}
+
+/* Optional: Remove text decoration on hover if desired */
+.clickable-row td:hover {
+    text-decoration: none;
+}
+
+.breadcrumb-navigation:hover {
+    background-color: #29589333;
+}
+
+.breadcrumb-item {
+  + .breadcrumb-item::before {
+    content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' viewBox='0 0 20 20'%3E%3Cpath d='M10 17L15 12' stroke='%23454545' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M15 12L10 7' stroke='%23454545' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
+    color: #7d8daa;
+    
+  }
+}
+.fw-less-bold {
+    font-weight: 600;
+}
+
+.checkbox-column {
+    width: 40px; /* Adjust based on your design needs */
+}
+
+</style>
+{% endblock extra_css %}
+
 {% block content %}
 
-<div id="product-explorer" data-product-id="{{ product.id }}" data-root-folder-id="{{ root_folder_id }}" class="container mt-3">
+<div id="product-explorer" data-product-id="{{ product.id }}" data-root-folder-id="{{ root_folder_id }}" class="container mt-5">
+    <div class="row">
+        <div class="col-12">
+            <div class="bg-white rounded-2 wrapper">
+                <h4 class="text-primary-custom mb-3 fw-bold px-5 py-3 border-bottom">{{ product.product_name}}</h4>
 
-    <h2>{{ product.product_name }}</h2>
-    <a href="{% url 'home' %}" class="btn btn-secondary">Back to Home</a>
-    <!-- Product Actions (Edit, Delete, etc.) -->
-    <div id="product-actions">
-        <a href="{% url 'products:edit_product' product.id %}" class="btn btn-primary">Edit Product</a>
-        <form action="{% url 'products:delete_product' product.id %}" method="post">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-primary">Delete Product</button>
-        </form>
-    </div>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <a href="{% url 'home' %}" class="btn btn-primary me-2">Back to Home</a>
+                        <a href="{% url 'products:edit_product' product.id %}" class="btn btn-primary me-2">Edit Product</a>
+                        <form action="{% url 'products:delete_product' product.id %}" method="post" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-primary">Delete Product</button>
+                        </form>
+                    </div>
+                    <div>
+                        <form id="create-folder-form" method="post" action="{% url 'products:folder_create' product_id=product.id %}">
+                            {% csrf_token %}
+                            <div class="input-group mb-3">
+                                <input type="text" class="form-control" placeholder="New Folder Name" id="folderName" name="name" required>
 
-    <!-- Breadcrumbs for navigation -->
-    <nav aria-label="breadcrumb">
-    <ol class="breadcrumb" id="breadcrumbs">
-        <!-- Remove the automatic addition of "Root" here -->
-        {% for folder in breadcrumbs %}
-        <li class="breadcrumb-item">
-            {{ folder.name }}
-        </li>
-        {% endfor %}
-    </ol>
-</nav>
+                                {% if current_folder %}
+                                    <input type="hidden" id="parentFolderId" name="parent_id" value="{{ current_folder.id }}">
+                                {% else %}
+                                    <input type="hidden" id="parentFolderId" name="parent_id" value="{{ root_folder.id }}">
+                                {% endif %}
+                                <button class="btn btn-primary" type="submit">Create Folder</button>
+                            </div>
+                        </form>
+                        <button type="button" class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#uploadDocumentModal">Upload Document</button>
+                        <a href="{% url 'access_control:manage_access' product_id=product.id %}" class="btn btn-primary">Manage Access</a>
+                    </div>
+                </div>
 
-    <!-- Folder and Document Actions -->
-    <div id="folder-actions">
-        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createFolderModal">Create Folder</button>
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadDocumentModal">Upload Document</button>
-        <a href="{% url 'access_control:manage_access' product_id=product.id %}" class="btn btn-info">Manage Access</a>
-    </div>
+                <div id="folders-container" class="px-3">
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            {% for breadcrumb in breadcrumbs %}
+                                <li class="breadcrumb-item">
+                                    {% if forloop.last %}
+                                        <span class="p-2 h6">{{ breadcrumb.name }}</span>
+                                    {% else %}
+                                        <a href="{% url 'products:product_explorer_folder' product_id=product.id folder_id=breadcrumb.id %}" class="text-primary-custom breadcrumb-navigation p-2 h6">{{ breadcrumb.name }}</a>
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                        </ol>
+                    </nav>
+                </div>
+                <div class="table-responsive px-5">
+                    <table class="table table-hover align-middle">
+                        <thead>
+                            <tr class="">
+                                <th scope="col" class="checkbox-column"></th>
+                                <th scope="col" class="small truncate-name">Name</th>
+                                <th scope="col" class="small truncate-type">Type</th>
+                                <th scope="col" class="small truncate-modified">Date Modified</th>
+                                <th scope="col" class="small truncate-version">Version</th>
+                                <th scope="col" class=""></th>
+                            </tr>
+                        </thead>
+                        
+                        <tbody>
+                            <!-- Folders -->
+                            {% for folder in subfolders %}
+                            <!--<tr class="clickable-row" onclick="window.location='{% url 'products:product_explorer_folder' product_id=product.id folder_id=folder.id %}';">-->
+                            <tr class="clickable-row"></tr>
+                                <td class="checkbox-column"><input type="checkbox" name="selected_items" value="folder_{{ folder.id }}"></td>
+                                <td class="text-muted small truncate-name">
+                                    <svg class="icon-folder me-2" xmlns="http://www.w3.org/2000/svg" width="22" height="18" fill="currentColor" viewBox="0 0 16 16">
+                                        <path d="M16 6.32099V12.642C16 13.4751 15.3473 14.1576 14.5194 14.2179L14.4 14.2222H1.6C0.75651 14.2222 0.0654679 13.5776 0.00438862 12.7599L0 12.642L0 6.32099L16 6.32099ZM6.0155 0C6.45292 0 6.86907 0.176755 7.16925 0.485378L7.26488 0.593075L8.38448 1.97531L14.4 1.97531C15.2435 1.97531 15.9345 2.61995 15.9956 3.43762L16 3.55556V4.74074L0 4.74074L0 1.58025C0 0.747171 0.652702 0.0646597 1.48059 0.00433444L1.6 0L6.0155 0Z" fill="#CCA92D"/>
+                                    </svg>
+                                    <a href="{% url 'products:product_explorer_folder' product_id=product.id folder_id=folder.id %}">
+                                        <span class="fw-less-bold">{{ folder.name }}</span>
+                                    </a>
+                                </td>
+                                <td class="text-muted small truncate-type">-</td>
+                                <td class="text-muted small truncate-modified">{{ folder.updated_at|date:"Y-m-d H:i" }}</td>
+                                <td class="text-muted small truncate-version">-</td>
+                                <td class="text-center">
+                                    <div class="dropdown">
+                                        <button class="btn btn-secondary dropdown-toggle px-0 py-1" type="button" id="actionDropdown{{ forloop.counter }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <g clip-path="url(#clip0_1417_12)">
+                                                    <rect x="12" y="12" width="0.01" height="0.01" stroke="#292929" stroke-width="3" stroke-linejoin="round"/>
+                                                    <rect x="12" y="5" width="0.01" height="0.01" stroke="#292929" stroke-width="3" stroke-linejoin="round"/>
+                                                    <rect x="12" y="19" width="0.01" height="0.01" stroke="#292929" stroke-width="3" stroke-linejoin="round"/>
+                                                </g>
+                                                <defs>
+                                                    <clipPath id="clip0_1417_12">
+                                                        <rect width="40" height="40" fill="white" transform="translate(0 0.000915527)"/>
+                                                    </clipPath>
+                                                </defs>
+                                            </svg>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionDropdown{{ forloop.counter }}">
+                                            <!-- Access Action -->
+                                            <li>
+                                                <a class="dropdown-item" href="#">
+                                                    <i class="fas fa-user"></i> &nbsp; Access
+                                                </a>
+                                            </li>
 
-    <!-- Folder Contents -->
+                                            <li>
+                                                <a class="dropdown-item" href="#">
+                                                    <i class="fas fa-user"></i> &nbsp; Edit
+                                                </a>
+                                            </li>
 
-    <div id="folders-container">
-        <div id="folder-contents">
-            {% include 'folders/folder_contents.html' with subfolders=folders %}
-            <div id="document-list-{{ current_folder.id }}" class="document-list"></div>
+                                            <!-- Update Action -->
+                                            <li>
+                                                <a class="dropdown-item" href="#">
+                                                    <i class="fas fa-edit"></i> &nbsp; Update
+                                                </a>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <!-- Delete Action -->
+                                            <li>
+                                                <form action="{% url 'folder:delete_folder' folder_id=folder.id %}" method="post" onsubmit="return confirm('Are you sure you want to delete this folder?');">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="dropdown-item text-danger"">
+                                                        <i class="fas fa-trash"></i> &nbsp; Delete
+                                                    </button>
+                                                </form>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            
+                            <!-- Documents -->
+                            {% for document in documents %}
+                            <tr class="clickable-row">
+                                <td class="checkbox-column"><input type="checkbox" name="selected_items" value="document_{{ document.id }}"></td>
+                                <td class="small truncate-name">
+                                    <a href="{% url 'documents:download_document' document.id %}" data-document-id="{{ document.id }}">
+                                        {% with document.file_type|upper as doc_type %}
+                                            {% if doc_type == '.PDF' %}
+                                                <svg class="me-2" width="20" height="22" viewBox="0 0 12 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                    <path d="M6.8 0V5.525C6.8 6.18774 7.30568 6.73238 7.95221 6.79416L8.075 6.8H13.6V15.3C13.6 16.1962 12.9065 16.9304 12.0269 16.9953L11.9 17H1.7C0.803792 17 0.0695594 16.3065 0.0046627 15.4269L0 15.3L0 1.7C0 0.803792 0.693496 0.0695596 1.57313 0.00466291L1.7 0L6.8 0ZM8.5 0.036856C8.77387 0.094843 9.03044 0.219882 9.24584 0.402096L9.35 0.497921L13.1021 4.25C13.3031 4.451 13.4486 4.69715 13.5286 4.96461L13.5631 5.1H8.5V0.036856Z" fill="#295893"/>
+                                                </svg>  
+                                            {% elif doc_type == '.WORD' %}
+                                                <img src="{% static 'icons/word-icon.png' %}" alt="Word" width="16" height="16" class="me-2">
+                                            {% elif doc_type == '.PNG' %}
+                                                <svg class="me-2" width="22" height="18" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                    <path d="M14.4 0C15.2837 0 16 0.696446 16 1.55556V12.4444C16 13.3036 15.2837 14 14.4 14H1.6C0.716344 14 0 13.3036 0 12.4444L0 1.55556C0 0.696446 0.716344 0 1.6 0L14.4 0ZM14.4 1.55556L1.6 1.55556L1.6 9.4115L5.59584 5.52666C5.98637 5.147 6.61952 5.147 7.01008 5.52666L10.2627 8.68902L11.2527 7.7266C11.6432 7.34689 12.2764 7.34689 12.6669 7.7266L14.4 9.4115V1.55556ZM10.8 3.11111C11.4627 3.11111 12 3.63344 12 4.27778C12 4.92211 11.4627 5.44444 10.8 5.44444C10.1373 5.44444 9.6 4.92211 9.6 4.27778C9.6 3.63344 10.1373 3.11111 10.8 3.11111Z" fill="#AC3140"/>
+                                                </svg>
+                                            {% elif doc_type == '.JPG' %}
+                                                <img src="{% static 'icons/jpg-icon.png' %}" alt="JPG" width="16" height="16" class="me-2">
+                                            {# Add more formats as needed #}
+                                            {% else %}
+                                                <!-- Optionally, show a default icon for unspecified document types -->
+                                                <svg class="me-2" width="20" height="22" viewBox="0 0 12 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                    <path d="M6.8 0V5.525C6.8 6.18774 7.30568 6.73238 7.95221 6.79416L8.075 6.8H13.6V15.3C13.6 16.1962 12.9065 16.9304 12.0269 16.9953L11.9 17H1.7C0.803792 17 0.0695594 16.3065 0.0046627 15.4269L0 15.3L0 1.7C0 0.803792 0.693496 0.0695596 1.57313 0.00466291L1.7 0L6.8 0ZM8.5 0.036856C8.77387 0.094843 9.03044 0.219882 9.24584 0.402096L9.35 0.497921L13.1021 4.25C13.3031 4.451 13.4486 4.69715 13.5286 4.96461L13.5631 5.1H8.5V0.036856Z" fill="#295893"/>
+                                                </svg>                                            
+                                            {% endif %}
+                                        {% endwith %}
+                                        <span class="fw-less-bold">{{ document.file_name }}</span>
+                                    </a>
+                                </td>
+                                <td class="small truncate-type">{{ document.document_type.type_name }}</td>
+                                <td class="small truncate-modified">{{ document.updated_at|date:"Y-m-d H:i" }}</td>
+                                <td class="small truncate-version">{{ document.version }}</td>
+                                <td class="text-center">
+                                    <div class="dropdown">
+                                        <button class="btn btn-secondary dropdown-toggle px-0 py-1" type="button" id="actionDropdown{{ forloop.counter }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <g clip-path="url(#clip0_1417_12)">
+                                                    <rect x="12" y="12" width="0.01" height="0.01" stroke="#292929" stroke-width="3" stroke-linejoin="round"/>
+                                                    <rect x="12" y="5" width="0.01" height="0.01" stroke="#292929" stroke-width="3" stroke-linejoin="round"/>
+                                                    <rect x="12" y="19" width="0.01" height="0.01" stroke="#292929" stroke-width="3" stroke-linejoin="round"/>
+                                                </g>
+                                                <defs>
+                                                    <clipPath id="clip0_1417_12">
+                                                        <rect width="40" height="40" fill="white" transform="translate(0 0.000915527)"/>
+                                                    </clipPath>
+                                                </defs>
+                                            </svg>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionDropdown{{ forloop.counter }}">
+                                            <!-- Access Action -->
+                                            <li>
+                                                <a class="dropdown-item" href="#">
+                                                    <i class="fas fa-user"></i> &nbsp; Access
+                                                </a>
+                                            </li>
+
+                                            <li>
+                                                <a class="dropdown-item" href="#">
+                                                    <i class="fas fa-user"></i> &nbsp; Edit
+                                                </a>
+                                            </li>
+
+                                            <!-- Update Action -->
+                                            <li>
+                                                <a class="dropdown-item" href="#">
+                                                    <i class="fas fa-edit"></i> &nbsp; Update
+                                                </a>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <!-- Delete Action -->
+                                            <li>
+                                                <form action="{% url 'documents:delete_document' document_id=document.id %}" method="post" onsubmit="return confirm('Are you sure you want to delete this folder?');">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="dropdown-item text-danger"">
+                                                        <i class="fas fa-trash"></i> &nbsp; Delete
+                                                    </button>
+                                                </form>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 <!-- Create Folder Modal -->
-{% include "modal/create_folder_modal.html" %}
+<!--{% include "modal/create_folder_modal.html" %}-->
 {% include "modal/upload_document_modal.html" %}
 
 
 
 {% block javascript %}
 
-<script src="{% static 'products/js/product_explorer.js' %}"></script>
+<!--<script src="{% static 'products/js/product_explorer.js' %}"></script>-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 
 <script>
-
-
+    $(document).ready(function() {
+        $('.dropdown').on('show.bs.dropdown', function(e) {
+            var $dropdownMenu = $(this).find('.dropdown-menu');
+            var $dropdownToggle = $(this).find('.dropdown-toggle');
+            
+            // Temporarily detach the menu to move it to the body
+            $('body').append($dropdownMenu.detach());
+            
+            // Get positioning details
+            var toggleOffset = $dropdownToggle.offset();
+            var toggleHeight = $dropdownToggle.outerHeight();
+            var menuWidth = $dropdownMenu.outerWidth();
+            var toggleWidth = $dropdownToggle.outerWidth();
+            
+            // Adjust dropdown's positioning to open to the left
+            $dropdownMenu.css({
+                'display': 'block',
+                'top': toggleOffset.top + toggleHeight + "px", // Position below the toggle button
+                'left': toggleOffset.left - menuWidth + "px", // Adjust to open to the left
+                'position': 'absolute'
+            });
+            
+            // Prevent scrolling to the bottom
+            $dropdownMenu.addClass('position-fixed');
+        }).on('hide.bs.dropdown', function(e) {
+            var $dropdownMenu = $(this).find('.dropdown-menu');
+            
+            // Move the menu back to its original parent
+            $(this).append($dropdownMenu.detach());
+            $dropdownMenu.css({
+                'display': '',
+                'position': '',
+                'top': '',
+                'left': ''
+            });
+            
+        });
+    });
 </script>
 {% endblock %}
 

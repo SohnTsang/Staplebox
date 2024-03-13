@@ -6,14 +6,22 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form id="upload-document-form" enctype="multipart/form-data">
+                <!-- Update the form action to use the correct URL and method -->
+                <form id="upload-document-form" action="{% url 'products:upload_document' product_id=product.id folder_id=current_folder.id %}" method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
                     <div class="form-group">
                         <label for="documentFile">Select Documents</label>
-                        <input type="file" class="form-control-file" id="documentFile" name="files[]" multiple required>
+                        <input type="file" class="form-control-file" id="documentFile" name="document_file" required>
                     </div>
-                    <div id="dynamicFormsContainer"></div>
-                    <input type="hidden" id="folderId" name="folder_id">
-                    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                    <div class="form-group">
+                        <label for="documentType">Document Type</label>
+                        <select class="form-control" id="documentType" name="document_type">
+                            {% for doc_type in document_types %}
+                            <option value="{{ doc_type.id }}">{{ doc_type.type_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <input type="hidden" id="folderId" name="folder_id" value="{{ folder.id }}">
                 </form>
             </div>
             <div class="modal-footer">

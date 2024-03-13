@@ -10,33 +10,40 @@ from django.http import JsonResponse
 from django.db.models import Q
 from django.urls import reverse
 from document_types.models import DocumentType
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from documents.models import Document
+
 
 @login_required
 def product_list(request):
     
-    current_sort = request.GET.get('sort', 'product_code')
+    current_sort = request.GET.get('sort', 'updated_at')
     current_direction = request.GET.get('direction', 'asc')
-    sorting_action = request.GET.get('sorting_action', 'no')
 
     filter_type = request.GET.get('filter_type', 'product_code')  # Default to filtering by product_name
     filter_value = request.GET.get('filter_value', '')
 
-    
+    if 'sort' in request.GET:
+        previous_sort = request.session.get('current_sort')
+        # Use 'previous_direction' to remember the last sorting direction.
+        previous_direction = request.session.get('current_direction', 'desc')
 
-    # Toggle direction if the same sort field is requested again
-    if 'sort' in request.GET and sorting_action == 'yes':
-        previous_sort = request.session.get('current_sort', None)
-        previous_direction = request.session.get('current_direction', 'asc')
-
+        # Check if the same sort field is clicked again.
         if current_sort == previous_sort:
-            current_direction = 'desc' if previous_direction == 'asc' else 'asc'
+            # If 'direction' is explicitly provided in the request, use it.
+            # Otherwise, toggle based on the previous direction.
+            if 'direction' in request.GET:
+                current_direction = request.GET.get('direction')
+            else:
+                current_direction = 'asc' if previous_direction == 'desc' else 'desc'
         else:
+            # For a different sort field, you might want to set a default direction or use 'asc'.
             current_direction = 'asc'
 
     # Save the current sort and direction in the session
     request.session['current_sort'] = current_sort
     request.session['current_direction'] = current_direction
-    
+
     products_with_root = []  # A new list to hold products with their root folder ID
 
     if request.user.is_authenticated:
@@ -58,12 +65,25 @@ def product_list(request):
                     'root_folder_id': None
                 })
 
+        page_number = request.GET.get('page', 1)  # Get the page number from the query parameters
+        paginator = Paginator(products_with_root, 10)  # Show 10 products per page. Adjust as needed.
+
+        try:
+            page_obj = paginator.page(page_number)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver first page.
+            page_obj = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), deliver last page of results.
+            page_obj = paginator.page(paginator.num_pages)
+
         context = {
             'products_with_root': products_with_root,
             'current_sort': current_sort,
             'current_direction': current_direction,
             'filter_value': filter_value,
             'filter_type': filter_type,
+            'page_obj': page_obj,
         }
 
     else:
@@ -111,47 +131,37 @@ def edit_product(request, pk):
 
 @login_required
 def product_explorer(request, product_id, folder_id=None):
-    document_types = DocumentType.objects.all()  # Fetch all document types
     product = get_object_or_404(Product, id=product_id)
-    # Ensure there is a default "Root" folder for each product
-    root_folder, created = Folder.objects.get_or_create(product=product, name='Root', defaults={'parent': None})
+    root_folder, _ = Folder.objects.get_or_create(product=product, name='Root', defaults={'parent': None})
 
-    if folder_id is not None and folder_id != root_folder.id:
-        current_folder = get_object_or_404(Folder, id=folder_id, product=product)
+    if folder_id and folder_id != root_folder.id:
+        current_folder = get_object_or_404(Folder, id=folder_id)
+        # Get ancestors of the current folder including itself for the breadcrumbs
+        folder_ancestors = list(current_folder.get_ancestors(include_self=True))
+        # Replace the first item (root folder) with a custom entry for the product name
+        breadcrumbs = [{'id': root_folder.id, 'name': product.product_name}]
+        # Extend breadcrumbs with current folder's ancestors, skipping the first one if it's the root
+        breadcrumbs.extend([{'id': folder.id, 'name': folder.name} for folder in folder_ancestors[1:]])
     else:
         current_folder = root_folder
-
-    folder_id = request.GET.get('folderId')
-
-    # If no specific folder ID is provided, redirect to the root folder page
-    if not folder_id:
-        return redirect(
-            f"{reverse('product_explorer', kwargs={'product_id': product.id})}?folderId={root_folder.id}")
+        # Only use the product name for the root breadcrumb
+        breadcrumbs = [{'id': root_folder.id, 'name': product.product_name}]
 
     subfolders = Folder.objects.filter(parent=current_folder).order_by('name')
+    documents = Document.objects.filter(folder=current_folder).order_by('created_at')
+    document_types = DocumentType.objects.all()
 
-    # Generate breadcrumbs
-    breadcrumbs = []
-    temp_folder = current_folder
-    while temp_folder and temp_folder != root_folder:
-        breadcrumbs.insert(0, {'name': temp_folder.name, 'id': temp_folder.id})
-        temp_folder = temp_folder.parent
-
-    # Modify here to avoid adding 'Root' twice when already in 'Root'
-    if current_folder != root_folder:
-        breadcrumbs.insert(0, {'name': 'Root', 'id': root_folder.id})
-
-    # Insert the root folder at the beginning of the breadcrumbs
-    breadcrumbs.insert(0, {'name': 'Root', 'id': root_folder.id})
-
-    return render(request, 'products/product_explorer.html', {
+    context = {
         'product': product,
+        'root_folder': root_folder,
         'current_folder': current_folder,
         'subfolders': subfolders,
-        'breadcrumbs': breadcrumbs,
-        'root_folder_id': root_folder.id,  # Pass the root folder's ID to the template
+        'documents': documents,
         'document_types': document_types,
-    })
+        'breadcrumbs': breadcrumbs,
+    }
+
+    return render(request, 'products/product_explorer.html', context)
 
 
 @login_required

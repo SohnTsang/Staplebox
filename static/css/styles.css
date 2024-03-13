@@ -733,8 +733,8 @@ progress {
   --bs-gutter-x: 1.5rem;
   --bs-gutter-y: 0;
   width: 100%;
-  padding-right: calc(var(--bs-gutter-x) * 0.5);
-  padding-left: calc(var(--bs-gutter-x) * 0.5);
+  /*padding-right: calc(var(--bs-gutter-x) * 0.5);*/
+  padding-left: calc(var(--bs-gutter-x) * 1);
   margin-right: auto;
   margin-left: auto;
 }
@@ -779,7 +779,7 @@ progress {
   display: flex;
   flex-wrap: wrap;
   margin-top: calc(-1 * var(--bs-gutter-y));
-  margin-right: calc(-0.5 * var(--bs-gutter-x));
+  /*margin-right: calc(-0.5 * var(--bs-gutter-x));*/
   margin-left: calc(-0.5 * var(--bs-gutter-x));
 }
 .row > * {
@@ -3154,7 +3154,7 @@ textarea.form-control-lg {
   white-space: nowrap;
 }
 .dropdown-toggle::after {
-  display: inline-block;
+  display: none;
   margin-left: 0.255em;
   vertical-align: 0.255em;
   content: "";
@@ -3168,9 +3168,10 @@ textarea.form-control-lg {
 }
 
 .dropdown-menu {
+  box-shadow: rgba(0, 0, 0, 0.25) 0px 1px 3px;
   --bs-dropdown-zindex: 1000;
-  --bs-dropdown-min-width: 10rem;
   --bs-dropdown-padding-x: 0;
+  --bs-dropdown-min-width: 10rem;
   --bs-dropdown-padding-y: 0.5rem;
   --bs-dropdown-spacer: 0.125rem;
   --bs-dropdown-font-size: 1rem;
@@ -3178,11 +3179,9 @@ textarea.form-control-lg {
   --bs-dropdown-bg: var(--bs-body-bg);
   --bs-dropdown-border-color: var(--bs-border-color-translucent);
   --bs-dropdown-border-radius: var(--bs-border-radius);
-  --bs-dropdown-border-width: var(--bs-border-width);
   --bs-dropdown-inner-border-radius: calc(var(--bs-border-radius) - var(--bs-border-width));
   --bs-dropdown-divider-bg: var(--bs-border-color-translucent);
   --bs-dropdown-divider-margin-y: 0.5rem;
-  --bs-dropdown-box-shadow: var(--bs-box-shadow);
   --bs-dropdown-link-color: var(--bs-body-color);
   --bs-dropdown-link-hover-color: var(--bs-body-color);
   --bs-dropdown-link-hover-bg: var(--bs-tertiary-bg);
@@ -4473,7 +4472,7 @@ textarea.form-control-lg {
   float: left;
   padding-right: var(--bs-breadcrumb-item-padding-x);
   color: var(--bs-breadcrumb-divider-color);
-  content: var(--bs-breadcrumb-divider, "/") /* rtl: var(--bs-breadcrumb-divider, "/") */;
+  content: var(--bs-breadcrumb-divider, "＞") /* rtl: var(--bs-breadcrumb-divider, ">") */;
 }
 .breadcrumb-item.active {
   color: var(--bs-breadcrumb-item-active-color);

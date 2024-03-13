@@ -65,29 +65,6 @@
 		font-weight: 500;
 	}
 
-	.select-auto-width > select {
-            width: auto; /* Adjust this based on your content */
-        }
-
-	@media (max-width: 500px) {
-		.select-auto-width {
-			width: 100%;
-		}
-		#filter_value {
-			max-width: auto !important;
-		}
-	}
-
-	@media (max-width: 360px) {
-		#filter_value {
-			max-width: 200px !important;
-		}
-	}
-
-	#filter_value {
-		width: 250px !important;
-	}
-
 	@media (max-width: 536px) {
         .responsive-wrap {
             flex-wrap: wrap;
@@ -110,16 +87,22 @@
         }
     }
 
+	@media (min-width: 576px) and (max-width: 582px) {
+		#mypartners {
+			max-width: 450px;
+		}
+	}
+
 
 </style>
 {% endblock extra_css %}
 
 {% block content %}
-<div class="container-fluid custom-container-fluid mt-5">
+<div class="container mt-5">
 	<div class="row">
 		<!-- Main Content -->
 		<div id="mypartners" class="col-12 col-lg-8">
-            <div class="bg-white rounded-3 wrapper border">
+            <div class="bg-white rounded-3 wrapper">
                 <h4 class="text-primary-custom mb-3 fw-bold px-5 py-3 border-bottom">My Partners</h4>
 				{% if form.errors %}
 					{% for field in form %}
@@ -149,13 +132,13 @@
 					</small>
 				</button>
 				<div class="px-5 pt-4">
-					<form method="get" action="" class="row g-3">
+					<form method="get" action="" class="">
 						<div class="col-12 d-flex flex-wrap align-items-center justify-content-between">
 
 							<div class="d-flex gap-2 align-items-center responsive-wrap">
 								<input type="text" class="form-control form-control-sm" id="filter_value" name="filter_value" value="{{ request.GET.filter_value }}" placeholder="Search Partners" aria-label="Filter...">
 			
-								<div class="select-auto-width d-flex">
+								<div class="select-auto-width d-flex gap-2">
 									<select class="form-select form-select-sm" name="filter_type" aria-label="Filter type">
 										<option value="company_name" {% if request.GET.filter_type == 'company_name' %}selected{% endif %}>Name</option>
 										<option value="email" {% if request.GET.filter_type == 'email' %}selected{% endif %}>Email</option>
@@ -163,7 +146,7 @@
 									</select>
 								
 			
-									<button type="submit" class="btn btn-outline-secondary btn-sm" id="button-addon2">
+									<button type="submit" class="btn btn-primary btn-sm" id="button-addon2">
 										<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: text-top;">
 											<path d="M21 21L16.6569 16.6569M16.6569 16.6569C18.1046 15.2091 19 13.2091 19 11C19 6.58172 15.4183 3 11 3C6.58172 3 3 6.58172 3 11C3 15.4183 6.58172 19 11 19C13.2091 19 15.2091 18.1046 16.6569 16.6569Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 										</svg>
@@ -222,7 +205,7 @@
 
 		<!-- Right Sidebar for Invitations -->
 		<div class="col-12 col-lg-4 invitation-list">
-            <div class="bg-white rounded-3 wrapper border">
+            <div class="bg-white rounded-3 wrapper">
 				<h4 class="text-primary-custom fw-bold px-5 py-3 border-bottom mb-0">Pending Invitation</h4>
 				<div class="">
 					<ul class="nav nav-tabs modern-tabs col-12" id="invitationTab" role="tablist">

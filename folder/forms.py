@@ -4,7 +4,7 @@ from .models import Folder
 class FolderForm(forms.ModelForm):
     class Meta:
         model = Folder
-        fields = ['name', 'parent', 'product', 'is_root']
+        fields = ['name', 'parent']
 
     def save(self, commit=True):
         folder = super().save(commit=False)

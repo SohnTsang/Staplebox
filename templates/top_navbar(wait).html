@@ -1,0 +1,97 @@
+{% load static %} <!-- Load your static files -->
+
+{% block extra_css %}
+<style>
+    #top-navbar {
+        z-index: 9999;
+    }
+    #company {
+        align-items: center;
+    }
+
+    #sidebarToggle.active, #sidebarToggle:hover, #sidebarToggle:active {
+        background-color: rgba(0, 0, 0, 0.1) !important; /* Light grey circle on active, hover, and click */
+        border-radius: 50% !important; /* Ensure it's round */
+        outline: none !important; /* Remove focus outline if not desired */
+    }
+
+</style>
+{% endblock extra_css %}
+<nav id="top-navbar" class="navbar navbar-expand-lg navbar-light bg-white px-3 d-flex sticky-top ">
+    <div class="container-fluid">
+        <div id="company" class="d-flex ps-3">
+            <button id="sidebarToggle" class="btn d-flex toggle-button p-0 active">
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <symbol id="list" viewBox="0 0 24 24">
+                        <path d="M2.99902 6.10345C2.44702 6.10345 1.99902 6.55145 1.99902 7.10345C1.99902 7.65545 2.44702 8.10345 2.99902 8.10345H20.999C21.551 8.10345 21.999 7.65545 21.999 7.10345C21.999 6.55145 21.551 6.10345 20.999 6.10345H2.99902ZM2.99902 11.1035C2.44702 11.1035 1.99902 11.5515 1.99902 12.1035C1.99902 12.6555 2.44702 13.1035 2.99902 13.1035H20.999C21.551 13.1035 21.999 12.6555 21.999 12.1035C21.999 11.5515 21.551 11.1035 20.999 11.1035H2.99902ZM2.99902 16.1035C2.44702 16.1035 1.99902 16.5515 1.99902 17.1035C1.99902 17.6555 2.44702 18.1035 2.99902 18.1035H20.999C21.551 18.1035 21.999 17.6555 21.999 17.1035C21.999 16.5515 21.551 16.1035 20.999 16.1035H2.99902Z" fill="#2A343D"/>
+                    </symbol>
+                        <rect width="40" height="40" rx="8" fill="none"/>
+                    <!-- Use the icon and position it at the center of the viewBox -->
+                    <use xlink:href="#list" width="24" height="24" x="8" y="8" stroke="black" stroke-width="0" fill="none"/>
+                </svg>
+            </button>
+            <a href="/" class="d-flex align-items-center py-2 me-md-auto custom-center ps-2">
+                <img src="{% static 'images/favicon.ico' %}" alt="Company Logo" class="" width="32" height="32"> <!-- Icon always shown -->
+                <span class="h5 fw-bold text-primary-custom mb-0 px-2">Staplebox</span> <!-- Text hidden on xs to sm, shown md and up -->
+            </a>
+        </div>
+
+        <!-- User Profile Dropdown -->
+        <div class="dropdown ms-auto ms-sm-0 flex-shrink-1 d-none custom-d-sm-inline d-sm-inline">
+            <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle" id="dropdownUser1" data-bs-toggle="dropdown" aria-expanded="false">
+                <img src="{% static 'images/navbar_icon/Avatars.png' %}" alt="Avatar" class="d-inline-block align-top rounded-circle" width="32" height="32">
+                <span class="d-none d-sm-inline mx-1 custom-fw-bold ps-2">{{ user_name }}</span>
+            </a>
+            
+            <ul class="dropdown-menu dropdown-menu-white text-small shadow" aria-labelledby="dropdownUser1">
+                <li><a class="dropdown-item" href="#">Settings</a></li>
+                <li><a class="dropdown-item" href="#">Profile</a></li>
+                <li>
+                    <hr class="dropdown-divider">
+                </li>
+                <li><a class="dropdown-item" href="{% url 'account_logout' %}">Sign out</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+
+{% block javascript %}
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const sidebar = document.getElementById('sidebar');
+        const toggleButton = document.getElementById('sidebarToggle');
+
+        // Check and apply the saved sidebar state on page load
+        if (localStorage.getItem('sidebarCollapsed') === 'true') {
+            sidebar.classList.add("sidebar-collapsed");
+            toggleButton.classList.remove('active');
+        } else {
+            sidebar.classList.remove("sidebar-collapsed");
+            toggleButton.classList.add('active');
+        }
+
+        if (sidebar && toggleButton) {
+            toggleButton.addEventListener('click', function() {
+                // Toggle 'sidebar-collapsed' class on sidebar
+                sidebar.classList.toggle("sidebar-collapsed");
+                const isCollapsed = sidebar.classList.contains("sidebar-collapsed");
+                
+                // Set the sidebar state in localStorage
+                localStorage.setItem('sidebarCollapsed', isCollapsed);
+                
+                // Toggle 'active' class on the button based on sidebar state
+                if (isCollapsed) {
+                    this.classList.remove('active');
+                } else {
+                    this.classList.add('active');
+                }
+            });
+        } else {
+            console.error("One or more elements are missing.");
+        }
+    });
+</script>
+
+{% endblock %}

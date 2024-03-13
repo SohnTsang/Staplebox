@@ -5,18 +5,18 @@
 {% endblock extra_css %}
 
 
-<div id="sidebar" class="px-3 py-sm-3 bg-white d-flex sticky-top shadow">
-    <div class="d-flex flex-sm-column flex-row flex-grow-1 px-sm-3 custom-px-xs custom-fw-bold">
-        <div id="company" class="mb-sm-3">
-            <a href="/" class="d-flex align-items-center pb-sm-3 mb-sm-3 mb-md-3 me-md-auto custom-center">
-                <img src="{% static 'images/favicon.ico' %}" alt="Company Logo" class="d-inline-block align-top" width="32" height="32"> <!-- Icon always shown -->
-                <span class="h5 fw-bold text-primary-custom d-none custom-d-sm-inline d-sm-inline mb-0 px-2">Staplebox</span> <!-- Text hidden on xs to sm, shown md and up -->
+<div id="sidebar" class="py-3 bg-white d-flex sticky-top pe-0 shadow-sm">
+    <div class="d-flex flex-column flex-row flex-grow-1 custom-fw-bold">
+        <div id="company" class="d-flex ps-3">
+            <a href="/" class="d-flex align-items-center pb-3 mb-3 me-md-auto custom-center">
+                <img src="{% static 'images/favicon.ico' %}" alt="Company Logo" class="" width="32" height="32"> <!-- Icon always shown -->
+                <span class="h5 fw-bold text-primary-custom mb-0 px-2">Staplebox</span> <!-- Text hidden on xs to sm, shown md and up -->
             </a>
         </div>
-        <ul class="nav nav-pills custom-sm-text-center flex-sm-column flex-row flex-nowrap flex-shrink-1 flex-sm-grow-0 flex-grow-1 mb-sm-auto mb-0 justify-content-center align-items-center align-items-sm-start" id="menu">
+        <ul class="nav nav-pills custom-sm-text-center flex-column flex-row flex-nowrap flex-shrink-1 flex-grow-0 mb-0 justify-content-center align-items-center" id="menu">
             
-            <li class="nav-item nav-bar-item custom-svg-collapse">
-                <a href="/" class="nav-link px-sm-0 px-1">
+            <li class="nav-item nav-bar-item custom-svg-collapse ps-3">
+                <a href="/" class="nav-link px-0 px-1">
                     <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <symbol id="home" viewBox="0 0 24 24">
                             <!-- Paths with adjusted position for centering -->
@@ -30,11 +30,11 @@
                         <use xlink:href="#home" width="24" height="24" x="8" y="8" stroke="black" stroke-width="2" fill="none"/>
                     </svg>
                         
-                    <span class="d-none d-sm-inline custom-d-sm-inline align-middle">Dashboard</span> 
+                    <span class="align-middle ps-2">Dashboard</span> 
                 </a>
             </li>
-            <li class="nav-item nav-bar-item custom-svg-collapse">
-                <a href="{% url 'products:product_list' %}" class="nav-link px-sm-0 px-1">
+            <li class="nav-item nav-bar-item custom-svg-collapse ps-3">
+                <a href="{% url 'products:product_list' %}" class="nav-link px-0 px-1">
                     <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <symbol id="product" viewBox="0 0 24 24">
                             <!-- Paths with stroke only -->
@@ -50,11 +50,11 @@
                         <use xlink:href="#product" width="24" height="24" x="8" y="8" stroke="#295893" stroke-opacity="0.8" stroke-width="2" fill="none"/>
                     </svg>
                         
-                    <span class="d-none d-sm-inline custom-d-sm-inline align-middle">Products</span>
+                    <span class="align-middle ps-2">Products</span>
                 </a>
             </li>
-            <li class="nav-item nav-bar-item custom-svg-collapse">
-                <a href="{% url 'partners:partner_list' %}" class="nav-link px-sm-0 px-1">
+            <li class="nav-item nav-bar-item custom-svg-collapse ps-3">
+                <a href="{% url 'partners:partner_list' %}" class="nav-link px-0 px-1">
                     <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <symbol id="partners" viewBox="0 0 24 24">
                             <!-- Paths with adjusted position for centering -->
@@ -68,11 +68,11 @@
                         <use xlink:href="#partners" width="24" height="24" x="8" y="8" stroke="#295893" stroke-opacity="0.8" stroke-width="2" fill="none"/>
                     </svg>
                         
-                    <span class="d-none d-sm-inline custom-d-sm-inline align-middle">Partners</span>
+                    <span class="align-middle ps-2">Partners</span>
                 </a>
             </li>
-            <li class="nav-item nav-bar-item custom-svg-collapse">
-                <a href="{% url 'companies:company_profile_view' %}" class="nav-link px-sm-0 px-1">
+            <li class="nav-item nav-bar-item custom-svg-collapse ps-3">
+                <a href="{% url 'companies:company_profile_view' %}" class="nav-link px-0 px-1">
                     <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <symbol id="companies" viewBox="0 0 24 24">
                             <path d="M7.5 11H4.6C4.03995 11 3.75992 11 3.54601 11.109C3.35785 11.2049 3.20487 11.3578 3.10899 11.546C3 11.7599 3 12.0399 3 12.6V21M16.5 11H19.4C19.9601 11 20.2401 11 20.454 11.109C20.6422 11.2049 20.7951 11.3578 20.891 11.546C21 11.7599 21 12.0399 21 12.6V21M16.5 21V6.2C16.5 5.0799 16.5 4.51984 16.282 4.09202C16.0903 3.71569 15.7843 3.40973 15.408 3.21799C14.9802 3 14.4201 3 13.3 3H10.7C9.57989 3 9.01984 3 8.59202 3.21799C8.21569 3.40973 7.90973 3.71569 7.71799 4.09202C7.5 4.51984 7.5 5.0799 7.5 6.2V21M22 21H2M11 7H13M11 11H13M11 15H13" stroke="#295893" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -80,11 +80,11 @@
                         <rect width="40" height="40" fill="none"/>
                         <use xlink:href="#companies" width="24" height="24" x="8" y="8" stroke="#295893" stroke-opacity="0.8" stroke-width="0.01" fill="none"/>
                     </svg>
-                    <span class="d-none d-sm-inline custom-d-sm-inline align-middle">Company</span>
+                    <span class="align-middle ps-2">Company</span>
                 </a>
             </li>
-            <li class="nav-item nav-bar-item custom-svg-collapse">
-                <a href="#submenu1" data-bs-toggle="collapse" class="nav-link px-sm-0 px-1">
+            <li class="nav-item nav-bar-item custom-svg-collapse ps-3">
+                <a href="#submenu1" data-bs-toggle="collapse" class="nav-link px-0 px-1">
                     <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <symbol id="notification" viewBox="0 0 24 24">
                             <!-- Paths with adjusted position for centering -->
@@ -98,11 +98,11 @@
                         <use xlink:href="#notification" width="24" height="24" x="8" y="8" stroke="#295893" stroke-opacity="0.8" stroke-width="2" fill="none"/>
                     </svg>
                         
-                    <span class="d-none d-sm-inline custom-d-sm-inline align-middle">Notification</span>
+                    <span class="align-middle ps-2">Notification</span>
                 </a>
             </li>
-            <li class="nav-item nav-bar-item custom-svg-collapse">
-                <a href="#submenu1" data-bs-toggle="collapse" class="nav-link px-sm-0 px-1">
+            <li class="nav-item nav-bar-item custom-svg-collapse ps-3">
+                <a href="#submenu1" data-bs-toggle="collapse" class="nav-link px-0 px-1">
                     <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <symbol id="setting" viewBox="0 0 24 24">
                             <!-- Paths with adjusted position for centering -->
@@ -115,28 +115,11 @@
 
                     </svg>
                         
-                    <span class="d-none d-sm-inline custom-d-sm-inline align-middle">Setting</span>
+                    <span class="align-middle ps-2">Setting</span>
                 </a>
             </li>
         </ul>
-        <div id="separator" class="d-flex flex-column justify-content-center align-items-center w-100 custom-margin-5 p-0">
-            <hr class="w-100">
-        </div>
-        <div class="dropdown py-sm-4 ms-auto ms-sm-0 flex-shrink-1 d-none custom-d-sm-inline d-sm-inline">
-            <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle" id="dropdownUser1" data-bs-toggle="dropdown" aria-expanded="false">
-                <img src="{% static 'images/navbar_icon/Avatars.png' %}" alt="Avatar" class="d-inline-block align-top rounded-circle" width="32" height="32">
-                <span class="d-none d-sm-inline mx-1 custom-fw-bold ps-2">{{ user_name }}</span>
-            </a>
-            
-            <ul class="dropdown-menu dropdown-menu-white text-small shadow" aria-labelledby="dropdownUser1">
-                <li><a class="dropdown-item" href="#">Settings</a></li>
-                <li><a class="dropdown-item" href="#">Profile</a></li>
-                <li>
-                    <hr class="dropdown-divider">
-                </li>
-                <li><a class="dropdown-item" href="{% url 'account_logout' %}">Sign out</a></li>
-            </ul>
-        </div>
+    
     </div>
 </div>
 

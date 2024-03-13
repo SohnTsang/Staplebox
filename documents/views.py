@@ -1,5 +1,4 @@
 from django.shortcuts import get_object_or_404
-from django.http import JsonResponse
 from .models import Document
 from access_control.models import AccessPermission
 from products.models import Product
@@ -7,58 +6,65 @@ from folder.models import Folder
 from document_types.models import DocumentType
 from django.views.decorators.csrf import csrf_exempt
 from django.http import FileResponse
+from django.http import JsonResponse, HttpResponseNotAllowed
 from django.http import HttpResponse, Http404
 from django.contrib.auth.decorators import login_required
+from django.shortcuts import redirect
+from django.urls import reverse
+from django.views.decorators.http import require_POST
+
+
 
 
 @csrf_exempt
+@login_required
 def upload_document(request, product_id, folder_id):
     if request.method == 'POST':
         try:
             folder = Folder.objects.get(id=folder_id)
-            documents = []
-
             for key, file in request.FILES.items():
-                parts = key.split('_')
-                if len(parts) > 1 and parts[0] == 'file':
-                    try:
-                        index = parts[1]
-                        document_type_id = request.POST.get(f'document_type_{index}')
-                        if document_type_id:
-                            document_type = DocumentType.objects.get(id=document_type_id)
-                            document = Document.objects.create(
-                                folder=folder,
-                                document_type=document_type,
-                                file=file
-                            )
-                            documents.append({
-                                'id': document.id,
-                                'name': document.file_name,
-                                'size': document.file_size,
-                                'type': document.file_type,
-                                'uploaded_at': document.formatted_upload_date,
-                                'document_type': document.document_type.type_name,
-                                'version': document.version,
-                            })
-                        else:
-                            print(f"No document type for file index {index}")
-                    except DocumentType.DoesNotExist:
-                        print(f"DocumentType not found for id: {document_type_id}")
-                    except Exception as e:
-                        print(f"Error processing file {key}: {e}")
-            return JsonResponse({'success': True, 'documents': documents})
+                # Assuming you're handling single file upload for simplicity
+                document_type_id = request.POST.get('document_type')
+                document_type = DocumentType.objects.get(id=document_type_id)
+                
+                Document.objects.create(
+                    folder=folder,
+                    document_type=document_type,
+                    file=file,
+                    uploaded_by=request.user
+                )
+
+            # Redirect to the product_explorer view with the current folder_id
+            # Adjust 'product_explorer' to 'product_explorer_folder' if you've used that as your URL name
+            return redirect(reverse('products:product_explorer_folder', kwargs={'product_id': product_id, 'folder_id': folder_id}))
+
         except Exception as e:
             print(f"Exception: {e}")
-            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+            # Consider adding more user-friendly error handling or logging here
 
+    # Fallback redirect if not POST or exception occurs
+    return redirect(reverse('products:product_explorer_folder', kwargs={'product_id': product_id, 'folder_id': folder_id}))
+
+
+@require_POST  # Ensures only POST requests are handled
 def delete_document(request, document_id):
-    # Assuming you have some permission checks here
-    try:
-        document = Document.objects.get(id=document_id)
+    if request.method == 'POST':
+        document = get_object_or_404(Document, id=document_id)
+
+        product_id = document.folder.product.id
+        folder_id = document.folder.id
+        parent_id = document.folder.parent_id if document.folder.parent else ''  # Capture parent ID before deletion
+
         document.delete()
-        return JsonResponse({'success': True})
-    except Document.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Document not found'}, status=404)
+
+        if parent_id:
+                return redirect('products:product_explorer_folder', product_id=product_id, folder_id=parent_id)
+        else:
+            return redirect('products:product_explorer', product_id=product_id)
+    else:
+        return redirect('products:product_explorer')  # Or some error handling
+
+
 
 @login_required
 def download_document(request, document_id):

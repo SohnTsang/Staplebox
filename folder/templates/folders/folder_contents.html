@@ -8,3 +8,13 @@
     {% empty %}
     {% endfor %}
 
+    {% for document in documents %}
+    <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+        <a href="{% url 'documents:download_document' document.id %}" data-document-id="{{ document.id }}">
+            {{ document.name }}
+        </a>
+        <span class="text-muted">{{ document.document_type.type_name }}</span>
+        <span class="ms-auto">{{ document.file_size|filesizeformat }}</span>
+        <span class="text-muted small">{{ document.formatted_upload_date }}</span>
+    </div>
+{% endfor %}
