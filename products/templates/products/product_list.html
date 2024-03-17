@@ -217,7 +217,7 @@
                                         {% if current_direction == 'asc' %}
                                             {% with new_direction="desc" %}
                                                 <th scope="col" class="sortable-header">
-                                                    <a href="?sort=created_at&direction={{ new_direction }}&filter_value={{ request.GET.filter_value|urlencode }}&filter_type={{ request.GET.filter_type|urlencode }}">Created at
+                                                    <a href="?sort=created_at&direction={{ new_direction }}&filter_value={{ request.GET.filter_value|urlencode }}&filter_type={{ request.GET.filter_type|urlencode }}">Date Created
                                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="align-baseline ">
                                                             <path d="M17 14L12 9L7 14" stroke="#292929" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                                                         </svg>
@@ -227,7 +227,7 @@
                                         {% else %}
                                             {% with new_direction="asc" %}
                                                 <th scope="col" class="sortable-header">
-                                                    <a href="?sort=created_at&direction={{ new_direction }}&filter_value={{ request.GET.filter_value|urlencode }}&filter_type={{ request.GET.filter_type|urlencode }}">Created at
+                                                    <a href="?sort=created_at&direction={{ new_direction }}&filter_value={{ request.GET.filter_value|urlencode }}&filter_type={{ request.GET.filter_type|urlencode }}">Date Created
                                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="align-baseline ">
                                                             <path d="M7 10L12 15" stroke="#292929" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                                                             <path d="M12 15L17 10" stroke="#292929" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -238,14 +238,14 @@
                                         {% endif %}
                                     {% else %}
                                         <th scope="col" class="sortable-header">
-                                            <a href="?sort=created_at&direction={{ new_direction }}&filter_value={{ request.GET.filter_value|urlencode }}&filter_type={{ request.GET.filter_type|urlencode }}">Created at
+                                            <a href="?sort=created_at&direction={{ new_direction }}&filter_value={{ request.GET.filter_value|urlencode }}&filter_type={{ request.GET.filter_type|urlencode }}">Date Created
                                         </th>
                                     {% endif %}
                                     {% if current_sort == 'updated_at' %}
                                         {% if current_direction == 'asc' %}
                                             {% with new_direction="desc" %}
                                                 <th scope="col" class="sortable-header">
-                                                    <a href="?sort=updated_at&direction={{ new_direction }}&filter_value={{ request.GET.filter_value|urlencode }}&filter_type={{ request.GET.filter_type|urlencode }}">Updated at
+                                                    <a href="?sort=updated_at&direction={{ new_direction }}&filter_value={{ request.GET.filter_value|urlencode }}&filter_type={{ request.GET.filter_type|urlencode }}">Date Modified
                                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="align-baseline ">
                                                             <path d="M17 14L12 9L7 14" stroke="#292929" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                                                         </svg>
@@ -255,7 +255,7 @@
                                         {% else %}
                                             {% with new_direction="asc" %}
                                                 <th scope="col" class="sortable-header">
-                                                    <a href="?sort=updated_at&direction={{ new_direction }}&filter_value={{ request.GET.filter_value|urlencode }}&filter_type={{ request.GET.filter_type|urlencode }}">Updated at
+                                                    <a href="?sort=updated_at&direction={{ new_direction }}&filter_value={{ request.GET.filter_value|urlencode }}&filter_type={{ request.GET.filter_type|urlencode }}">Date Modified
                                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="align-baseline ">
                                                             <path d="M7 10L12 15" stroke="#292929" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                                                             <path d="M12 15L17 10" stroke="#292929" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -266,7 +266,7 @@
                                         {% endif %}
                                     {% else %}
                                         <th scope="col" class="sortable-header">
-                                            <a href="?sort=updated_at&direction={{ new_direction }}&filter_value={{ request.GET.filter_value|urlencode }}&filter_type={{ request.GET.filter_type|urlencode }}">Updated at
+                                            <a href="?sort=updated_at&direction={{ new_direction }}&filter_value={{ request.GET.filter_value|urlencode }}&filter_type={{ request.GET.filter_type|urlencode }}">Date Modified
                                         </th>
                                     {% endif %}
                                 <th scope="col" class="text-center">Actions</th>

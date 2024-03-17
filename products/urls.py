@@ -1,6 +1,6 @@
 
-from django.urls import path
-from .views import product_list, create_product, edit_product, delete_product
+from django.urls import path, re_path
+from .views import product_list, create_product, edit_product, delete_product, move_entity
 from folder.views import folder_create
 from documents.views import upload_document, delete_document, get_documents
 from document_types.views import document_types_list
@@ -26,4 +26,8 @@ urlpatterns = [
 
     # New URL pattern for accessing a folder within the context of a specific product
     path('<int:product_id>/folders/<int:folder_id>/api/document_types/', document_types_list, name='document_types_list'),
+    path('products/<int:product_id>/move/<str:entity_type>/<int:entity_id>/', views.move_entity, name='move_entity'),
+    path('products/<int:product_id>/move/<str:entity_type>/<int:entity_id>/<int:current_folder_id>/', views.move_entity, name='move_entity'),
+  
+
 ]

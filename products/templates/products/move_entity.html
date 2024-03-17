@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+    .breadcrumb-container {
+        background: #f5f5f5;
+        padding: 10px 15px;
+        border-radius: 5px;
+    }
+    .breadcrumb-container ol {
+        margin-bottom: 0;
+    }
+    .content-header {
+        margin-top: 20px;
+        margin-bottom: 15px;
+    }
+    .content-section {
+        background: #fff;
+        padding: 15px;
+        border-radius: 5px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .content-item {
+        padding: 10px;
+        border-bottom: 1px solid #eee;
+    }
+    .content-item:last-child {
+        border-bottom: none;
+    }
+    .action-form {
+        margin-top: 20px;
+        text-align: center;
+    }
+    .fw-less-bold {
+        font-weight: 600;
+    }
+</style>
+
+<div class="container">
+    <div class="breadcrumb-container" aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            {% for crumb in breadcrumbs %}
+                <li class="breadcrumb-item">
+                    {% if forloop.last %}
+                    <span class="p-2 h6">{{ crumb.name }}</span>
+                    {% else %}
+                        <a href="{{ crumb.url }}" class="text-primary-custom breadcrumb-navigation p-2 h6">{{ crumb.name }}</a>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ol>
+    </div>
+    <div class="content-header">
+        
+        {% if entity_type == 'folder' %}
+            <h4>Move {{ entity.name }}</h4>
+        {% else %}
+            <h4>Move {{ entity.display_filename }}</h4>
+        {% endif %}
+        {% if entity_type == 'folder' %}
+            {% if entity.parent %}
+                <p>Current location: {{ entity.parent.name }}</p>
+            {% else %}
+                <p>Current location: Root</p>
+            {% endif %}
+        {% else %}
+            {% if entity.folder %}
+                <p>Current location: {{ entity.folder.name }}</p>
+            {% else %}
+                <p>Current location: Root</p>
+            {% endif %}
+        {% endif %}
+    </div>
+    <div class="content-section">
+        <h3>Contents</h3>
+        {% for folder in folders %}
+            <div class="content-item">
+                <strong>Folder:</strong> <span class="fw-less-bold">{{ folder.name }}</span>
+                <a href="{% url 'products:move_entity' product_id=product.id entity_type=entity_type entity_id=entity.id current_folder_id=folder.id %}" class="text-primary-custom">Open</a>
+            </div>
+        {% endfor %}
+        {% for document in documents %}
+            <div class="content-item">
+                <strong>Document:</strong> {{ document.display_filename }}
+            </div>
+        {% endfor %}
+    </div>
+    <form method="post" action="{% url 'products:move_entity' product_id=product.id entity_type=entity_type entity_id=entity.id current_folder_id=current_folder.id %}" class="action-form">
+        {% csrf_token %}
+        <input type="hidden" name="target_folder_id" value="{{ current_folder.id }}">
+        <button type="submit" class="btn btn-primary">Move Here</button>
+    </form>
+</div>
+{% endblock %}

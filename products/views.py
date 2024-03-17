@@ -148,7 +148,7 @@ def product_explorer(request, product_id, folder_id=None):
         breadcrumbs = [{'id': root_folder.id, 'name': product.product_name}]
 
     subfolders = Folder.objects.filter(parent=current_folder).order_by('name')
-    documents = Document.objects.filter(folder=current_folder).order_by('created_at')
+    documents = Document.objects.filter(folder=current_folder).order_by('original_filename')
     document_types = DocumentType.objects.all()
 
     context = {
@@ -202,3 +202,47 @@ def home_view(request):
         products_with_root = []
 
     return render(request, 'home.html', {'products_with_root': products_with_root})
+
+
+@login_required
+def move_entity(request, product_id, entity_type, entity_id, current_folder_id=None):
+    product = get_object_or_404(Product, pk=product_id)
+    entity = get_object_or_404(Folder if entity_type == 'folder' else Document, pk=entity_id)
+    root_folder, _ = Folder.objects.get_or_create(product=product, name='Root', defaults={'parent': None})
+    current_folder = get_object_or_404(Folder, pk=current_folder_id) if current_folder_id else root_folder
+    
+    if request.method == 'POST':
+        target_folder_id = request.POST.get('target_folder_id', root_folder.id)
+        target_folder = get_object_or_404(Folder, pk=target_folder_id)
+        if entity_type == 'folder':
+            entity.parent = target_folder
+        else:
+            entity.folder = target_folder
+        entity.save()
+        messages.success(request, 'Entity moved successfully.')
+        
+        # Redirect to the target folder view inside product explorer
+        return redirect(reverse('products:product_explorer_folder', kwargs={'product_id': product_id, 'folder_id': target_folder.id}))
+
+    # Prepare breadcrumbs
+    breadcrumbs = [{'name': product.product_name, 'url': reverse('products:move_entity', args=[product_id, entity_type, entity_id])}]
+    parent = current_folder
+    while parent is not None and parent != root_folder:
+        breadcrumbs.insert(1, {'name': parent.name, 'url': reverse('products:move_entity', args=[product_id, entity_type, entity_id, parent.id])})
+        parent = parent.parent
+
+    # Navigation context
+    folders = Folder.objects.filter(parent=current_folder).exclude(id=entity.id if entity_type == 'folder' else None).order_by('name')
+    documents = Document.objects.filter(folder=current_folder).exclude(id=entity.id if entity_type == 'document' else None).order_by('original_filename')
+
+    context = {
+        'product': product,
+        'entity': entity,
+        'entity_type': entity_type,
+        'folders': folders,
+        'documents': documents,
+        'current_folder': current_folder,
+        'root_folder': root_folder,
+        'breadcrumbs': breadcrumbs,
+    }
+    return render(request, 'products/move_entity.html', context)

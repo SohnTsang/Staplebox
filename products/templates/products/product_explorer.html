@@ -19,6 +19,14 @@
     text-overflow: ellipsis !important;
 }
 
+.truncate-original-name {
+    max-width: 250px !important; /* Adjust based on your layout */
+    width: 200px !important; /* Adjust based on your layout */
+    min-width: 150px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
 
 .truncate-type {
     max-width: 250px !important; /* Adjust based on your layout */
@@ -47,6 +55,12 @@
     text-overflow: ellipsis !important;
 }
 
+.fixed-width-header {
+    max-width: 50px !important; /* Adjust the width as needed */
+    width: 50px !important; /* Adjust the width as needed */
+    min-width: 50px !important;
+}
+
 .clickable-row td {
     cursor: pointer;
     text-decoration: none;
@@ -58,7 +72,7 @@
 }
 
 .breadcrumb-navigation:hover {
-    background-color: #29589333;
+    background-color: #3d9dd433;
 }
 
 .breadcrumb-item {
@@ -73,8 +87,12 @@
 }
 
 .checkbox-column {
-    width: 40px; /* Adjust based on your design needs */
+    width: 40px !important; /* Adjust based on your design needs */
+    max-width: 40px !important;
+    min-width: 40px !important;
 }
+
+
 
 </style>
 {% endblock extra_css %}
@@ -136,10 +154,11 @@
                             <tr class="">
                                 <th scope="col" class="checkbox-column"></th>
                                 <th scope="col" class="small truncate-name">Name</th>
+                                <th scope="col" class="small truncate-original-name">Original Name</th>
                                 <th scope="col" class="small truncate-type">Type</th>
                                 <th scope="col" class="small truncate-modified">Date Modified</th>
                                 <th scope="col" class="small truncate-version">Version</th>
-                                <th scope="col" class=""></th>
+                                <th scope="col" class="fixed-width-header"></th>
                             </tr>
                         </thead>
                         
@@ -150,16 +169,17 @@
                             <tr class="clickable-row"></tr>
                                 <td class="checkbox-column"><input type="checkbox" name="selected_items" value="folder_{{ folder.id }}"></td>
                                 <td class="text-muted small truncate-name">
-                                    <svg class="icon-folder me-2" xmlns="http://www.w3.org/2000/svg" width="22" height="18" fill="currentColor" viewBox="0 0 16 16">
+                                    <svg class="icon-folder me-2" xmlns="http://www.w3.org/2000/svg" width="22" height="20" fill="currentColor" viewBox="0 0 16 16">
                                         <path d="M16 6.32099V12.642C16 13.4751 15.3473 14.1576 14.5194 14.2179L14.4 14.2222H1.6C0.75651 14.2222 0.0654679 13.5776 0.00438862 12.7599L0 12.642L0 6.32099L16 6.32099ZM6.0155 0C6.45292 0 6.86907 0.176755 7.16925 0.485378L7.26488 0.593075L8.38448 1.97531L14.4 1.97531C15.2435 1.97531 15.9345 2.61995 15.9956 3.43762L16 3.55556V4.74074L0 4.74074L0 1.58025C0 0.747171 0.652702 0.0646597 1.48059 0.00433444L1.6 0L6.0155 0Z" fill="#CCA92D"/>
                                     </svg>
                                     <a href="{% url 'products:product_explorer_folder' product_id=product.id folder_id=folder.id %}">
                                         <span class="fw-less-bold">{{ folder.name }}</span>
                                     </a>
                                 </td>
-                                <td class="text-muted small truncate-type">-</td>
+                                <td class="text-muted small truncate-original-name"></td>
+                                <td class="text-muted small truncate-type"></td>
                                 <td class="text-muted small truncate-modified">{{ folder.updated_at|date:"Y-m-d H:i" }}</td>
-                                <td class="text-muted small truncate-version">-</td>
+                                <td class="text-muted small truncate-version"></td>
                                 <td class="text-center">
                                     <div class="dropdown">
                                         <button class="btn btn-secondary dropdown-toggle px-0 py-1" type="button" id="actionDropdown{{ forloop.counter }}" data-bs-toggle="dropdown" aria-expanded="false">
@@ -180,20 +200,20 @@
                                             <!-- Access Action -->
                                             <li>
                                                 <a class="dropdown-item" href="#">
-                                                    <i class="fas fa-user"></i> &nbsp; Access
+                                                    <i class="fas fa-user"></i> &nbsp; Access Control
                                                 </a>
                                             </li>
 
                                             <li>
-                                                <a class="dropdown-item" href="#">
+                                                <a class="dropdown-item" href="{% url 'folder:edit_folder' product_id=product.id folder_id=folder.id%}">
                                                     <i class="fas fa-user"></i> &nbsp; Edit
                                                 </a>
                                             </li>
 
                                             <!-- Update Action -->
                                             <li>
-                                                <a class="dropdown-item" href="#">
-                                                    <i class="fas fa-edit"></i> &nbsp; Update
+                                                <a href="{% url 'products:move_entity' product_id=product.id entity_type='folder' entity_id=folder.id %}" class="dropdown-item">
+                                                    <i class="fas fa-edit"></i> &nbsp; Move Folder
                                                 </a>
                                             </li>
                                             <li><hr class="dropdown-divider"></li>
@@ -239,12 +259,14 @@
                                                 </svg>                                            
                                             {% endif %}
                                         {% endwith %}
-                                        <span class="fw-less-bold">{{ document.file_name }}</span>
+                                        <span class="fw-less-bold">{{ document.display_filename }}</span>
+
                                     </a>
                                 </td>
+                                <td class="small truncate-original-name">{{ document.original_filename }}</td>
                                 <td class="small truncate-type">{{ document.document_type.type_name }}</td>
                                 <td class="small truncate-modified">{{ document.updated_at|date:"Y-m-d H:i" }}</td>
-                                <td class="small truncate-version">{{ document.version }}</td>
+                                <td class="small truncate-version ps-4">{{ document.version }}</td>
                                 <td class="text-center">
                                     <div class="dropdown">
                                         <button class="btn btn-secondary dropdown-toggle px-0 py-1" type="button" id="actionDropdown{{ forloop.counter }}" data-bs-toggle="dropdown" aria-expanded="false">
@@ -265,22 +287,48 @@
                                             <!-- Access Action -->
                                             <li>
                                                 <a class="dropdown-item" href="#">
-                                                    <i class="fas fa-user"></i> &nbsp; Access
+                                                    <i class="fas fa-user"></i> &nbsp; Access Control
                                                 </a>
                                             </li>
 
                                             <li>
-                                                <a class="dropdown-item" href="#">
+                                                <a href="{% url 'documents:edit_document' document_id=document.id %}" class="dropdown-item">
                                                     <i class="fas fa-user"></i> &nbsp; Edit
                                                 </a>
                                             </li>
 
-                                            <!-- Update Action -->
                                             <li>
-                                                <a class="dropdown-item" href="#">
-                                                    <i class="fas fa-edit"></i> &nbsp; Update
+                                                <a href="{% url 'documents:comment_versions' document_id=document.id %}" class="dropdown-item">
+                                                    <i class="fas fa-user"></i> &nbsp; Comment
                                                 </a>
                                             </li>
+                                            
+                                            <li>
+                                                <a href="{% url 'products:move_entity' product_id=product.id entity_type='document' entity_id=document.id %}" class="dropdown-item">
+                                                    <i class="fas fa-user"></i> &nbsp; Move Document
+                                                </a>
+                                            </li>
+
+                                            <li>
+                                                <a class="dropdown-item" href="{% url 'documents:update_document' document_id=document.id %}">
+                                                    <i class="fas fa-edit"></i> &nbsp; Upload New Version
+                                                </a>
+                                            </li>
+
+                                            <li>
+                                                {% if document.version > 1 %}
+                                                    <a class="dropdown-item" href="{% url 'documents:document_versions' document_id=document.id %}">
+                                                        <i class="fas fa-history"></i> &nbsp; Version History
+                                                    </a>
+                                                {% else %}
+                                                    <span class="dropdown-item text-muted" style="cursor: default;">
+                                                        <i class="fas fa-history"></i> &nbsp; Version History
+                                                    </span>
+                                                {% endif %}
+                                            </li>
+
+                                            <!-- Update Action -->
+                                            
                                             <li><hr class="dropdown-divider"></li>
                                             <!-- Delete Action -->
                                             <li>

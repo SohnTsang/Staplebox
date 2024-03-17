@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Comments for "{{ original_document.original_filename }}"</h2>
+<div class="list-group">
+    <!-- Special handling for the original document -->
+    
+    <!-- Loop for subsequent versions -->
+    {% for version in versions %}
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+        Version {{ version.version }} - {{ version.original_filename }} - Last modified: {{ version.created_at|date:"Y-m-d H:i" }} - Comment: "{{ version.comments|default:"No comment" }}" - {{ version.uploaded_by }}
+        <!-- version_id for version comments -->
+        <a href="{% url 'documents:edit_comment' version_id=version.id %}" class="btn btn-primary btn-sm">Edit</a>
+    </li>
+    {% endfor %}
+
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+        Version 1 - {{ original_document.original_filename }} - Last modified: {{ original_document.created_at|date:"Y-m-d H:i" }} - Comment: "{{ original_document.comments|default:"No comment" }}" - {{ original_document.uploaded_by }}
+        <!-- Pass the document_id for original document comment editing -->
+        <a href="{% url 'documents:edit_comment' %}?document_id={{ original_document.id }}" class="btn btn-primary btn-sm">Edit</a>
+    </li>
+</div>
+{% endblock %}

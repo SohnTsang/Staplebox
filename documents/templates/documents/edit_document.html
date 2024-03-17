@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Edit Document</h2>
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    
+    <!-- Document Type Dropdown -->
+    <div class="form-group">
+        <label for="id_document_type">Document Type:</label>
+        {{ form.field_name.errors }}
+        <select name="document_type" id="id_document_type" class="form-control">
+            {% for doc_type in form.document_type.field.queryset %}
+                <option value="{{ doc_type.pk }}" {% if doc_type.pk == form.document_type.value %}selected{% endif %}>
+                    {{ doc_type }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+    
+    <!-- Original Filename Input -->
+    <div class="form-group">
+        <label for="id_original_filename">File Name:</label>
+        {{ form.field_name.errors }}
+        <input type="text" name="original_filename" id="id_original_filename" class="form-control" value="{{ form.original_filename.value }}">
+    </div>
+    
+    <!-- Comments Textarea -->
+    <div class="form-group">
+        <label for="id_comments">Comments:</label>
+        {{ form.field_name.errors }}
+        <textarea name="comments" id="id_comments" class="form-control">{{ form.comments.value }}</textarea>
+    </div>
+    
+    <button type="submit" class="btn btn-primary">Update Document</button>
+</form>
+{% endblock %}

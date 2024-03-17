@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>Document Versions</h2>
+<h3>Version History for "{{ original_document.original_filename }}"</h3>
+<div class="list-group">
+    <!-- Download link for the original document -->
+    <!-- Display all subsequent versions -->
+    {% for version in versions %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+            Version {{ version.version }} - {{ version.original_filename }} - Last modified: {{ version.created_at|date:"Y-m-d H:i" }} - {{ version.uploaded_by }}
+            <!-- Updated URL pattern to use the combined download view with version_id -->
+            <a href="{% url 'documents:download_document' document_id=original_document.id version_id=version.id %}" class=""><span class="badge bg-primary rounded-pill">Download</span></a>
+        </li>
+    {% endfor %}
+
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+        Version 1 - {{ original_document.original_filename }} - Last modified: {{ original_document.created_at|date:"Y-m-d H:i" }} - {{ original_document.uploaded_by }}
+        <!-- Updated URL pattern to use the combined download view -->
+        <a href="{% url 'documents:download_document' document_id=original_document.id %}" class=""><span class="badge bg-primary rounded-pill">Download</span></a>
+        
+    </li>
+</div>
+{% endblock %}
