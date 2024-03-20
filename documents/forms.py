@@ -30,5 +30,10 @@ class DocumentEditForm(forms.ModelForm):
     
     def __init__(self, *args, **kwargs):
         super(DocumentEditForm, self).__init__(*args, **kwargs)
-        # Add placeholders or customize fields as needed
         self.fields['document_type'].queryset = DocumentType.objects.all()
+        
+        # Set the default selection for the document_type field
+        if not self.instance.pk:  # Check if the form is for a new instance
+            first_document_type = DocumentType.objects.first()  # Get the first DocumentType
+            if first_document_type:
+                self.fields['document_type'].initial = first_document_type.id

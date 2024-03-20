@@ -59,6 +59,12 @@
             <div class="bg-white rounded-3 wrapper">
                 <h4 class="text-primary-custom mb-3 fw-bold px-5 py-3 border-bottom">My Products</h4>
                 <a href="{% url 'products:create_product' %}" class="btn btn-primary mb-0 mx-5"><small>Create New Product</small></a>
+                <a href="{% url 'home' %}" class="btn btn-primary me-2">Back to Home</a>
+                <a href="{% url 'products:edit_product' product.id %}" class="btn btn-primary me-2">Edit Product</a>
+                <form action="{% url 'products:delete_product' product.id %}" method="post" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary">Delete Product</button>
+                </form>
                 
                 <div class="d-flex justify-content-start mb-3 pt-4 px-5">
                     <form method="get" class="row g-2 align-items-center">

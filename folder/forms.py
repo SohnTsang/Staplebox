@@ -5,6 +5,7 @@ class FolderForm(forms.ModelForm):
     class Meta:
         model = Folder
         fields = ['name', 'parent']
+        exclude = ['product', 'created_by', 'is_root']
 
     def save(self, commit=True):
         folder = super().save(commit=False)

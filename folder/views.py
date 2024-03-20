@@ -10,6 +10,7 @@ from django.contrib import messages  # Optional: For user feedback
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods
 from django import forms
+from django.utils import timezone
 
 
 @login_required
@@ -30,6 +31,7 @@ def folder_create(request, product_id):
         if form.is_valid():
             folder = form.save(commit=False)
             folder.product = product
+            folder.created_by = request.user
 
             parent_id = request.POST.get('parent_id')
             if parent_id:
@@ -57,6 +59,7 @@ def edit_folder(request, product_id, folder_id):
         form = FolderForm(request.POST, instance=folder, use_required_attribute=False)
         form.fields['parent'].widget = forms.HiddenInput()  # Hide the parent field
         if form.is_valid():
+            folder.updated_at = timezone.now()
             form.save()
             # Redirect to the parent folder if it exists, otherwise go to the product's root folder view
             if parent_folder_id:

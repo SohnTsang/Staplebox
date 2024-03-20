@@ -1,37 +1,200 @@
+{% load static %}
+
+{% block extra_css %}
+<style>
+
+.modal-dialog-custom {
+    margin-top: 10vh; /* Default for most sizes */
+}
+
+/* For smaller screens, you might want to have less of a top margin */
+@media (max-width: 768px) {
+    .modal-dialog-custom {
+        margin-top: 5vh;
+    }
+}
+
+.drag-and-drop-area {
+    border: 2px dashed #cccccc;
+    text-align: center;
+    cursor: pointer;
+    margin-bottom: 20px;
+    position: relative;
+}
+
+.drag-and-drop-area label {
+
+    cursor: pointer;
+}
+
+.text-primary-custom:hover {
+    background-color: #2f82c033;
+}
+
+
+.drag-and-drop-area:hover {
+    background-color: #f9f9f9;
+}
+
+.upload-icon {
+    width: 50px; /* Adjust based on your needs */
+    margin-bottom: 10px;
+}
+
+.text-15 {
+    font-size: 15px;
+}
+
+#file-name {
+    display: block; /* Makes the file name appear on a new line */
+    margin-top: 10px;
+    color: #555;
+    font-style: italic;
+}
+
+textarea { 
+    resize: none;
+}
+
+
+.file-input {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 15px;
+    background-color: #f7f7f7;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.input-group {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.file-name-input, .document-type-select {
+    flex-grow: 1;
+    padding: 3px 6px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #fff;
+    font-size: 14px;
+}
+
+.remove-btn {
+    padding: 3px 6px;
+    background-color: #ff161a;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.remove-btn:hover {
+    background-color: rgb(255, 90, 90);
+    color: rgb(255, 255, 255);
+}
+
+.comment-textarea {
+    resize: vertical; /* Allows vertical resizing only */
+    padding: 3px 6px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #fff;
+    font-size: 14px;
+    resize: none;
+}
+
+</style>
+{% endblock extra_css %}
+
 <div class="modal fade" id="uploadDocumentModal" tabindex="-1" aria-labelledby="uploadDocumentModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="uploadDocumentModalLabel">Upload Document</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div class="modal-dialog modal-dialog-custom">
+        <div class="modal-content" style="width:90%;">
+            <div class="modal-header border-0">
+                <h5 class="modal-title" id="uploadDocumentModalLabel">Upload File</h5>
             </div>
-            <div class="modal-body">
-                <!-- Update the form action to use the correct URL and method -->
+            <div class="modal-body pt-0">
                 <form id="upload-document-form" action="{% url 'products:upload_document' product_id=product.id folder_id=current_folder.id %}" method="post" enctype="multipart/form-data">
                     {% csrf_token %}
-                    <div class="form-group">
-                        <label for="documentFile">Select Documents</label>
-                        <input type="file" class="form-control-file" id="documentFile" name="document_file" required>
+                    <div class="drag-and-drop-area" ondragover="event.preventDefault();" ondrop="handleDrop(event);">
+                        <input type="file" id="documentFile" name="document_files" hidden required multiple>
+                        <label for="documentFile" class="w-100">
+                            <img src="{% static 'images/empty_state/upload.png' %}" alt="Select an item to show information" class="my-4 text-center" style="align-self:center;" width="150" height="130">
+                            <p class="small">Drag & drop files here or click to select files</p>
+                            
+                        </label>
                     </div>
-                    <div class="form-group">
+                    <div id="file-inputs-container"></div>
+                    <!--
+                    <div class="form-group" style="margin-bottom:10px;">
                         <label for="comments">Comments:</label>
-                        <textarea id="comments" name="comments" class="form-control"></textarea>
+                        <textarea id="comments" rows="3" name="comments" class="form-control fixed-height"></textarea>
                     </div>
                     <div class="form-group">
                         <label for="documentType">Document Type</label>
                         <select class="form-control" id="documentType" name="document_type">
                             {% for doc_type in document_types %}
-                            <option value="{{ doc_type.id }}">{{ doc_type.type_name }}</option>
+                                <option value="{{ doc_type.id }}">{{ doc_type.type_name }}</option>
                             {% endfor %}
                         </select>
                     </div>
                     <input type="hidden" id="folderId" name="folder_id" value="{{ folder.id }}">
+                    -->
                 </form>
-            </div>
-            <div class="modal-footer">
-                <button type="submit" class="btn btn-primary" form="upload-document-form">Upload Documents</button>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        
+                <div class="modal-footer border-0 p-0">
+                    <button type="button" class="btn small h6 text-primary-custom text-15" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn small h6 fw-less-bold text-primary-custom text-15" form="upload-document-form">Upload</button>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+{% block javascript %}
+<script>
+    document.getElementById('documentFile').addEventListener('change', function(event) {
+        updateFileInputFields(event.target.files);
+    });
+    
+    function handleDrop(event) {
+        event.preventDefault();
+        const files = event.dataTransfer.files;
+        document.getElementById('documentFile').files = files;
+        updateFileInputFields(files);
+    }
+    
+    function updateFileInputFields(files) {
+        const container = document.getElementById('file-inputs-container');
+        container.innerHTML = ''; // Clear previous inputs
+        Array.from(files).forEach((file, index) => {
+            const fileInputHTML = `
+            <div class="file-input" data-index="${index}">
+                <div class="input-group">
+                    <input type="text" name="file_names[]" value="${file.name}" readonly class="form-control file-name-input fw-less-bold">
+                    <select name="document_types[]" class="form-select document-type-select">
+                        {% for doc_type in document_types %}
+                            <option value="{{ doc_type.id }}">{{ doc_type.type_name }}</option>
+                        {% endfor %}
+                    </select>
+                    <button class="btn remove-btn" type="button" onclick="removeFileInput(${index})">
+                        Remove
+                    </button>
+                </div>
+                <textarea rows="2" class="form-control comment-textarea" name="comments[]" placeholder="Comments"></textarea>
+            </div>`;
+            container.innerHTML += fileInputHTML;
+        });
+    }
+    
+    function removeFileInput(index) {
+        const toRemove = document.querySelector(`.file-input[data-index="${index}"]`);
+        if (toRemove) {
+            toRemove.remove();
+        }
+    }
+    </script>
+{% endblock %}

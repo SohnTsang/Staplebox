@@ -20,6 +20,7 @@ from django.core.files.base import ContentFile
 from django.http import HttpResponseForbidden
 from django.utils.html import escape  # Use escape to prevent XSS attacks
 from .forms import DocumentEditForm  # Assuming you will create this form
+from django.utils import timezone 
 
 
 #For checking file integrity
@@ -29,45 +30,40 @@ def file_hash(file):
         hash_sha256.update(chunk)
     return hash_sha256.hexdigest()
 
+
 @csrf_exempt
 @login_required
 def upload_document(request, product_id, folder_id):
     if request.method == 'POST':
-        folder = get_object_or_404(Folder, id=folder_id)
+        folder = get_object_or_404(Folder, id=folder_id, product_id=product_id)
         try:
-            for key, file in request.FILES.items():
-                comments = request.POST.get('comments', '')
-                document_type_id = request.POST.get('document_type')
-                document_type = get_object_or_404(DocumentType, id=document_type_id)
-                hash_digest = file_hash(file)
-                
-                original_filename = file.name
-                # Check if the file already exists in the folder
-                if Document.objects.filter(folder=folder, original_filename=original_filename).exists():
-                    # Generate a new filename if it exists
-                    new_filename = generate_new_filename(folder, original_filename)
-                else:
-                    new_filename = original_filename
+            files = request.FILES.getlist('document_files')
+            file_names = request.POST.getlist('file_names[]')  # Assuming you're sending file names separately
+            document_types = request.POST.getlist('document_types[]')
+            comments_list = request.POST.getlist('comments[]')
 
-                # Directly create a new document entry
+            for file, doc_type_id, comment in zip(files, document_types, comments_list):
+                hash_digest = file_hash(file)
+                document_type = get_object_or_404(DocumentType, id=doc_type_id)
+
                 Document.objects.create(
                     folder=folder,
+                    original_filename=file.name,
                     document_type=document_type,
                     file=file,
-                    file_hash=hash_digest,  # Store the hash of the file
-                    original_filename=new_filename,  # Use the potentially new filename
+                    file_hash=hash_digest,
                     uploaded_by=request.user,
-                    comments=comments,
+                    comments=comment,
                 )
 
-            # Redirect to the folder view after successful upload
-            return redirect(reverse('products:product_explorer_folder', kwargs={'product_id': product_id, 'folder_id': folder_id}))
+            messages.success(request, 'Documents uploaded successfully.')
         except Exception as e:
-            # Handle exceptions or logging
-            print(f"Exception: {e}")
+            messages.error(request, f'Failed to upload documents. Error: {e}')
 
-    # Redirect to the folder view if not POST or in case of exceptions
-    return redirect(reverse('products:product_explorer_folder', kwargs={'product_id': product_id, 'folder_id': folder_id}))
+        return redirect(reverse('products:product_explorer_folder', kwargs={'product_id': product_id, 'folder_id': folder_id}))
+
+    return redirect(reverse('products:product_explorer', kwargs={'product_id': product_id}))
+
 
 
 
@@ -105,6 +101,8 @@ def edit_document(request, document_id):
                 # Update the original_filename to reflect the uploaded file's name
                 edited_instance.original_filename = uploaded_file.name
             edited_instance.save()
+            document.updated_at = timezone.now()  # Ensure to import timezone from django.utils
+            document.save(update_fields=['updated_at'])
             form.save_m2m()  # Required for saving ManyToMany fields if any
             
             messages.success(request, 'Update successful.')

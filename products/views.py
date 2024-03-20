@@ -151,6 +151,20 @@ def product_explorer(request, product_id, folder_id=None):
     documents = Document.objects.filter(folder=current_folder).order_by('original_filename')
     document_types = DocumentType.objects.all()
 
+    for document in documents:
+        document.latest_version = document.versions.latest('created_at') if document.versions.exists() else None
+        document.created_at = document.created_at  # Adjust as per your model
+        if document.latest_version:
+            document.latest_uploaded_by = document.latest_version.uploaded_by
+            document.latest_comment = document.latest_version.comments
+            document.latest_file_size = document.latest_version.formatted_file_size
+            document.latest_version_date = document.latest_version.created_at
+        else:
+            document.latest_uploaded_by = document.uploaded_by
+            document.latest_comment = document.comments
+            document.latest_file_size = document.formatted_file_size
+            document.latest_version_date = document.created_at
+
     context = {
         'product': product,
         'root_folder': root_folder,

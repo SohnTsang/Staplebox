@@ -7,8 +7,124 @@
 
 
 {% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
 <style>
+
+body {
+    font-family: 'Inter', sans-serif;
+}
+
+.dropdown-menu {
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+.dropdown-menu li {
+    padding-top: 0.2rem;
+    padding-bottom: 0.2rem;
+}
+
+.btn-modern {
+    background-color: #295893; /* Primary color */
+    border: none;
+    color: white;
+    padding: 8px 15px;
+    text-align: center;
+    text-decoration: none;
+    font-size: 14px;
+    border-radius: 5px; /* Rounded corners */
+}
+
+.btn-modern:hover {
+    background-color: #2f82c0 !important; /* Darker shade for hover/focus */
+    color: white;
+    text-decoration: none; /* Prevents underlining text */
+}
+.btn-modern:active, .btn-modern:focus-visible {
+    background-color: #1e4f7f !important; /* Darker shade for active state */
+    color: white;
+    text-decoration: none; /* Prevents underlining text */
+}
+
+
+@media (min-width: 1055px) {
+    #detail {
+        width: 350px;
+    }
+    
+}
+
+@media (max-width: 1054px) {
+    #detail {
+        display: none !important;
+    }
+    #left-explorer{
+        width: 100% !important;
+    }
+}
+
+.text-muted-weight {
+    font-weight: 400;
+    color:#181818;
+    font-size: small;
+}
+
+#right-panel-title {
+    display: flex;
+    align-items: center; /* Align items vertically in the center */
+    
+}
+
+.name-container {
+    margin-left: 8px; /* Adjust based on your icon's width or desired spacing */
+    flex: 1; /* Allows the text container to take up the remaining space */
+    white-space: normal; /* Ensure text wraps */
+    word-wrap: break-word; /* Break the word to prevent overflow */
+    overflow-wrap: break-word; /* Standard property for breaking long words to prevent overflow */
+    hyphens: auto; /* Allow hyphenation of words in supported browsers */
+}
+
+.py-2-custom {
+    padding-top: 0.8rem !important;
+    padding-bottom: 0.8rem !important;
+}
+
+.title {
+    min-height: 70px;
+    align-items: center; /* This vertically centers the content */
+    display: flex;
+    flex-shrink: 0; /* Prevents these elements from shrinking, ensuring they maintain their size */
+
+}
+
+.vh-90{
+    height: 90vh !important;
+}
+
+.table-responsive {
+    overflow-y: auto;
+    display: block;
+}
+
+#information {
+    overflow-y: auto;
+    display: block;
+}
+
+/* Sticky table header */
+.table thead th {
+    position: sticky;
+    top: 0;
+    background-color: #fff; /* Match the background to your table/theme */
+    z-index: 1; /* Ensures the header is above other content */
+}
+
+/* Ensure the table stretches to full width */
+.table {
+    width: 100%;
+    margin-bottom: 0rem; /* Adjust as necessary */
+}
 
 .truncate-name {
     max-width: 300px !important; /* Adjust based on your layout */
@@ -62,7 +178,6 @@
 }
 
 .clickable-row td {
-    cursor: pointer;
     text-decoration: none;
 }
 
@@ -84,6 +199,7 @@
 }
 .fw-less-bold {
     font-weight: 600;
+    color:#2e2e2e;
 }
 
 .checkbox-column {
@@ -92,70 +208,108 @@
     min-width: 40px !important;
 }
 
+.highlighted-row {
+    background-color: #90c2ff36 !important; /* Or any color you prefer */
+}
 
+.detail-item {
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.5rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+.detail-item:last-child {
+    border-bottom: none;
+    padding-bottom: 1rem;
+}
+
+.detail-item:first-child {
+    padding-top: 1rem;
+}
+
+.detail-item strong {
+    font-size: 0.95rem;
+    display: block;
+    color: rgb(44, 44, 44);
+    margin-bottom: .2rem;
+    font-weight: 600;
+}
+
+.detail-item p {
+    margin: 0;
+    padding: 0;
+    color: #474747;
+    font-size: 0.95rem;
+}
 
 </style>
 {% endblock extra_css %}
 
 {% block content %}
 
-<div id="product-explorer" data-product-id="{{ product.id }}" data-root-folder-id="{{ root_folder_id }}" class="container mt-5">
+<div id="product-explorer" data-product-id="{{ product.id }}" data-root-folder-id="{{ root_folder_id }}" class="container-fluid mt-5">
     <div class="row">
-        <div class="col-12">
-            <div class="bg-white rounded-2 wrapper">
-                <h4 class="text-primary-custom mb-3 fw-bold px-5 py-3 border-bottom">{{ product.product_name}}</h4>
-
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <a href="{% url 'home' %}" class="btn btn-primary me-2">Back to Home</a>
-                        <a href="{% url 'products:edit_product' product.id %}" class="btn btn-primary me-2">Edit Product</a>
-                        <form action="{% url 'products:delete_product' product.id %}" method="post" class="d-inline">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-primary">Delete Product</button>
-                        </form>
-                    </div>
-                    <div>
-                        <form id="create-folder-form" method="post" action="{% url 'products:folder_create' product_id=product.id %}">
-                            {% csrf_token %}
-                            <div class="input-group mb-3">
-                                <input type="text" class="form-control" placeholder="New Folder Name" id="folderName" name="name" required>
-
-                                {% if current_folder %}
-                                    <input type="hidden" id="parentFolderId" name="parent_id" value="{{ current_folder.id }}">
-                                {% else %}
-                                    <input type="hidden" id="parentFolderId" name="parent_id" value="{{ root_folder.id }}">
-                                {% endif %}
-                                <button class="btn btn-primary" type="submit">Create Folder</button>
-                            </div>
-                        </form>
-                        <button type="button" class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#uploadDocumentModal">Upload Document</button>
-                        <a href="{% url 'access_control:manage_access' product_id=product.id %}" class="btn btn-primary">Manage Access</a>
-                    </div>
+        <div id="left-explorer" class="col-md-12 col-lg-8 pe-lg-3">
+            <div class="bg-white rounded-2 wrapper vh-90">
+                <div class="title">
+                    <h4 class="text-primary-custom fw-bold px-3">{{ product.product_name}}</h4>
                 </div>
+                
 
-                <div id="folders-container" class="px-3">
+                <div id="folders-container" class="ms-3 mt-2">
                     <nav aria-label="breadcrumb">
                         <ol class="breadcrumb">
                             {% for breadcrumb in breadcrumbs %}
                                 <li class="breadcrumb-item">
                                     {% if forloop.last %}
-                                        <span class="p-2 h6">{{ breadcrumb.name }}</span>
+                                        <span class="p-2 h6 fw-bold">{{ breadcrumb.name }}</span>
                                     {% else %}
-                                        <a href="{% url 'products:product_explorer_folder' product_id=product.id folder_id=breadcrumb.id %}" class="text-primary-custom breadcrumb-navigation p-2 h6">{{ breadcrumb.name }}</a>
+                                        <a href="{% url 'products:product_explorer_folder' product_id=product.id folder_id=breadcrumb.id %}" class="text-primary-custom opacity-75 breadcrumb-navigation p-2 h6">{{ breadcrumb.name }}</a>
                                     {% endif %}
                                 </li>
                             {% endfor %}
                         </ol>
                     </nav>
                 </div>
-                <div class="table-responsive px-5">
+                
+                <div class="d-flex justify-content-start align-items-center pb-3 px-3">
+                    <noscript>
+                        <form id="create-folder-form" method="post" action="{% url 'products:folder_create' product_id=product.id %}" class="">
+                            {% csrf_token %}
+                            <div class="row g-2 align-items-center">
+                                <div class="col-auto">
+                                    <input type="text" class="form-control" placeholder="New Folder Name" id="folderName" name="name" required>
+                                    <button class="btn btn-modern" type="submit">Create Folder</button>
+                                </div>
+                                {% if current_folder %}
+                                    <input type="hidden" id="parentFolderId" name="parent_id" value="{{ current_folder.id }}">
+                                {% else %}
+                                    <input type="hidden" id="parentFolderId" name="parent_id" value="{{ root_folder.id }}">
+                                {% endif %}
+                            </div>
+                        </form>
+                    </noscript>
+                    <!-- Spacer div to push the next element(s) to the right -->
+                    <button type="button" class="btn btn-modern" data-bs-toggle="modal" data-bs-target="#createFolderModal">Upload File</button>
+                    <button type="button" class="btn btn-modern ms-2" data-bs-toggle="modal" data-bs-target="#uploadDocumentModal">Upload File</button>
+                    <div class="ms-auto"></div>
+                    
+                    <!-- This link/button will be aligned to the right -->
+                    <a href="{% url 'access_control:manage_access' product_id=product.id %}" class="btn btn-modern text-white">Manage Access</a>
+                </div>
+
+                
+
+
+                <div class="table-responsive px-4">
                     <table class="table table-hover align-middle">
                         <thead>
                             <tr class="">
                                 <th scope="col" class="checkbox-column"></th>
                                 <th scope="col" class="small truncate-name">Name</th>
                                 <th scope="col" class="small truncate-original-name">Original Name</th>
-                                <th scope="col" class="small truncate-type">Type</th>
+                                <th scope="col" class="small truncate-type">Category</th>
                                 <th scope="col" class="small truncate-modified">Date Modified</th>
                                 <th scope="col" class="small truncate-version">Version</th>
                                 <th scope="col" class="fixed-width-header"></th>
@@ -166,20 +320,20 @@
                             <!-- Folders -->
                             {% for folder in subfolders %}
                             <!--<tr class="clickable-row" onclick="window.location='{% url 'products:product_explorer_folder' product_id=product.id folder_id=folder.id %}';">-->
-                            <tr class="clickable-row"></tr>
-                                <td class="checkbox-column"><input type="checkbox" name="selected_items" value="folder_{{ folder.id }}"></td>
-                                <td class="text-muted small truncate-name">
-                                    <svg class="icon-folder me-2" xmlns="http://www.w3.org/2000/svg" width="22" height="20" fill="currentColor" viewBox="0 0 16 16">
+                            <tr class="clickable-row" data-owner="{{ folder.created_by }}" data-name="{{ folder.name }}" data-modified="{{ folder.updated_at|date:"Y-m-d H:i" }}" data-created="{{ folder.created_at|date:"Y-m-d H:i" }}" data-type="folder">
+                                    <td class="checkbox-column"><input type="checkbox" name="selected_items" value="folder_{{ folder.id }}"></td>
+                                <td class="small truncate-name">
+                                    <svg class="me-2" width="23" height="20" viewBox="0 0 17 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                                         <path d="M16 6.32099V12.642C16 13.4751 15.3473 14.1576 14.5194 14.2179L14.4 14.2222H1.6C0.75651 14.2222 0.0654679 13.5776 0.00438862 12.7599L0 12.642L0 6.32099L16 6.32099ZM6.0155 0C6.45292 0 6.86907 0.176755 7.16925 0.485378L7.26488 0.593075L8.38448 1.97531L14.4 1.97531C15.2435 1.97531 15.9345 2.61995 15.9956 3.43762L16 3.55556V4.74074L0 4.74074L0 1.58025C0 0.747171 0.652702 0.0646597 1.48059 0.00433444L1.6 0L6.0155 0Z" fill="#CCA92D"/>
                                     </svg>
                                     <a href="{% url 'products:product_explorer_folder' product_id=product.id folder_id=folder.id %}">
                                         <span class="fw-less-bold">{{ folder.name }}</span>
                                     </a>
                                 </td>
-                                <td class="text-muted small truncate-original-name"></td>
-                                <td class="text-muted small truncate-type"></td>
-                                <td class="text-muted small truncate-modified">{{ folder.updated_at|date:"Y-m-d H:i" }}</td>
-                                <td class="text-muted small truncate-version"></td>
+                                <td class="text-muted-weight small truncate-original-name"> — </td>
+                                <td class="text-muted-weight small truncate-type"> — </td>
+                                <td class="text-muted-weight small truncate-modified">{{ folder.updated_at|date:"Y-m-d H:i" }}</td>
+                                <td class="text-muted-weight small truncate-version ps-4"> — </td>
                                 <td class="text-center">
                                     <div class="dropdown">
                                         <button class="btn btn-secondary dropdown-toggle px-0 py-1" type="button" id="actionDropdown{{ forloop.counter }}" data-bs-toggle="dropdown" aria-expanded="false">
@@ -234,27 +388,32 @@
                             
                             <!-- Documents -->
                             {% for document in documents %}
-                            <tr class="clickable-row">
+                            <tr class="clickable-row" data-owner="{{ document.uploaded_by }}" data-version="{{ document.version }}" data-filetype="{{ document.file_type }}" data-name="{{ document.display_filename }}" data-modified="{{ document.updated_at|date:"Y-m-d H:i" }}" data-original="{{ document.original_filename }}" data-category="{{ document.document_type.type_name }}" data-created-by="{{ document.latest_uploaded_by }}" data-created="{{ document.created_at|date:"Y-m-d H:i" }}" data-latest-comment="{{ document.latest_comment }}" data-filesize="{{ document.latest_file_size }}" data-type="document" ">
                                 <td class="checkbox-column"><input type="checkbox" name="selected_items" value="document_{{ document.id }}"></td>
                                 <td class="small truncate-name">
                                     <a href="{% url 'documents:download_document' document.id %}" data-document-id="{{ document.id }}">
                                         {% with document.file_type|upper as doc_type %}
                                             {% if doc_type == '.PDF' %}
-                                                <svg class="me-2" width="20" height="22" viewBox="0 0 12 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <svg class="me-2" width="23" height="22" viewBox="0 0 15 18" fill="none" xmlns="http://www.w3.org/2000/svg">
                                                     <path d="M6.8 0V5.525C6.8 6.18774 7.30568 6.73238 7.95221 6.79416L8.075 6.8H13.6V15.3C13.6 16.1962 12.9065 16.9304 12.0269 16.9953L11.9 17H1.7C0.803792 17 0.0695594 16.3065 0.0046627 15.4269L0 15.3L0 1.7C0 0.803792 0.693496 0.0695596 1.57313 0.00466291L1.7 0L6.8 0ZM8.5 0.036856C8.77387 0.094843 9.03044 0.219882 9.24584 0.402096L9.35 0.497921L13.1021 4.25C13.3031 4.451 13.4486 4.69715 13.5286 4.96461L13.5631 5.1H8.5V0.036856Z" fill="#295893"/>
                                                 </svg>  
                                             {% elif doc_type == '.WORD' %}
                                                 <img src="{% static 'icons/word-icon.png' %}" alt="Word" width="16" height="16" class="me-2">
                                             {% elif doc_type == '.PNG' %}
-                                                <svg class="me-2" width="22" height="18" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <svg class="me-2" width="23" height="20" viewBox="0 0 17 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                                                     <path d="M14.4 0C15.2837 0 16 0.696446 16 1.55556V12.4444C16 13.3036 15.2837 14 14.4 14H1.6C0.716344 14 0 13.3036 0 12.4444L0 1.55556C0 0.696446 0.716344 0 1.6 0L14.4 0ZM14.4 1.55556L1.6 1.55556L1.6 9.4115L5.59584 5.52666C5.98637 5.147 6.61952 5.147 7.01008 5.52666L10.2627 8.68902L11.2527 7.7266C11.6432 7.34689 12.2764 7.34689 12.6669 7.7266L14.4 9.4115V1.55556ZM10.8 3.11111C11.4627 3.11111 12 3.63344 12 4.27778C12 4.92211 11.4627 5.44444 10.8 5.44444C10.1373 5.44444 9.6 4.92211 9.6 4.27778C9.6 3.63344 10.1373 3.11111 10.8 3.11111Z" fill="#AC3140"/>
                                                 </svg>
                                             {% elif doc_type == '.JPG' %}
-                                                <img src="{% static 'icons/jpg-icon.png' %}" alt="JPG" width="16" height="16" class="me-2">
-                                            {# Add more formats as needed #}
+                                                <svg class="me-2" width="23" height="20" viewBox="0 0 17 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                    <path d="M14.4 0C15.2837 0 16 0.696446 16 1.55556V12.4444C16 13.3036 15.2837 14 14.4 14H1.6C0.716344 14 0 13.3036 0 12.4444L0 1.55556C0 0.696446 0.716344 0 1.6 0L14.4 0ZM14.4 1.55556L1.6 1.55556L1.6 9.4115L5.59584 5.52666C5.98637 5.147 6.61952 5.147 7.01008 5.52666L10.2627 8.68902L11.2527 7.7266C11.6432 7.34689 12.2764 7.34689 12.6669 7.7266L14.4 9.4115V1.55556ZM10.8 3.11111C11.4627 3.11111 12 3.63344 12 4.27778C12 4.92211 11.4627 5.44444 10.8 5.44444C10.1373 5.44444 9.6 4.92211 9.6 4.27778C9.6 3.63344 10.1373 3.11111 10.8 3.11111Z" fill="#AC3140"/>
+                                                </svg>
+                                            {% elif doc_type == '.SVG' %}
+                                                <svg class="me-2" width="23" height="20" viewBox="0 0 17 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                    <path d="M14.4 0C15.2837 0 16 0.696446 16 1.55556V12.4444C16 13.3036 15.2837 14 14.4 14H1.6C0.716344 14 0 13.3036 0 12.4444L0 1.55556C0 0.696446 0.716344 0 1.6 0L14.4 0ZM14.4 1.55556L1.6 1.55556L1.6 9.4115L5.59584 5.52666C5.98637 5.147 6.61952 5.147 7.01008 5.52666L10.2627 8.68902L11.2527 7.7266C11.6432 7.34689 12.2764 7.34689 12.6669 7.7266L14.4 9.4115V1.55556ZM10.8 3.11111C11.4627 3.11111 12 3.63344 12 4.27778C12 4.92211 11.4627 5.44444 10.8 5.44444C10.1373 5.44444 9.6 4.92211 9.6 4.27778C9.6 3.63344 10.1373 3.11111 10.8 3.11111Z" fill="#AC3140"/>
+                                                </svg>
                                             {% else %}
                                                 <!-- Optionally, show a default icon for unspecified document types -->
-                                                <svg class="me-2" width="20" height="22" viewBox="0 0 12 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <svg class="me-2" width="23" height="22" viewBox="0 0 15 18" fill="none" xmlns="http://www.w3.org/2000/svg">
                                                     <path d="M6.8 0V5.525C6.8 6.18774 7.30568 6.73238 7.95221 6.79416L8.075 6.8H13.6V15.3C13.6 16.1962 12.9065 16.9304 12.0269 16.9953L11.9 17H1.7C0.803792 17 0.0695594 16.3065 0.0046627 15.4269L0 15.3L0 1.7C0 0.803792 0.693496 0.0695596 1.57313 0.00466291L1.7 0L6.8 0ZM8.5 0.036856C8.77387 0.094843 9.03044 0.219882 9.24584 0.402096L9.35 0.497921L13.1021 4.25C13.3031 4.451 13.4486 4.69715 13.5286 4.96461L13.5631 5.1H8.5V0.036856Z" fill="#295893"/>
                                                 </svg>                                            
                                             {% endif %}
@@ -263,10 +422,10 @@
 
                                     </a>
                                 </td>
-                                <td class="small truncate-original-name">{{ document.original_filename }}</td>
-                                <td class="small truncate-type">{{ document.document_type.type_name }}</td>
-                                <td class="small truncate-modified">{{ document.updated_at|date:"Y-m-d H:i" }}</td>
-                                <td class="small truncate-version ps-4">{{ document.version }}</td>
+                                <td class="text-muted-weight small truncate-original-name">{{ document.original_filename }}</td>
+                                <td class="text-muted-weight small truncate-type">{{ document.document_type.type_name }}</td>
+                                <td class="text-muted-weight small truncate-modified">{{ document.updated_at|date:"Y-m-d H:i" }}</td>
+                                <td class="text-muted-weight small truncate-version ps-4">{{ document.version }}</td>
                                 <td class="text-center">
                                     <div class="dropdown">
                                         <button class="btn btn-secondary dropdown-toggle px-0 py-1" type="button" id="actionDropdown{{ forloop.counter }}" data-bs-toggle="dropdown" aria-expanded="false">
@@ -316,15 +475,9 @@
                                             </li>
 
                                             <li>
-                                                {% if document.version > 1 %}
-                                                    <a class="dropdown-item" href="{% url 'documents:document_versions' document_id=document.id %}">
-                                                        <i class="fas fa-history"></i> &nbsp; Version History
-                                                    </a>
-                                                {% else %}
-                                                    <span class="dropdown-item text-muted" style="cursor: default;">
-                                                        <i class="fas fa-history"></i> &nbsp; Version History
-                                                    </span>
-                                                {% endif %}
+                                                <a class="dropdown-item" href="{% url 'documents:document_versions' document_id=document.id %}">
+                                                    <i class="fas fa-history"></i> &nbsp; Version History
+                                                </a>
                                             </li>
 
                                             <!-- Update Action -->
@@ -349,12 +502,48 @@
                 </div>
             </div>
         </div>
+        <div id="detail" class="col-lg-2 ps-1">
+            <div class="bg-white rounded-2 wrapper vh-90">
+                <div class="title">
+                    <h6 id="right-panel-title" class="text-primary-custom mb-0 px-3 fw-bold">{{ product.product_name }}</h6>
+                </div>
+				<div class="">
+					<ul class="nav nav-tabs modern-tabs col-12" id="invitationTab" role="tablist">
+						<li class="nav-item col-6" role="presentation">
+							<button class="nav-link active tab-link py-2-custom" id="access-tab" data-bs-toggle="tab" data-bs-target="#access" type="button" role="tab" aria-controls="received" aria-selected="true">
+								<div class="button-text small">Access</div>
+							</button>
+						</li>
+						<li class="nav-item col-6" role="presentation">
+							<button class="nav-link tab-link py-2-custom" id="details-tab" data-bs-toggle="tab" data-bs-target="#details" type="button" role="tab" aria-controls="sent" aria-selected="false">
+								<div class="button-text small">Details</div>
+							</button>
+						</li>
+					</ul>
+				</div>
+				<div class="tab-content" id="information">
+					<div class="tab-pane fade show active" id="access" role="tabpanel" aria-labelledby="access-tab">
+						<div class="list-group" id="access-information">
+							<img src="{% static 'images/empty_state/show_info2.png' %}" alt="Select an item to show information" class="mt-5 text-center" style="align-self:center;" width="233.7" height="200">
+                            <small class="text-center mt-3">Select an item to show information</small>
+                        </div>
+					</div>
+					<div class="tab-pane fade" id="details" role="tabpanel" aria-labelledby="details-tab">
+						<div class="list-group" id="details-information">
+							<img src="{% static 'images/empty_state/show_info2.png' %}" alt="Select an item to show information" class="mt-5 text-center" style="align-self:center;" width="233.7" height="200">
+                            <small class="text-center mt-3">Select an item to show information</small>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
     </div>
 </div>
 
 <!-- Create Folder Modal -->
 <!--{% include "modal/create_folder_modal.html" %}-->
 {% include "modal/upload_document_modal.html" %}
+{% include "modal/create_folder_modal.html" %}
 
 
 
@@ -401,6 +590,106 @@
             });
             
         });
+    });
+</script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Initial product name to revert back when no row is selected
+        const initialProductName = document.querySelector('#right-panel-title').textContent;
+        const productNameElement = document.querySelector('#right-panel-title');
+
+        // Function to update the right panel with selected item details
+        function updateRightPanel(owner, type, version, fileType, name, original, modified, category, createdBy, created, filesize, latestComment) {
+            console.log("Type: ", type)
+            if (type === "document") {
+                document.getElementById("details-information").innerHTML = `
+                    <div class="detail-item"><strong>Original Name</strong><small>${original}</small></div>
+                    <div class="detail-item"><strong>Category</strong><small>${category}</small></div>
+                    <div class="detail-item"><strong>Latest Comment</strong><small>${latestComment}</small></div>
+                    <div class="detail-item"><strong>Owner</strong><small>${owner}</small></div>
+                    <div class="detail-item"><strong>File Size</strong><small>${filesize}</small></div>
+                    <div class="detail-item"><strong>Version</strong><small>${version}</small></div>
+                    <div class="detail-item"><strong>Modified</strong><small>${modified} by ${createdBy}</small></div>
+                    <div class="detail-item"><strong>Created</strong><small>${created}</small></div>
+                    `;
+                    // Switch to the details tab
+                    // new bootstrap.Tab(document.querySelector('#details-tab')).show();
+            }
+            else if (type === "folder") {
+                document.getElementById("details-information").innerHTML = `
+                    <div class="detail-item"><strong>Owner</strong><small>${owner}</small></div>
+                    <div class="detail-item"><strong>Modified</strong><small>${modified}</small></div>
+                    <div class="detail-item"><strong>Created</strong><small>${created}</small></div>
+                    `;
+                    // Switch to the details tab
+                    // new bootstrap.Tab(document.querySelector('#details-tab')).show();
+            }
+        }
+
+        function resetRightPanel() {
+            // Implement according to what needs to be reset or cleared in the right panel
+            // For example:
+            document.getElementById("details-information").innerHTML = `
+                <img src="{% static 'images/empty_state/show_info2.png' %}" alt="Select an item to show information" class="mt-5 text-center" style="align-self:center;" width="233.7" height="200">
+                <small class="text-center mt-3">Select an item to show information</small>
+                `;
+            document.querySelectorAll('.clickable-row').forEach(r => r.classList.remove('highlighted-row'));
+        }
+
+        function getIconHTML(fileType) {
+            // Define your icons here
+            const icons = {
+                '.PDF': '<svg class="" width="20" height="23" viewBox="0 0 15 18" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6.8 0V5.525C6.8 6.18774 7.30568 6.73238 7.95221 6.79416L8.075 6.8H13.6V15.3C13.6 16.1962 12.9065 16.9304 12.0269 16.9953L11.9 17H1.7C0.803792 17 0.0695594 16.3065 0.0046627 15.4269L0 15.3L0 1.7C0 0.803792 0.693496 0.0695596 1.57313 0.00466291L1.7 0L6.8 0ZM8.5 0.036856C8.77387 0.094843 9.03044 0.219882 9.24584 0.402096L9.35 0.497921L13.1021 4.25C13.3031 4.451 13.4486 4.69715 13.5286 4.96461L13.5631 5.1H8.5V0.036856Z" fill="#295893"/></svg>',
+                '.WORD': '<img src="{% static "icons/word-icon.png" %}" alt="Word" width="16" height="16" class="">',
+                '.PNG': '<svg class="" width="23" height="19" viewBox="0 0 17 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14.4 0C15.2837 0 16 0.696446 16 1.55556V12.4444C16 13.3036 15.2837 14 14.4 14H1.6C0.716344 14 0 13.3036 0 12.4444L0 1.55556C0 0.696446 0.716344 0 1.6 0L14.4 0ZM14.4 1.55556L1.6 1.55556L1.6 9.4115L5.59584 5.52666C5.98637 5.147 6.61952 5.147 7.01008 5.52666L10.2627 8.68902L11.2527 7.7266C11.6432 7.34689 12.2764 7.34689 12.6669 7.7266L14.4 9.4115V1.55556ZM10.8 3.11111C11.4627 3.11111 12 3.63344 12 4.27778C12 4.92211 11.4627 5.44444 10.8 5.44444C10.1373 5.44444 9.6 4.92211 9.6 4.27778C9.6 3.63344 10.1373 3.11111 10.8 3.11111Z" fill="#AC3140"/></svg>',
+                '.JPG': '<svg class="" width="23" height="19" viewBox="0 0 17 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14.4 0C15.2837 0 16 0.696446 16 1.55556V12.4444C16 13.3036 15.2837 14 14.4 14H1.6C0.716344 14 0 13.3036 0 12.4444L0 1.55556C0 0.696446 0.716344 0 1.6 0L14.4 0ZM14.4 1.55556L1.6 1.55556L1.6 9.4115L5.59584 5.52666C5.98637 5.147 6.61952 5.147 7.01008 5.52666L10.2627 8.68902L11.2527 7.7266C11.6432 7.34689 12.2764 7.34689 12.6669 7.7266L14.4 9.4115V1.55556ZM10.8 3.11111C11.4627 3.11111 12 3.63344 12 4.27778C12 4.92211 11.4627 5.44444 10.8 5.44444C10.1373 5.44444 9.6 4.92211 9.6 4.27778C9.6 3.63344 10.1373 3.11111 10.8 3.11111Z" fill="#AC3140"/></svg>',
+                '.SVG': '<svg class="" width="23" height="19" viewBox="0 0 17 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14.4 0C15.2837 0 16 0.696446 16 1.55556V12.4444C16 13.3036 15.2837 14 14.4 14H1.6C0.716344 14 0 13.3036 0 12.4444L0 1.55556C0 0.696446 0.716344 0 1.6 0L14.4 0ZM14.4 1.55556L1.6 1.55556L1.6 9.4115L5.59584 5.52666C5.98637 5.147 6.61952 5.147 7.01008 5.52666L10.2627 8.68902L11.2527 7.7266C11.6432 7.34689 12.2764 7.34689 12.6669 7.7266L14.4 9.4115V1.55556ZM10.8 3.11111C11.4627 3.11111 12 3.63344 12 4.27778C12 4.92211 11.4627 5.44444 10.8 5.44444C10.1373 5.44444 9.6 4.92211 9.6 4.27778C9.6 3.63344 10.1373 3.11111 10.8 3.11111Z" fill="#AC3140"/></svg>',
+                // Add more as needed
+                'DEFAULT': '<svg class="icon-folder" xmlns="http://www.w3.org/2000/svg" width="22" height="20" fill="currentColor" viewBox="0 0 18 16"><path d="M16 6.32099V12.642C16 13.4751 15.3473 14.1576 14.5194 14.2179L14.4 14.2222H1.6C0.75651 14.2222 0.0654679 13.5776 0.00438862 12.7599L0 12.642L0 6.32099L16 6.32099ZM6.0155 0C6.45292 0 6.86907 0.176755 7.16925 0.485378L7.26488 0.593075L8.38448 1.97531L14.4 1.97531C15.2435 1.97531 15.9345 2.61995 15.9956 3.43762L16 3.55556V4.74074L0 4.74074L0 1.58025C0 0.747171 0.652702 0.0646597 1.48059 0.00433444L1.6 0L6.0155 0Z" fill="#CCA92D"/></svg>' // Default icon
+            };
+            if (!fileType) {
+                return icons['DEFAULT']; // Return default icon or an empty string if no icon should be shown
+            }
+
+            return icons[fileType.toUpperCase()] || icons['DEFAULT']; // Return matching icon or default
+        }
+        
+        // Event listener for row clicks
+        document.querySelectorAll('.clickable-row').forEach(row => {
+            row.addEventListener('click', function() {
+                const isSelected = this.classList.contains('highlighted-row');
+                const fileType = this.dataset.filetype;
+                const iconHTML = getIconHTML(fileType);
+                const name = this.dataset.name;
+
+                // Remove highlighting from previously selected row
+                if (!isSelected) {
+                    // Highlight this row
+                    document.querySelectorAll('.clickable-row').forEach(r => r.classList.remove('highlighted-row'));
+
+                    this.classList.add('highlighted-row');
+                    // Update the product/folder/document name
+                    productNameElement.innerHTML = `${iconHTML} <span class="name-container py-3">${name}</span>`;
+                    // Update right panel with this row's data
+                    updateRightPanel(this.dataset.owner, this.dataset.type, this.dataset.version, this.dataset.filetype, this.dataset.name, this.dataset.original, this.dataset.modified, this.dataset.category, this.dataset.createdBy, this.dataset.created, this.dataset.filesize, this.dataset.latestComment);
+                } else {
+                    
+                    // If the row was already selected, revert the text and don't highlight any row
+                    productNameElement.textContent = initialProductName;
+                    resetRightPanel();
+                }
+            });
+        });
+        document.addEventListener('click', function(event) {
+            if (!event.target.closest('.clickable-row') && !event.target.closest('#detail')) {
+                document.querySelectorAll('.clickable-row').forEach(r => r.classList.remove('highlighted-row'));
+                productNameElement.textContent = initialProductName;
+                resetRightPanel(); // Clear or reset the right panel details
+            }
+        });
+
+        
     });
 </script>
 {% endblock %}
