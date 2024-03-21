@@ -1,0 +1,21 @@
+<div class="mb-2">
+    <input type="checkbox" name="folders" value="{{ folder.id }}" id="folder{{ folder.id }}">
+    <label class="btn btn-outline-primary" data-bs-toggle="collapse" href="#collapseFolder{{ folder.id }}" role="button" aria-expanded="false" aria-controls="collapseFolder{{ folder.id }}">
+        {{ folder.name }}
+    </label>
+    <div class="collapse" id="collapseFolder{{ folder.id }}">
+        <div class="card card-body">
+            {% for subfolder in folder.subfolders.all %}
+                {% include 'access_control/folder_structure.html' with folder=subfolder %}
+            {% endfor %}
+            {% for document in folder.documents.all %}
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="documents" value="{{ document.id }}" id="document{{ document.id }}">
+                    <label class="form-check-label" for="document-{{ document.id }}">
+                        {{ document.display_filename }}
+                    </label>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>

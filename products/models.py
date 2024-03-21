@@ -35,3 +35,6 @@ class Product(models.Model):
         if is_new:
             Folder = apps.get_model('folder', 'Folder')  # Replace 'app_name' with the name of your app
             Folder.objects.create(name="Root", product=self, parent=None)
+
+    def __str__(self):
+        return self.product_name

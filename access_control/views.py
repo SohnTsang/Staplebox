@@ -17,6 +17,8 @@ from django.db.models import Q
 from collections import defaultdict
 from django.db.models import Prefetch
 from django.urls import reverse
+from .forms import AccessPermissionForm
+from django.db import transaction
 
 
 
@@ -172,18 +174,70 @@ def manage_access(request, product_id):
     user = request.user
     product = get_object_or_404(Product, id=product_id)
 
+    permissions = AccessPermission.objects.filter(product=product).select_related('partner2', 'folder', 'document')
+    partners_with_access = []
+
+    for permission in permissions:
+        access_detail = f"{permission.partner2.username} - Prod: {permission.product.product_name}"
+        if permission.folder:
+            access_detail += f", Folder: {permission.folder.name}"
+        if permission.document:
+            access_detail += f", Doc: {permission.document.display_filename}"
+        partners_with_access.append(access_detail)
+
     # Ensure the user requesting this page is the product owner
     if product.user != user:
         messages.error(request, "You are not authorized to manage access for this product.")
-        return redirect('your_redirect_destination')  # Update with your actual redirect
+        return redirect('home')  # Update with your actual redirect
 
-    # Fetching active partnerships where the current user is either the partner1 or partner2
+    form = AccessPermissionForm(request.POST or None, user=user, product_id=product_id)
+    # Processing form submission (grant access)
+    if request.method == 'POST' and form.is_valid():
+        messages_list = []
+        action = request.POST.get('action')
+        with transaction.atomic():
+            if action == 'remove_access':
+                # Handle the removal of selected permissions
+                permissions_to_remove = form.cleaned_data.get('remove_permissions', [])
+                for permission in permissions_to_remove:
+                    permission.delete()
+                messages.success(request, "Access removed successfully.")
+            
+            elif action == 'grant_access':
+                # Extracting selected partner IDs, folder IDs, and document IDs from form.cleaned_data
+                    partners = form.cleaned_data['partners']  # This should be a queryset of User instances.
+                    folder_ids = request.POST.getlist('folders')
+                    document_ids = request.POST.getlist('documents')
+                    granting_product_level_access = not folder_ids and not document_ids
+
+                    for partner in partners:
+                        if granting_product_level_access:
+                            message = grant_product_access(user, partner, product)
+                        else:
+                            for folder_id in folder_ids:
+                                folder = get_object_or_404(Folder, id=folder_id)
+                                message = grant_folder_or_document_access(user, partner, product, folder=folder)
+                                messages_list.append(message)
+                            for document_id in document_ids:
+                                document = get_object_or_404(Document, id=document_id)
+                                message = grant_folder_or_document_access(user, partner, product, document=document)
+                                messages_list.append(message)
+                        
+                        # Append and display messages for each partner processed
+                        messages.info(request, message)
+
+                # Redirect to avoid re-posting form data
+            return redirect('access_control:manage_access', product_id=product_id)
+            
+    else:
+        form = AccessPermissionForm(user=request.user, product_id=product_id)
+        
+    # Fetching active partnerships, folders, and documents as before for display
     active_partnerships = Partnership.objects.filter(
         Q(partner1=user) | Q(partner2=user),
         is_active=True
     ).distinct()
 
-    # Preparing partners list to include both partner2s and partner1s related to the user
     active_partners = set()
     for partnership in active_partnerships:
         if partnership.partner1 == user:
@@ -191,46 +245,74 @@ def manage_access(request, product_id):
         else:
             active_partners.add(partnership.partner1)
 
-    # Fetch folders and documents related to the product
-    folders = Folder.objects.filter(product=product)
+    folders = Folder.objects.filter(product=product, parent__isnull=True)
     documents = Document.objects.filter(folder__in=folders)
-
-    # Preparing folders and their documents for the template
     folders_data = [{'folder': folder, 'documents': documents.filter(folder=folder)} for folder in folders]
 
     context = {
         'product': product,
-        'partners': list(active_partners),  # Convert the set to a list for the template
+        'partners': list(active_partners),
+        'folders': folders,
         'folders_data': folders_data,
+        'partners_with_access': partners_with_access,
+        'form': form,  # Include the form in the context
     }
 
     return render(request, 'access_control/manage_access.html', context)
 
 
-@csrf_exempt
-@require_POST
-def grant_access(request):
-    data = json.loads(request.body.decode('utf-8'))
-    product_id = int(data.get('product_id'))
-    partner_ids = [int(id) for id in data.get('partners', [])]
-    folder_ids = set(int(id) for id in data.get('folders', []))
-    document_ids = set(int(id) for id in data.get('documents', []))
-    product = get_object_or_404(Product, id=product_id, user=request.user)
-    
-    if product.user != request.user:
-        return JsonResponse({"error": "Unauthorized to grant access for this product."}, status=403)
+def grant_product_access(user, partner, product):
+    # First, remove any specific folder/document-level permissions.
+    AccessPermission.objects.filter(
+        product=product, 
+        partner1=user, 
+        partner2=partner
+    ).exclude(
+        folder__isnull=True, 
+        document__isnull=True
+    ).delete()
 
-    for partner_id in partner_ids:
-        partner = get_object_or_404(User, id=partner_id)
-        # When granting access to the entire product and its hierarchy
-        if not folder_ids and not document_ids:
-            grant_access_to_product(request.user, partner, product_id)
-        else:
-            # Specific access grants
-            
-            grant_specific_access(request.user, partner, product_id, folder_ids, document_ids)
-            
-    return JsonResponse({"success": True, "message": "Access granted successfully."})
+    # Next, get or create a single product-level permission.
+    permission, created = AccessPermission.objects.get_or_create(
+        product=product, 
+        partner1=user, 
+        partner2=partner,
+        defaults={'folder': None, 'document': None}
+    )
+
+    # If a new product-level permission was created, indicate so.
+    if created:
+        return f"Granted {partner.username} access to the entire product: {product.product_name}."
+    else:
+        # If the permission already existed, there's nothing more to do.
+        return f"{partner.username} already had access to the entire product: {product.product_name}."
+    
+    return message
+
+def grant_folder_or_document_access(user, partner, product, folder=None, document=None):
+    if AccessPermission.objects.filter(product=product, partner2=partner, folder__isnull=True, document__isnull=True).exists():
+        return f"{partner.username} already has access to the entire product: {product.product_name}, which includes all folders and documents."
+
+    if folder:
+        _, created = AccessPermission.objects.get_or_create(product=product, partner1=user, partner2=partner, folder=folder)
+        return f"Granted {partner.username} access to folder: {folder.name} in product: {product.product_name}." if created else f"{partner.username} already has access to folder: {folder.name}."
+    elif document:
+        _, created = AccessPermission.objects.get_or_create(product=product, partner1=user, partner2=partner, document=document)
+        return f"Granted {partner.username} access to document: {document.display_filename} in product: {product.product_name}." if created else f"{partner.username} already has access to document: {document.display_filename}."
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 def grant_access_to_product(user, partner, product_id):
     product = get_object_or_404(Product, pk=product_id)

@@ -26,3 +26,6 @@ class Folder(models.Model):
             # If this folder is being set as root, unset any other root folders for the same product
             Folder.objects.filter(product=self.product, is_root=True).exclude(id=self.id).update(is_root=False)
         super().save(*args, **kwargs)
+    
+    def __str__(self):
+        return self.name

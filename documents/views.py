@@ -31,7 +31,6 @@ def file_hash(file):
     return hash_sha256.hexdigest()
 
 
-@csrf_exempt
 @login_required
 def upload_document(request, product_id, folder_id):
     if request.method == 'POST':
