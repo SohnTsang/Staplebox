@@ -1,0 +1,61 @@
+{% block extra_css %}
+<style>
+    input[type=checkbox]:disabled + label {
+        color: #6c757d; /* Bootstrap's text-muted color */
+    }
+</style>
+{% endblock extra_css %}
+
+{% for folder in folders %}
+    <div class="mb-3 folder-item">
+        <input type="checkbox" name="folders" value="{{ folder.id }}" id="folder{{ folder.id }}" class="folder-checkbox">
+        <label for="folder{{ folder.id }}" class="folder-label">
+            {% if folder.name == "Root" %}
+                {{ folder.product.product_name }}
+            {% else %}
+                {{ folder.name }} - {{ folder.updated_at }}
+            {% endif %}
+        </label>
+        <div class="ms-3 folder-content" id="folderContent{{ folder.id }}">
+            {% if folder.subfolders.exists %}
+                {% include 'access_control/_folder_structure.html' with folders=folder.subfolders.all %}
+            {% endif %}
+            {% for document in folder.documents.all %}
+                <div>
+                    <input type="checkbox" name="documents" value="{{ document.id }}" id="document{{ document.id }}" class="document-checkbox">
+                    <label for="document{{ document.id }}">{{ document.display_filename }}</label>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endfor %}
+
+{% block javascript %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const folderCheckboxes = document.querySelectorAll('.folder-checkbox');
+
+    folderCheckboxes.forEach(function(folderCheckbox) {
+        folderCheckbox.addEventListener('change', function() {
+            const folderId = folderCheckbox.value;
+            const folderContentDiv = document.getElementById(`folderContent${folderId}`);
+            const childCheckboxes = folderContentDiv.querySelectorAll('input[type=checkbox]');
+
+            // Check if the current folder checkbox is checked or not
+            if (folderCheckbox.checked) {
+                childCheckboxes.forEach(function(childCheckbox) {
+                    childCheckbox.checked = false; // Deselect
+                    childCheckbox.disabled = true; // Disable (grey out)
+                });
+            } else {
+                childCheckboxes.forEach(function(childCheckbox) {
+                    childCheckbox.disabled = false; // Enable
+                });
+            }
+        });
+    });
+});
+</script>
+
+{% endblock %}

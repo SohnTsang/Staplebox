@@ -173,17 +173,28 @@ def view_access(request):
 def manage_access(request, product_id):
     user = request.user
     product = get_object_or_404(Product, id=product_id)
-
     permissions = AccessPermission.objects.filter(product=product).select_related('partner2', 'folder', 'document')
-    partners_with_access = []
+
+    displayed_permissions = set()
+    partners_with_access = set()
 
     for permission in permissions:
-        access_detail = f"{permission.partner2.username} - Prod: {permission.product.product_name}"
-        if permission.folder:
-            access_detail += f", Folder: {permission.folder.name}"
-        if permission.document:
-            access_detail += f", Doc: {permission.document.display_filename}"
-        partners_with_access.append(access_detail)
+        # Simplify by focusing on the highest level of access granted
+        if permission.folder is None and permission.document is None:
+            # Product-level access
+            access_detail = f"{permission.partner2.username} - Prod: {permission.product.product_name}"
+        elif permission.folder and not permission.folder.is_root:
+            # Specific folder access (non-root)
+            access_detail = f"{permission.partner2.username} - Prod: {permission.product.product_name}, Folder: {permission.folder.name}"
+        elif permission.document:
+            # Document access, ensuring it's not redundant with folder or product-level access
+            access_detail = f"{permission.partner2.username} - Prod: {permission.product.product_name}, Doc: {permission.document.display_filename}"
+        else:
+            continue  # Skip if it's root access or otherwise handled
+        
+        partners_with_access.add(access_detail)  # Add unique access details
+
+    partners_with_access = list(partners_with_access)  # Convert set back to list for template rendering
 
     # Ensure the user requesting this page is the product owner
     if product.user != user:
@@ -197,34 +208,62 @@ def manage_access(request, product_id):
         action = request.POST.get('action')
         with transaction.atomic():
             if action == 'remove_access':
-                # Handle the removal of selected permissions
                 permissions_to_remove = form.cleaned_data.get('remove_permissions', [])
-                for permission in permissions_to_remove:
-                    permission.delete()
-                messages.success(request, "Access removed successfully.")
+                removed_count = 0
+
+                if permissions_to_remove:
+                    for permission in permissions_to_remove:
+                        permission.delete()
+                        removed_count += 1
+
+                    if removed_count > 0:
+                        # If at least one permission was successfully removed
+                        messages.success(request, f"Access removed successfully for {removed_count} items.")
+                    else:
+                        # If the list was not empty, but no permissions were actually removed
+                        messages.error(request, "Could not remove access. Please try again.")
+                else:
+                    # If no permissions were selected for removal
+                    messages.info(request, "No changes were made. Please select access permissions for removal.")
+
             
             elif action == 'grant_access':
                 # Extracting selected partner IDs, folder IDs, and document IDs from form.cleaned_data
                     partners = form.cleaned_data['partners']  # This should be a queryset of User instances.
                     folder_ids = request.POST.getlist('folders')
+                    folders = Folder.objects.filter(id__in=folder_ids)
+                    root_folder_selected = folders.filter(is_root=True).exists()
                     document_ids = request.POST.getlist('documents')
-                    granting_product_level_access = not folder_ids and not document_ids
+                    granting_product_level_access = not folder_ids and not document_ids or root_folder_selected
+                    granted_new_access = False
+                    redundant_access = False
 
                     for partner in partners:
                         if granting_product_level_access:
-                            message = grant_product_access(user, partner, product)
+                            if grant_product_access(user, partner, product):
+                                granted_new_access = True
+                            else:
+                                redundant_access = True
                         else:
                             for folder_id in folder_ids:
                                 folder = get_object_or_404(Folder, id=folder_id)
-                                message = grant_folder_or_document_access(user, partner, product, folder=folder)
-                                messages_list.append(message)
+                                if grant_folder_or_document_access(user, partner, product, folder=folder):
+                                    granted_new_access = True
+                                else:
+                                    redundant_access = True
                             for document_id in document_ids:
                                 document = get_object_or_404(Document, id=document_id)
-                                message = grant_folder_or_document_access(user, partner, product, document=document)
-                                messages_list.append(message)
-                        
-                        # Append and display messages for each partner processed
-                        messages.info(request, message)
+                                if grant_folder_or_document_access(user, partner, product, document=document):
+                                    granted_new_access = True
+                                else:
+                                    redundant_access = True
+
+                    if granted_new_access:
+                        messages.success(request, "Access granted successfully.")
+                    elif redundant_access:
+                        messages.info(request, "No new access was granted. Existing access was sufficient.")
+                    else:
+                        messages.warning(request, "No access changes were made. Please select partners and items for granting access.")
 
                 # Redirect to avoid re-posting form data
             return redirect('access_control:manage_access', product_id=product_id)
@@ -273,198 +312,53 @@ def grant_product_access(user, partner, product):
     ).delete()
 
     # Next, get or create a single product-level permission.
-    permission, created = AccessPermission.objects.get_or_create(
+    _, created = AccessPermission.objects.get_or_create(
         product=product, 
         partner1=user, 
         partner2=partner,
         defaults={'folder': None, 'document': None}
     )
-
     # If a new product-level permission was created, indicate so.
     if created:
-        return f"Granted {partner.username} access to the entire product: {product.product_name}."
-    else:
-        # If the permission already existed, there's nothing more to do.
-        return f"{partner.username} already had access to the entire product: {product.product_name}."
+        AccessPermission.objects.filter(product=product, partner2=partner).exclude(id=_.id).delete()
+    return created
     
-    return message
 
 def grant_folder_or_document_access(user, partner, product, folder=None, document=None):
-    if AccessPermission.objects.filter(product=product, partner2=partner, folder__isnull=True, document__isnull=True).exists():
-        return f"{partner.username} already has access to the entire product: {product.product_name}, which includes all folders and documents."
+    # Check for existing product-level access.
+    product_access_exists = AccessPermission.objects.filter(
+        product=product, partner2=partner, folder__isnull=True, document__isnull=True
+    ).exists()
+
+    if product_access_exists:
+        # Product-level access already exists, no need to grant lower-level access.
+        return False
 
     if folder:
+        # If granting access to the "Root" or product-level access is being granted.
+        if folder.is_root:
+            return grant_product_access(user, partner, product)
+        
+        # If granting access to a non-root folder, remove access to subfolders and documents within it.
+        AccessPermission.objects.filter(product=product, partner2=partner, folder__in=folder.subfolders.all()).delete()
+        AccessPermission.objects.filter(product=product, partner2=partner, document__folder=folder).delete()
+
+        # Ensure no higher-level access exists before granting folder access.
+        current_folder = folder.parent
+        while current_folder:
+            if AccessPermission.objects.filter(product=product, partner2=partner, folder=current_folder).exists():
+                return False  # Higher-level access exists.
+            current_folder = current_folder.parent
+
         _, created = AccessPermission.objects.get_or_create(product=product, partner1=user, partner2=partner, folder=folder)
-        return f"Granted {partner.username} access to folder: {folder.name} in product: {product.product_name}." if created else f"{partner.username} already has access to folder: {folder.name}."
-    elif document:
+        return created
+
+    if document:
+        # Check for existing product-level or folder access.
+        if AccessPermission.objects.filter(product=product, partner2=partner, folder=document.folder).exists():
+            return False  # Folder-level access exists.
+        
         _, created = AccessPermission.objects.get_or_create(product=product, partner1=user, partner2=partner, document=document)
-        return f"Granted {partner.username} access to document: {document.display_filename} in product: {product.product_name}." if created else f"{partner.username} already has access to document: {document.display_filename}."
+        return created
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-def grant_access_to_product(user, partner, product_id):
-    product = get_object_or_404(Product, pk=product_id)
-    # Ensure a Product instance is used for the 'product' parameter
-    AccessPermission.objects.get_or_create(partner1=user, partner2=partner, product=product)
-    
-    # Keep track of root folder IDs to avoid duplicates
-    root_folder_ids = set()
-    
-    # Print the hierarchical structure of each folder in the product
-    for folder in product.folders.all():
-        # Check if the folder is a root folder and if its ID is not already processed
-        if folder.is_root and folder.id not in root_folder_ids:
-            print_hierarchical_structure(folder)
-            root_folder_ids.add(folder.id)
-        
-        # Grant access to each folder and its contents
-        grant_access_to_folder(user, partner, folder, product)
-
-def fetch_all_document_ids_within_folder(folder_id):
-    """
-    Recursively fetch all document IDs within a folder, including its subfolders.
-    """
-    folder = Folder.objects.get(id=folder_id)
-    document_ids = list(folder.documents.values_list('id', flat=True))
-    for subfolder in folder.subfolders.all():
-        document_ids.extend(fetch_all_document_ids_within_folder(subfolder.id))
-    return document_ids
-
-def grant_specific_access(user, partner, product_id, folder_ids, document_ids):
-    printed_folders = set()
-    product = Product.objects.get(id=product_id)
-    printed_folders = set()  # To keep track of folders that have been printed
-
-    for folder_id in folder_ids:
-        document_ids.update(fetch_all_document_ids_within_folder(folder_id))
-    
-    root_folder_access_granted = any(Folder.objects.filter(id=folder_id, product=product, is_root=True).exists() for folder_id in folder_ids)
-
-    if root_folder_access_granted:
-        # If access to the root folder is granted, grant access to the whole product
-        grant_access_to_product(user, partner, product_id)
-    else:
-        # If specific folders are specified, grant access to them and their hierarchy
-        if folder_ids:
-            for folder_id in folder_ids:
-                folder = Folder.objects.get(id=folder_id, product=product)
-                # Grant access up the hierarchy from the specified folder
-                grant_access_upwards(user, partner, folder, product)
-                # Grant access downwards from the specified folder
-                grant_access_downwards(user, partner, folder)
-
-                # Print hierarchical structure if the folder has not been printed before
-                if folder not in printed_folders:
-                    print_hierarchical_structure(folder, printed_folders)
-
-                    printed_folders.add(folder)
-                
-        # If specific documents are specified, grant access to them
-        if document_ids:
-            for document_id in document_ids:
-                document = Document.objects.get(id=document_id)
-                if document.folder:
-                    # Grant access to the document's folder and up the hierarchy
-                    grant_access_upwards(user, partner, document.folder, product)
-                    
-                # Grant access to the document itself
-                AccessPermission.objects.get_or_create(partner1=user, partner2=partner, document=document, product=product)
-
-    # Grant access to specific documents
-    if document_ids:
-        for document_id in document_ids:
-            document = Document.objects.get(id=document_id)
-            # Grant access to the document's folder and up the hierarchy.
-            if document.folder:
-                grant_access_upwards(user, partner, document.folder, product)
-            # Grant access to the document itself.
-            AccessPermission.objects.get_or_create(partner1=user, partner2=partner, document=document, product=product)
-
-
-def grant_access_upwards(user, partner, folder, product):
-    # Recursively grant access to the folder and its ancestors.
-    current_folder = folder
-    while current_folder:
-        AccessPermission.objects.get_or_create(partner1=user, partner2=partner, folder=current_folder, product=product)
-        current_folder = current_folder.parent
-
-def grant_access_downwards(user, partner, folder):
-    # Recursively grant access to subfolders and their documents.
-    AccessPermission.objects.get_or_create(partner1=user, partner2=partner, folder=folder, product=folder.product)
-    for document in folder.documents.all():
-        AccessPermission.objects.get_or_create(partner1=user, partner2=partner, document=document, product=folder.product)
-    for subfolder in folder.subfolders.all():
-        grant_access_downwards(user, partner, subfolder)
-
-def grant_access_to_folder(user, partner, folder, product):
-    # Create access permission for the folder
-    AccessPermission.objects.get_or_create(partner1=user, partner2=partner, folder=folder, product=product)
-    
-    # Fetch and create access permissions for all documents within the folder
-    document_ids = fetch_all_document_ids_within_folder(folder.id)
-    for doc_id in document_ids:
-        document = Document.objects.get(id=doc_id)
-        AccessPermission.objects.get_or_create(partner1=user, partner2=partner, document=document, product=product)
-        
-        
-    
-    # Recursively grant access to subfolders
-    for subfolder in folder.subfolders.all():
-        grant_access_to_folder(user, partner, subfolder, product)
-
-@csrf_exempt
-@require_POST
-def remove_access(request, access_id):
-    try:
-        access_permission = AccessPermission.objects.get(id=access_id, partner1=request.user)
-        access_permission.delete()
-        return JsonResponse({'success': True, 'message': 'Access successfully removed.'})
-    except AccessPermission.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Access permission not found or you do not have permission to remove it.'}, status=404)
-    
-
-def print_hierarchical_structure(folder, printed_folders=None, indent=0, include_ancestors=True):
-    """
-    Print the hierarchical structure of a folder with proper indentation, including its ancestors.
-    Avoids infinite loops by keeping track of printed folders.
-    """
-    if printed_folders is None:
-        printed_folders = set()
-
-    # Optionally include ancestors in the printout
-    if include_ancestors:
-        ancestors = folder.get_ancestors(include_self=False)
-        for ancestor in ancestors:
-            if ancestor.id not in printed_folders:
-                print(" " * indent + f"Folder: {ancestor.name}")
-                printed_folders.add(ancestor.id)
-                indent += 2  # Increase indent for the next level
-
-    # Now handle the current folder as before
-    if folder.id in printed_folders:
-        return
-    printed_folders.add(folder.id)
-
-    # Print the current folder name with appropriate indentation
-    print(" " * indent + f"Folder: {folder.name}")
-
-    # Print documents within the folder
-    for document in folder.documents.all():
-        print(" " * (indent + 2) + f"Document: {document.file_name}")
-
-    # Recursively print subfolders
-    for subfolder in folder.subfolders.all():
-        print_hierarchical_structure(subfolder, printed_folders, indent=indent + 2, include_ancestors=False)
-
+    return False

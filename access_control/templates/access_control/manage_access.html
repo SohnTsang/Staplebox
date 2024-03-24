@@ -51,8 +51,8 @@
                         <h2>Folder Structure</h2>
                         <div id="folder-structure">
                             <div>
-                                {{form.folders}}
-                                {{form.documents}}
+                                {% include './_folder_structure.html' with folders=folders %}
+
                             </div>
                         </div>
                     </div>
