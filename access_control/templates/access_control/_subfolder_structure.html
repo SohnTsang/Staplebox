@@ -1,0 +1,74 @@
+{% block extra_css %}
+<style>
+.folder-content {
+}
+
+
+</style>
+{% endblock extra_css %}
+
+<!-- _subfolder_structure.html -->
+<!-- Subfolder Row: Initially Hidden, Shown on Parent Folder Expand -->
+<tr class="folder-row collapse folderContent{{ folder.parent_id }}" tabindex="0" data-bs-target=".folderContent{{ folder.id }}" aria-expanded="false">
+    <td class="lh-lg ps-3 py-1">
+        <input type="checkbox" name="folders" value="{{ folder.id }}">
+        <span class="arrow-icon" style="display: inline-block; width: 20px;">
+            <svg class="arrow-icon" width="24" height="24" viewBox="0 0 24 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <g clip-path="url(#clip0_1426_57)">
+                    <path d="M10 17L15 12" stroke="#5379A8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M15 12L10 7" stroke="#5379A8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </g>
+                <defs>
+                    <clipPath id="clip0_1426_57">
+                    <rect width="24" height="24" fill="white"/>
+                    </clipPath>
+                </defs>
+            </svg>
+        </span>
+        
+        <span class="folder-name fw-less-bold">{{ folder.name }}</span>
+    </td>
+    <td class="d-md-none d-lg-table-cell text-muted-weight small">Folder</td> <!-- Placeholder for subfolders -->
+    <td class="text-muted-weight small">{{ folder.updated_at|date:"Y-m-d H:i" }}</td>
+</tr>
+
+<!-- Nested Subfolders -->
+{% for subfolder in folder.subfolders.all %}
+    {% include 'access_control/_subfolder_structure.html' with folder=subfolder documents=subfolder.documents.all %}
+{% endfor %}
+
+<!-- Documents under Subfolder -->
+{% for document in documents %}
+    <tr class="folder-content collapse folderContent{{ folder.id }}" tabindex="0">
+        <td class="document-name lh-lg ps-3 py-1">
+            <input type="checkbox" name="documents" value="{{ document.id }}">
+            <svg width="20" height="20" viewBox="0 0 18 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <g clip-path="url(#clip0_1428_85)">
+                    <path d="M7 21C5.89543 21 5 20.1046 5 19V3H14L19 8V19C19 20.1046 18.1046 21 17 21H7Z" stroke="#5379A8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M13 3V9H19" stroke="#5379A8" stroke-width="2.5" stroke-linejoin="round"/>
+                    <path d="M9 13H15" stroke="#5379A8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M9 17H15" stroke="#5379A8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </g>
+                <defs>
+                    <clipPath id="clip0_1428_85">
+                        <rect width="26" height="26" fill="white"/>
+                    </clipPath>
+                </defs>
+            </svg>
+            
+            <span class="fw-less-bold">{{ document.display_filename }}</span>
+        </td>
+        <td class="d-md-none d-lg-table-cell text-muted-weight small">Document</td>
+        <td class="text-muted-weight small">{{ document.updated_at|date:"Y-m-d H:i" }}</td>
+    </tr>
+{% endfor %}
+
+
+{% block javascript %}
+
+<script>
+    
+</script>
+
+
+{% endblock %}

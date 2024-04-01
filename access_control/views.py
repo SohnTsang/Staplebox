@@ -19,8 +19,8 @@ from django.db.models import Prefetch
 from django.urls import reverse
 from .forms import AccessPermissionForm
 from django.db import transaction
-
-
+from partners.utils import get_partner_info
+from companies.models import CompanyProfile
 
 
 
@@ -172,29 +172,37 @@ def view_access(request):
 @login_required
 def manage_access(request, product_id):
     user = request.user
+    partner_info = get_partner_info(user)
     product = get_object_or_404(Product, id=product_id)
     permissions = AccessPermission.objects.filter(product=product).select_related('partner2', 'folder', 'document')
 
     displayed_permissions = set()
-    partners_with_access = set()
+    partners_with_access = []
 
     for permission in permissions:
+        company_profile = CompanyProfile.objects.filter(user_profile=permission.partner2.userprofile).first()
         # Simplify by focusing on the highest level of access granted
         if permission.folder is None and permission.document is None:
             # Product-level access
-            access_detail = f"{permission.partner2.username} - Prod: {permission.product.product_name}"
+            access_detail = f"Product: {permission.product.product_name}"
         elif permission.folder and not permission.folder.is_root:
             # Specific folder access (non-root)
-            access_detail = f"{permission.partner2.username} - Prod: {permission.product.product_name}, Folder: {permission.folder.name}"
+            access_detail = f"Product: {permission.product.product_name}, Folder: {permission.folder.name}"
         elif permission.document:
             # Document access, ensuring it's not redundant with folder or product-level access
-            access_detail = f"{permission.partner2.username} - Prod: {permission.product.product_name}, Doc: {permission.document.display_filename}"
+            access_detail = f"Product: {permission.product.product_name}, Doc: {permission.document.display_filename}"
         else:
             continue  # Skip if it's root access or otherwise handled
         
-        partners_with_access.add(access_detail)  # Add unique access details
-
-    partners_with_access = list(partners_with_access)  # Convert set back to list for template rendering
+        partners_with_access.append({
+            'access_detail': access_detail,
+            'company_name': company_profile.name if company_profile else "No Company Profile",
+            'company_email': company_profile.email if company_profile else "",
+            'company_role': company_profile.role if company_profile else "",
+            'permission_id': permission.id,
+            # Include any other fields you want from the CompanyProfile
+            
+        })
 
     # Ensure the user requesting this page is the product owner
     if product.user != user:
@@ -208,6 +216,7 @@ def manage_access(request, product_id):
         action = request.POST.get('action')
         with transaction.atomic():
             if action == 'remove_access':
+                request.session['last_active_tab'] = 'current'
                 permissions_to_remove = form.cleaned_data.get('remove_permissions', [])
                 removed_count = 0
 
@@ -229,6 +238,7 @@ def manage_access(request, product_id):
             
             elif action == 'grant_access':
                 # Extracting selected partner IDs, folder IDs, and document IDs from form.cleaned_data
+                    request.session['last_active_tab'] = 'all'
                     partners = form.cleaned_data['partners']  # This should be a queryset of User instances.
                     folder_ids = request.POST.getlist('folders')
                     folders = Folder.objects.filter(id__in=folder_ids)
@@ -264,37 +274,46 @@ def manage_access(request, product_id):
                         messages.info(request, "No new access was granted. Existing access was sufficient.")
                     else:
                         messages.warning(request, "No access changes were made. Please select partners and items for granting access.")
+            else:
+                request.session['last_active_tab'] = 'all'
 
                 # Redirect to avoid re-posting form data
             return redirect('access_control:manage_access', product_id=product_id)
             
     else:
+        
         form = AccessPermissionForm(user=request.user, product_id=product_id)
         
     # Fetching active partnerships, folders, and documents as before for display
-    active_partnerships = Partnership.objects.filter(
-        Q(partner1=user) | Q(partner2=user),
-        is_active=True
-    ).distinct()
 
-    active_partners = set()
-    for partnership in active_partnerships:
-        if partnership.partner1 == user:
-            active_partners.add(partnership.partner2)
-        else:
-            active_partners.add(partnership.partner1)
+    root_folders = Folder.objects.filter(product=product, parent__isnull=True)
+    documents = Document.objects.filter(folder__in=root_folders)
 
-    folders = Folder.objects.filter(product=product, parent__isnull=True)
-    documents = Document.objects.filter(folder__in=folders)
-    folders_data = [{'folder': folder, 'documents': documents.filter(folder=folder)} for folder in folders]
+    folders_data = []
+    for root_folder in root_folders:
+        subfolders = Folder.objects.filter(parent=root_folder)  # Direct children of each root folder
+        for subfolder in subfolders:
+            documents = Document.objects.filter(folder=subfolder)
+            folders_data.append({'folder': subfolder, 'documents': documents})
+            # If you also need to fetch subfolders of subfolders recursively, you'll need a more complex approach
+
+    # If root_folders should also include documents directly under them without a subfolder
+    for root_folder in root_folders:
+        documents = Document.objects.filter(folder=root_folder)
+        if documents.exists():
+            folders_data.append({'folder': None, 'documents': documents})
+    
+
 
     context = {
         'product': product,
-        'partners': list(active_partners),
-        'folders': folders,
+        'partners': partner_info,
+        'documents': documents,
+        'folders': root_folders,
         'folders_data': folders_data,
         'partners_with_access': partners_with_access,
         'form': form,  # Include the form in the context
+        'last_active_tab': request.session.get('last_active_tab', 'all'),
     }
 
     return render(request, 'access_control/manage_access.html', context)

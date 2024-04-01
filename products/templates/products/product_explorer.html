@@ -48,6 +48,14 @@ body {
 }
 
 
+.table > :not(caption) > * > * {
+  padding: 0.5rem 0.5rem;
+  color: var(--bs-table-color-state, var(--bs-table-color-type, var(--bs-table-color)));
+  background-color: var(--bs-table-bg);
+  border-bottom-width: var(--bs-border-width);
+  box-shadow: inset 0 0 0 9999px var(--bs-table-bg-state, var(--bs-table-bg-type, var(--bs-table-accent-bg)));
+}
+
 @media (min-width: 1055px) {
     #detail {
         width: 350px;
@@ -85,10 +93,7 @@ body {
     hyphens: auto; /* Allow hyphenation of words in supported browsers */
 }
 
-.py-2-custom {
-    padding-top: 0.8rem !important;
-    padding-bottom: 0.8rem !important;
-}
+
 
 .title {
     min-height: 70px;
@@ -98,9 +103,6 @@ body {
 
 }
 
-.vh-90{
-    height: 90vh !important;
-}
 
 .table-responsive {
     overflow-y: auto;
@@ -197,10 +199,6 @@ body {
     
   }
 }
-.fw-less-bold {
-    font-weight: 600;
-    color:#2e2e2e;
-}
 
 .checkbox-column {
     width: 40px !important; /* Adjust based on your design needs */
@@ -209,7 +207,7 @@ body {
 }
 
 .highlighted-row {
-    background-color: #90c2ff36 !important; /* Or any color you prefer */
+    background-color: #1e7bee44 !important; /* Or any color you prefer */
 }
 
 .detail-item {
@@ -248,9 +246,10 @@ body {
 
 {% block content %}
 
+
 <div id="product-explorer" data-product-id="{{ product.id }}" data-root-folder-id="{{ root_folder_id }}" class="container-fluid mt-5">
     <div class="row">
-        <div id="left-explorer" class="col-md-12 col-lg-8 pe-lg-3">
+        <div id="left-explorer" class="col-md-12 col-lg-8 pe-lg-2">
             <div class="bg-white rounded-2 wrapper vh-90">
                 <div class="title">
                     <h4 class="text-primary-custom fw-bold px-3">{{ product.product_name}}</h4>
@@ -320,70 +319,70 @@ body {
                             <!-- Folders -->
                             {% for folder in subfolders %}
                             <!--<tr class="clickable-row" onclick="window.location='{% url 'products:product_explorer_folder' product_id=product.id folder_id=folder.id %}';">-->
-                            <tr class="clickable-row" data-owner="{{ folder.created_by }}" data-name="{{ folder.name }}" data-modified="{{ folder.updated_at|date:"Y-m-d H:i" }}" data-created="{{ folder.created_at|date:"Y-m-d H:i" }}" data-type="folder">
-                                    <td class="checkbox-column"><input type="checkbox" name="selected_items" value="folder_{{ folder.id }}"></td>
-                                <td class="small truncate-name">
-                                    <svg class="me-2" width="23" height="20" viewBox="0 0 17 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M16 6.32099V12.642C16 13.4751 15.3473 14.1576 14.5194 14.2179L14.4 14.2222H1.6C0.75651 14.2222 0.0654679 13.5776 0.00438862 12.7599L0 12.642L0 6.32099L16 6.32099ZM6.0155 0C6.45292 0 6.86907 0.176755 7.16925 0.485378L7.26488 0.593075L8.38448 1.97531L14.4 1.97531C15.2435 1.97531 15.9345 2.61995 15.9956 3.43762L16 3.55556V4.74074L0 4.74074L0 1.58025C0 0.747171 0.652702 0.0646597 1.48059 0.00433444L1.6 0L6.0155 0Z" fill="#CCA92D"/>
-                                    </svg>
-                                    <a href="{% url 'products:product_explorer_folder' product_id=product.id folder_id=folder.id %}">
-                                        <span class="fw-less-bold">{{ folder.name }}</span>
-                                    </a>
-                                </td>
-                                <td class="text-muted-weight small truncate-original-name"> — </td>
-                                <td class="text-muted-weight small truncate-type"> — </td>
-                                <td class="text-muted-weight small truncate-modified">{{ folder.updated_at|date:"Y-m-d H:i" }}</td>
-                                <td class="text-muted-weight small truncate-version ps-4"> — </td>
-                                <td class="text-center">
-                                    <div class="dropdown">
-                                        <button class="btn btn-secondary dropdown-toggle px-0 py-1" type="button" id="actionDropdown{{ forloop.counter }}" data-bs-toggle="dropdown" aria-expanded="false">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                <g clip-path="url(#clip0_1417_12)">
-                                                    <rect x="12" y="12" width="0.01" height="0.01" stroke="#292929" stroke-width="3" stroke-linejoin="round"/>
-                                                    <rect x="12" y="5" width="0.01" height="0.01" stroke="#292929" stroke-width="3" stroke-linejoin="round"/>
-                                                    <rect x="12" y="19" width="0.01" height="0.01" stroke="#292929" stroke-width="3" stroke-linejoin="round"/>
-                                                </g>
-                                                <defs>
-                                                    <clipPath id="clip0_1417_12">
-                                                        <rect width="40" height="40" fill="white" transform="translate(0 0.000915527)"/>
-                                                    </clipPath>
-                                                </defs>
-                                            </svg>
-                                        </button>
-                                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionDropdown{{ forloop.counter }}">
-                                            <!-- Access Action -->
-                                            <li>
-                                                <a class="dropdown-item" href="#">
-                                                    <i class="fas fa-user"></i> &nbsp; Access Control
-                                                </a>
-                                            </li>
+                                <tr class="clickable-row" data-owner="{{ folder.created_by }}" data-name="{{ folder.name }}" data-modified="{{ folder.updated_at|date:"Y-m-d H:i" }}" data-created="{{ folder.created_at|date:"Y-m-d H:i" }}" data-type="folder">
+                                        <td class="checkbox-column"><input type="checkbox" name="selected_items" value="folder_{{ folder.id }}"></td>
+                                    <td class="small truncate-name">
+                                        <svg class="me-2" width="23" height="20" viewBox="0 0 17 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M16 6.32099V12.642C16 13.4751 15.3473 14.1576 14.5194 14.2179L14.4 14.2222H1.6C0.75651 14.2222 0.0654679 13.5776 0.00438862 12.7599L0 12.642L0 6.32099L16 6.32099ZM6.0155 0C6.45292 0 6.86907 0.176755 7.16925 0.485378L7.26488 0.593075L8.38448 1.97531L14.4 1.97531C15.2435 1.97531 15.9345 2.61995 15.9956 3.43762L16 3.55556V4.74074L0 4.74074L0 1.58025C0 0.747171 0.652702 0.0646597 1.48059 0.00433444L1.6 0L6.0155 0Z" fill="#CCA92D"/>
+                                        </svg>
+                                        <a href="{% url 'products:product_explorer_folder' product_id=product.id folder_id=folder.id %}">
+                                            <span class="fw-less-bold">{{ folder.name }}</span>
+                                        </a>
+                                    </td>
+                                    <td class="text-muted-weight small truncate-original-name"> — </td>
+                                    <td class="text-muted-weight small truncate-type"> — </td>
+                                    <td class="text-muted-weight small truncate-modified">{{ folder.updated_at|date:"Y-m-d H:i" }}</td>
+                                    <td class="text-muted-weight small truncate-version ps-4"> — </td>
+                                    <td class="text-center">
+                                        <div class="dropdown">
+                                            <button class="btn btn-secondary dropdown-toggle px-0 py-1" type="button" id="actionDropdown{{ forloop.counter }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                    <g clip-path="url(#clip0_1417_12)">
+                                                        <rect x="12" y="12" width="0.01" height="0.01" stroke="#292929" stroke-width="3" stroke-linejoin="round"/>
+                                                        <rect x="12" y="5" width="0.01" height="0.01" stroke="#292929" stroke-width="3" stroke-linejoin="round"/>
+                                                        <rect x="12" y="19" width="0.01" height="0.01" stroke="#292929" stroke-width="3" stroke-linejoin="round"/>
+                                                    </g>
+                                                    <defs>
+                                                        <clipPath id="clip0_1417_12">
+                                                            <rect width="40" height="40" fill="white" transform="translate(0 0.000915527)"/>
+                                                        </clipPath>
+                                                    </defs>
+                                                </svg>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionDropdown{{ forloop.counter }}">
+                                                <!-- Access Action -->
+                                                <li>
+                                                    <a class="dropdown-item" href="#">
+                                                        <i class="fas fa-user"></i> &nbsp; Access Control
+                                                    </a>
+                                                </li>
 
-                                            <li>
-                                                <a class="dropdown-item" href="{% url 'folder:edit_folder' product_id=product.id folder_id=folder.id%}">
-                                                    <i class="fas fa-user"></i> &nbsp; Edit
-                                                </a>
-                                            </li>
+                                                <li>
+                                                    <a class="dropdown-item" href="{% url 'folder:edit_folder' product_id=product.id folder_id=folder.id%}">
+                                                        <i class="fas fa-user"></i> &nbsp; Edit
+                                                    </a>
+                                                </li>
 
-                                            <!-- Update Action -->
-                                            <li>
-                                                <a href="{% url 'products:move_entity' product_id=product.id entity_type='folder' entity_id=folder.id %}" class="dropdown-item">
-                                                    <i class="fas fa-edit"></i> &nbsp; Move Folder
-                                                </a>
-                                            </li>
-                                            <li><hr class="dropdown-divider"></li>
-                                            <!-- Delete Action -->
-                                            <li>
-                                                <form action="{% url 'folder:delete_folder' folder_id=folder.id %}" method="post" onsubmit="return confirm('Are you sure you want to delete this folder?');">
-                                                    {% csrf_token %}
-                                                    <button type="submit" class="dropdown-item text-danger"">
-                                                        <i class="fas fa-trash"></i> &nbsp; Delete
-                                                    </button>
-                                                </form>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </td>
-                            </tr>
+                                                <!-- Update Action -->
+                                                <li>
+                                                    <a href="{% url 'products:move_entity' product_id=product.id entity_type='folder' entity_id=folder.id %}" class="dropdown-item">
+                                                        <i class="fas fa-edit"></i> &nbsp; Move Folder
+                                                    </a>
+                                                </li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <!-- Delete Action -->
+                                                <li>
+                                                    <form action="{% url 'folder:delete_folder' folder_id=folder.id %}" method="post" onsubmit="return confirm('Are you sure you want to delete this folder?');">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="dropdown-item text-danger"">
+                                                            <i class="fas fa-trash"></i> &nbsp; Delete
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </td>
+                                </tr>
                             {% endfor %}
                             
                             <!-- Documents -->
@@ -524,13 +523,13 @@ body {
 				<div class="tab-content" id="information">
 					<div class="tab-pane fade show active" id="access" role="tabpanel" aria-labelledby="access-tab">
 						<div class="list-group" id="access-information">
-							<img src="{% static 'images/empty_state/show_info2.png' %}" alt="Select an item to show information" class="mt-5 text-center" style="align-self:center;" width="233.7" height="200">
+							<img src="{% static 'images/empty_state/show_info2.png' %}" alt="No Items Selected" class="mt-5 text-center" style="align-self:center;" width="210" height="180">
                             <small class="text-center mt-3">Select an item to show information</small>
                         </div>
 					</div>
 					<div class="tab-pane fade" id="details" role="tabpanel" aria-labelledby="details-tab">
 						<div class="list-group" id="details-information">
-							<img src="{% static 'images/empty_state/show_info2.png' %}" alt="Select an item to show information" class="mt-5 text-center" style="align-self:center;" width="233.7" height="200">
+							<img src="{% static 'images/empty_state/show_info2.png' %}" alt="No Items Selected" class="mt-5 text-center" style="align-self:center;" width="210" height="180">
                             <small class="text-center mt-3">Select an item to show information</small>
 						</div>
 					</div>

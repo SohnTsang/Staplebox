@@ -1863,13 +1863,6 @@ progress {
   vertical-align: top;
   border-color: var(--bs-table-border-color);
 }
-.table > :not(caption) > * > * {
-  padding: 0.5rem 0.5rem;
-  color: var(--bs-table-color-state, var(--bs-table-color-type, var(--bs-table-color)));
-  background-color: var(--bs-table-bg);
-  border-bottom-width: var(--bs-border-width);
-  box-shadow: inset 0 0 0 9999px var(--bs-table-bg-state, var(--bs-table-bg-type, var(--bs-table-accent-bg)));
-}
 .table > tbody {
   vertical-align: inherit;
 }
@@ -1919,8 +1912,8 @@ progress {
 }
 
 .table-hover > tbody > tr:hover > * {
-  --bs-table-color-state: var(--bs-table-hover-color);
-  --bs-table-bg-state: var(--bs-table-hover-bg);
+  background-color: #7e9abe22;
+  background-color: #7e9abe22;
 }
 
 .table-primary {

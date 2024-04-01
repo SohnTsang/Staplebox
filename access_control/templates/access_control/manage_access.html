@@ -1,11 +1,120 @@
-{% extends "base.html" %}
+{% extends "base_users.html" %}
 {% load static %}
 {% load crispy_forms_tags %}
 {% load crispy_forms_filters %}
 
+
+
+{% block extra_css %}
+<style>
+
+.table > :not(caption) > * > * {
+  color: var(--bs-table-color-state, var(--bs-table-color-type, var(--bs-table-color)));
+  background-color: var(--bs-table-bg);
+  border-bottom-width: var(--bs-border-width);
+  box-shadow: inset 0 0 0 9999px var(--bs-table-bg-state, var(--bs-table-bg-type, var(--bs-table-accent-bg)));
+}
+
+.sticky tr {
+    position: sticky;
+    top: 0;
+    z-index: 100; /* To ensure it stays above the content */
+    background-color: #fff; /* To prevent content behind it from showing through */
+    box-shadow: 0 1px 1px -1px #dee2e6;
+}
+
+
+.title {
+    min-height: 70px;
+    align-items: center; /* This vertically centers the content */
+    display: flex;
+    flex-shrink: 0; /* Prevents these elements from shrinking, ensuring they maintain their size */
+
+}
+
+
+.list-group-item:not(:focus):not(:active):hover {
+    background-color: #7e9abe22; /* Lighter background color on hover */
+}
+
+/* Active or focused state */
+.list-group-item:focus, .list-group-item:active {
+    background-color: #1e7bee44 !important; /* Keep background color when active/focused */
+}
+
+
+/* Wrapping div for responsive table with max-height and vertical scrolling */
+.table-responsive {
+    max-height: 82.5vh; /* Example max-height, adjust as needed */
+    min-height: 82.5vh; /* Example max-height, adjust as needed */
+    
+    box-sizing: content-box; /* Ensures padding is added to the total width and height */
+    border: 1px solid #ddd;
+    overflow-y: auto;
+    overflow-x: auto;
+}
+
+.table {
+    width: 100%;
+    max-width: 100%;
+    margin-bottom: 0px;
+    table-layout: fixed;
+    border-collapse: collapse; /* Optional: for border spacing consistency */
+}
+
+
+.table th, .table td {
+    text-align: left;
+    vertical-align: top;
+    line-height: 1.42857143;
+}
+
+.table thead th {
+    line-height: 1.282;
+}
+
+.table th {
+    font-weight: bold;
+}
+
+/* Name column specific styles for truncating text */
+.table td:nth-child(1) { /* Adjust the column index as necessary */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 0; /* Ensures that text-overflow takes effect */
+}
+
+.table th:nth-child(1), .table td:nth-child(1) {
+    width: 50%;
+}
+
+.table th:nth-child(2), .table td:nth-child(2) {
+    width: 20%;
+}
+
+.table th:nth-child(3), .table td:nth-child(3) {
+    width: 30%;
+}
+
+/* Responsiveness and overflow handling */
+@media screen and (max-width: 767px) {
+    .table-responsive {
+        border: 0;
+    }
+
+    .table th, .table td {
+        white-space: normal;
+    }
+}
+
+</style>
+{% endblock extra_css %}
+
 {% block title %}Manage Access for Products{% endblock %}
 
 {% block content %}
+
 
 {% if messages %}
     <div class="container mt-3">
@@ -21,61 +130,181 @@
     </div>
 {% endif %}
 
-<div class="container mt-4">
-    <form method="post" action="{% url 'access_control:manage_access' product.id %}">
-        {% csrf_token %}
-        <div class="row">
-            <!-- Left Side: Partners -->
-            <div class="col-md-4 mb-3">
-                <h2>Partners</h2>
-                <div class="list-group">
-                    {{ form.partners }}
+<div class="container mt-5">
+    <div class="row">
+        <!-- Left Side: Partners -->
+        <div id="mypartners" class="col-md-4 col-lg-4 ps-1">
+            <div class="bg-white rounded-2 wrapper vh-90">
+                <div class="title">
+                    <h4 class="text-primary-custom fw-bold px-3">Partners</h4>
                 </div>
-            </div>
-
-            <!-- Right Side -->
-            <div class="col-md-8">
-                <div class="row">
-                    <!-- Upper Right: Partners with Access -->
-                    <div class="col-12 mb-3">
-                        <h2>Partners with Access</h2>
-                        <div class="list-group" id="partners-with-access">
-                            {% for access in partners_with_access %}
-                                <a href="#" class="list-group-item list-group-item-action">{{ access }}</a>
-                            {% endfor %}
+                <div class="">
+                    <ul class="nav nav-tabs modern-tabs col-12" id="invitationTab" role="tablist">
+                        <li class="nav-item col-6" role="presentation">
+                            <button class="nav-link tab-link py-2-custom {% if last_active_tab == 'all' %}active{% endif %}" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab" aria-controls="received" aria-selected="{% if last_active_tab == 'all' %}true{% else %}false{% endif %}">
+                                <div class="button-text small">All</div>
+                            </button>
+                        </li>
+                        <li class="nav-item col-6" role="presentation">
+                            <button class="nav-link tab-link py-2-custom {% if last_active_tab == 'current' %}active{% endif %}" id="current-tab" data-bs-toggle="tab" data-bs-target="#current" type="button" role="tab" aria-controls="sent" aria-selected="{% if last_active_tab == 'current' %}true{% else %}false{% endif %}">
+                                <div class="button-text small">Granted</div>
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                <div class="tab-content" id="information">
+                    <div class="tab-pane fade {% if last_active_tab == 'all' %}show active{% endif %}" id="all" role="tabpanel" aria-labelledby="all-tab">
+                        <div class="list-group" id="access-information">
+                            <form method="post" action="{% url 'access_control:manage_access' product.id %}">
+                                {% csrf_token %}
+                                <div class="list-group">
+                                    {% for partner in partners %}
+                                    <div class="list-group-item flex-column align-items-start">
+                                        <div class="d-flex py-1">
+                                            <div class="" style="align-self: center;">
+                                                <!-- Ensure the name is correctly set for collecting multiple partner IDs -->
+                                                <input type="checkbox" name="partners" value="{{ partner.partner_id }}" id="partner_{{ partner.partner_id }}">
+                                            </div>
+                                            <div class="ps-3">
+                                                <div class="fw-bold">{{ partner.company_name }}</div>
+                                                <div class="text-primary-custom fw-medium">{{ partner.company_role|title }}</div>
+                                            </div>
+                                            
+                                            <div class="dropdown">
+                                                <!-- Dropdown Actions -->
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% empty %}
+                                    <div class="list-group" id="all-partners">
+                                        <img src="{% static 'images/empty_state/no_partners.png' %}" alt="No Parnters" class="mt-5 text-center" style="align-self:center;" width="210" height="180">
+                                        <small class="text-center mt-3">Partners added will be shown here</small>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-12">
+                                        <div>
+                                            <!-- This button now submits the form enclosing the partner checkboxes -->
+                                            <button type="submit" name="action" value="grant_access" class="btn btn-primary">Grant Access</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
                         </div>
                     </div>
-
-                    <!-- Lower Right: Folder Structure -->
-                    <div class="col-12">
-                        <h2>Folder Structure</h2>
-                        <div id="folder-structure">
-                            <div>
-                                {% include './_folder_structure.html' with folders=folders %}
-
+                    <div class="tab-pane fade {% if last_active_tab == 'current' %}show active{% endif %}" id="current" role="tabpanel" aria-labelledby="current-tab">
+                        <div class="list-group" id="current-access">
+                            <div class="col-12 mb-3">
+                                <div class="list-group" id="partners-with-access">
+                                    {% for access in partners_with_access %}
+                                    <div class="list-group-item list-group-item-action d-flex align-items-center">
+                                        <div class="d-flex align-items-center me-3">
+                                            <!-- This space can be used for other elements if needed -->
+                                        </div>
+                                        <div class="flex-grow-1 d-flex flex-column">
+                                            <div class="fw-bold">{{ access.company_name }}</div>
+                                            <div class="fw-bold">{{ access.company_email }}</div>
+                                            <div>{{ access.access_detail }}</div>
+                                        </div>
+                                        <!-- Remove Button Form -->
+                                        <form action="{% url 'access_control:manage_access' product.id %}" method="post">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="action" value="remove_access">
+                                            <input type="hidden" name="remove_permissions" value="{{ access.permission_id }}">
+                                            <button type="submit" value="remove_access" class="btn btn-danger btn-sm" data-tab="#current">Remove</button>
+                                        </form>
+                                    </div>
+                                    {% empty %}
+                                    <div class="list-group" id="all-partners">
+                                        <img src="{% static 'images/empty_state/no_partners.png' %}" alt="No Parnters" class="mt-5 text-center" style="align-self:center;" width="210" height="190">
+                                        <small class="text-center mt-3">Partners granted access will be shown here</small>
+                                    </div>
+                                    {% endfor %}
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+            
 
-        <div class="row mt-3">
-            <div class="col-12">
-                <button type="submit" name="action" value="grant_access" class="btn btn-primary">Grant Access</button>
-                <div>
-                    <h3>Remove Access</h3>
-                    {{ form.remove_permissions }}
-                    <button type="submit" name="action" value="remove_access" class="btn btn-danger">Remove Access</button>
-
+        <div class="col-md-8">
+            <div class="bg-white rounded-2 wrapper vh-90">
+                <div class="title">
+                    <h4 class="text-primary-custom fw-bold px-3">{{ product.product_name }}</h4>
+                </div>
+                <div class="table-responsive border-0">
+                    <table class="table">
+                        <thead class="sticky">
+                            <tr class="">
+                                <th class="ps-3 py-2-custom">Name</th>
+                                <th class="d-md-none d-lg-table-cell py-2-custom">Type</th>
+                                <th class="py-2-custom">Date Modified</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in folders_data %}
+                                {% include 'access_control/_folder_structure.html' with folder=item.folder documents=item.documents %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
-    </form>
+    </div>
 </div>
 
 
+
 {% block javascript %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Select the form by its action attribute or any unique identifier
+        const form = document.querySelector('form[action="{% url 'access_control:manage_access' product.id %}"]');
+    
+        form.addEventListener("submit", function(event) {
+            // Prevent multiple submissions of hidden inputs if the form is submitted more than once
+            removeHiddenInputs();
+    
+            // Select all checked folder checkboxes
+            const selectedFolders = document.querySelectorAll('input[name="folders"]:checked');
+            // For each selected folder, create a hidden input in the form
+            selectedFolders.forEach(function(folder) {
+                const hiddenInput = document.createElement("input");
+                hiddenInput.type = "hidden";
+                hiddenInput.name = "folders";
+                hiddenInput.value = folder.value;
+                form.appendChild(hiddenInput);
+            });
+    
+            // Select all checked document checkboxes
+            const selectedDocuments = document.querySelectorAll('input[name="documents"]:checked');
+            // For each selected document, create a hidden input in the form
+            selectedDocuments.forEach(function(document) {
+                const hiddenInput = document.createElement("input");
+                hiddenInput.type = "hidden";
+                hiddenInput.name = "documents";
+                hiddenInput.value = document.value;
+                form.appendChild(hiddenInput);
+            });
+    
+            // No need to call event.preventDefault() as we want to submit the form
+        });
+    
+        function removeHiddenInputs() {
+            // Remove any previously added hidden inputs for folders and documents
+            const hiddenFolderInputs = form.querySelectorAll('input[type="hidden"][name="folders"]');
+            const hiddenDocumentInputs = form.querySelectorAll('input[type="hidden"][name="documents"]');
+    
+            hiddenFolderInputs.forEach(input => input.remove());
+            hiddenDocumentInputs.forEach(input => input.remove());
+        }
+    });
+</script>
 
 
 {% endblock %}

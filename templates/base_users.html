@@ -15,6 +15,17 @@
     <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
     
     <style>
+
+        .checkbox-column {
+            width: 40px !important; /* Adjust based on your design needs */
+            max-width: 40px !important;
+            min-width: 40px !important;
+        }
+
+        .py-2-custom {
+            padding-top: 0.8rem !important;
+            padding-bottom: 0.8rem !important;
+        }
         .asteriskField {
             display: none;
         }
@@ -41,11 +52,25 @@
             flex-direction: column; /* Stack children vertically */
             box-shadow: 1px 2px 5px rgba(0,0,0,.08);
         }
+
+        .wrapper-left {
+            display: flex;
+            flex-direction: column; /* Stack children vertically */
+            box-shadow: 1px 2px 5px rgba(0,0,0,.08);
+        }
+        
+        .list-group-item:first-child{
+            border-top: none !important;
+        }
+
+        .vh-90{
+            height: 90vh !important;
+        }
+
         .list-group-item {
             border-left: none !important;
             border-right: none !important;
-            border-top: 1px solid #dee2e6 !important; /* Bootstrap's default border color */
-            border-bottom: 1px solid #dee2e6 !important;
+            border-bottom: 1px solid #dee2e6CC !important;
             width: 100%; /* Ensure full width */
             margin-left: 0; /* Align with parent's left edge */
             margin-right: 0; /* Align with parent's right edge */
@@ -56,16 +81,8 @@
             outline: none !important;
         }
 
-
-        /* Remove top border for the first item */
-        .list-group-item:first-child {
-            border-top: none !important;
-        }
-
         /* Optionally, if you want no border on the last item, use this */
-        .list-group-item:last-child {
-            border-bottom: none !important;
-        }
+        
         
         .dropdown a:hover {
             background-color:rgba(92, 154, 209, 0.1);
@@ -123,6 +140,11 @@
             }
         }
 
+        
+        .fw-less-bold {
+            font-weight: 500;
+            color:#2e2e2e;
+        }
         #filter_value {
             width: 250px !important;
         }
