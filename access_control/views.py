@@ -6,14 +6,8 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.shortcuts import render
 from .models import Product, Folder, Document, AccessPermission
-from partners.models import Partnership  
-from users.models import UserProfile
 from django.contrib.auth.models import User
 from django.contrib import messages
-from django.views.decorators.csrf import csrf_exempt
-from django.core.exceptions import ObjectDoesNotExist
-from django.core.cache import cache
-from django.db.models import Q
 from collections import defaultdict
 from django.db.models import Prefetch
 from django.urls import reverse
@@ -21,82 +15,10 @@ from .forms import AccessPermissionForm
 from django.db import transaction
 from partners.utils import get_partner_info
 from companies.models import CompanyProfile
-
-
-
-@login_required
-def get_access_details(request, product_id):
-    #try:
-    # Query AccessPermission instances related to the given product_id
-    access_permissions = AccessPermission.objects.filter(
-            Q(product_id=product_id) |
-            Q(folder__product_id=product_id) |
-            Q(document__folder__product_id=product_id)
-        ).distinct().select_related('partner2', 'folder', 'document')        
-
-    access_details = []
-    for access in access_permissions:
-        if access.document:
-            document_name = os.path.basename(access.document.file.name)  # Using os.path.basename to get the file name
-            access_level = f'Document: {document_name}'
-        elif access.folder:
-            access_level = f'Folder: {access.folder.name}'
-        else:
-            access_level = 'Product Access'
-
-        access_details.append({
-            'id': access.id,
-            'partnerName': access.partner2.username,
-            'accessLevel': access_level
-        })
-    data = {'accessDetails': access_details}
-
-    return JsonResponse(data)
-
-
-
-def initialize_folder_hierarchy(folder, structure, is_root=True):
-    """
-    Initialize the folder structure, including all ancestors, and return the structure of the current folder.
-    """
-    if not folder:
-        return structure
-    
-    current_structure = structure
-    ancestors = folder.get_ancestors(include_self=True)
-    for ancestor in ancestors[:-1]:  # Exclude the last item for special handling
-        if ancestor.id not in current_structure:
-            current_structure[ancestor.id] = {
-                'name': ancestor.name,
-                'documents': [],
-                'subfolders': defaultdict(dict),
-                'is_root': is_root
-            }
-        current_structure = current_structure[ancestor.id]['subfolders']
-        is_root = False  # Only the first ancestor is considered root
-
-    # Handle the last item (the current folder)
-    current_folder = ancestors[-1]
-    if current_folder.id not in current_structure:
-        current_structure[current_folder.id] = {
-            'name': current_folder.name,
-            'documents': [],
-            'subfolders': defaultdict(dict),
-            'is_root': is_root
-        }
-    
-    return current_structure[current_folder.id]
-
-def convert_defaultdict_to_dict(d):
-    """
-    Recursively convert a defaultdict to a regular dict.
-    This function is crucial for ensuring the template can iterate over the data.
-    """
-    if isinstance(d, defaultdict):
-        d = {k: convert_defaultdict_to_dict(v) for k, v in d.items()}
-    elif isinstance(d, dict):  # Additional check to recursively convert nested defaultdicts
-        d = {k: convert_defaultdict_to_dict(v) for k, v in d.items()}
-    return d
+from .utils import get_partners_with_access
+from django.http import JsonResponse
+from django.db.models import Q
+from users.models import UserProfile
 
 @login_required
 def view_access(request):
@@ -170,40 +92,117 @@ def view_access(request):
 
 
 @login_required
+def fetch_partner_access_details(request, product_id, partner_id):
+    # Ensure the user requesting this page is the product owner or has permission to view this information
+    product = get_object_or_404(Product, id=product_id)
+    partner = User.objects.get(id=partner_id)
+
+    if product.user != request.user:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+
+    product_access = AccessPermission.objects.filter(partner2=partner, product=product, folder__isnull=True, document__isnull=True).exists()
+    # Fetch access details for the given partner and product
+    folders_access = AccessPermission.objects.filter(partner2_id=partner_id, product_id=product_id, folder__isnull=False).values_list('folder_id', flat=True)
+    documents_access = AccessPermission.objects.filter(partner2_id=partner_id, product_id=product_id, document__isnull=False).values_list('document_id', flat=True)
+
+    # Convert querysets to lists (as querysets are not JSON serializable directly)
+    folders_access_list = list(folders_access)
+    documents_access_list = list(documents_access)
+
+    # Return the access details as a JSON response
+    return JsonResponse({
+        'folders': folders_access_list,
+        'documents': documents_access_list,
+        'product_access': product_access,
+    })
+
+
+
+@login_required
+@require_POST
+def update_access(request, product_id):
+    product = get_object_or_404(Product, pk=product_id)
+    if product.user != request.user:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+
+    partner_ids = request.POST.getlist('partners')
+    selected_folder_ids = set(request.POST.getlist('folders'))  # IDs of selected folders
+    selected_document_ids = set(request.POST.getlist('documents'))  # IDs of selected documents
+
+    # Retrieve all folder and document IDs within the product for comparison
+    all_folder_ids = set(Folder.objects.filter(product=product).values_list('id', flat=True))
+    all_document_ids = set(Document.objects.filter(folder__product=product).values_list('id', flat=True))
+
+    try:
+        changes_made = False
+        for partner_id in partner_ids:
+            partner = get_object_or_404(User, pk=partner_id)
+
+            # Determine if full access is already granted
+            full_access = AccessPermission.objects.filter(
+                partner1=request.user,
+                partner2=partner,
+                product=product,
+                folder__isnull=True,
+                document__isnull=True
+            ).exists()
+
+            # Grant or adjust access based on selections
+            if selected_folder_ids == all_folder_ids and selected_document_ids == all_document_ids:
+                if not full_access:
+                    # Remove any existing specific permissions and grant full product access
+                    AccessPermission.objects.filter(partner1=request.user, partner2=partner, product=product).delete()
+                    AccessPermission.objects.create(partner1=request.user, partner2=partner, product=product)
+                    changes_made = True
+            else:
+                # Manage specific permissions
+                existing_permissions = AccessPermission.objects.filter(partner1=request.user, partner2=partner, product=product)
+                existing_folder_ids = {str(permission.folder_id) for permission in existing_permissions if permission.folder_id}
+                existing_document_ids = {str(permission.document_id) for permission in existing_permissions if permission.document_id}
+
+                folders_to_add = selected_folder_ids - existing_folder_ids
+                documents_to_add = selected_document_ids - existing_document_ids
+                folders_to_remove = existing_folder_ids - selected_folder_ids
+                documents_to_remove = existing_document_ids - selected_document_ids
+
+                if folders_to_add or documents_to_add or folders_to_remove or documents_to_remove:
+                    changes_made = True
+                    # Remove full access if previously granted
+                    if full_access:
+                        AccessPermission.objects.filter(partner1=request.user, partner2=partner, product=product, folder__isnull=True, document__isnull=True).delete()
+
+                    # Adjust specific permissions
+                    AccessPermission.objects.filter(partner1=request.user, partner2=partner, product=product, folder_id__in=folders_to_remove).delete()
+                    AccessPermission.objects.filter(partner1=request.user, partner2=partner, product=product, document_id__in=documents_to_remove).delete()
+
+                    for folder_id in folders_to_add:
+                        folder = get_object_or_404(Folder, pk=folder_id)
+                        AccessPermission.objects.create(partner1=request.user, partner2=partner, product=product, folder=folder)
+
+                    for document_id in documents_to_add:
+                        document = get_object_or_404(Document, pk=document_id)
+                        AccessPermission.objects.create(partner1=request.user, partner2=partner, product=product, document=document)
+
+        if changes_made:
+            messages.success(request, "Access updated successfully.")
+        else:
+            messages.info(request, "No changes were made to access permissions.")
+
+    except Exception as e:
+        messages.error(request, str(e))
+
+    return redirect('access_control:manage_access', product_id=product_id)
+
+
+
+@login_required
 def manage_access(request, product_id):
     user = request.user
     partner_info = get_partner_info(user)
     product = get_object_or_404(Product, id=product_id)
-    permissions = AccessPermission.objects.filter(product=product).select_related('partner2', 'folder', 'document')
-
-    displayed_permissions = set()
-    partners_with_access = []
-
-    for permission in permissions:
-        company_profile = CompanyProfile.objects.filter(user_profile=permission.partner2.userprofile).first()
-        # Simplify by focusing on the highest level of access granted
-        if permission.folder is None and permission.document is None:
-            # Product-level access
-            access_detail = f"Product: {permission.product.product_name}"
-        elif permission.folder and not permission.folder.is_root:
-            # Specific folder access (non-root)
-            access_detail = f"Product: {permission.product.product_name}, Folder: {permission.folder.name}"
-        elif permission.document:
-            # Document access, ensuring it's not redundant with folder or product-level access
-            access_detail = f"Product: {permission.product.product_name}, Doc: {permission.document.display_filename}"
-        else:
-            continue  # Skip if it's root access or otherwise handled
-        
-        partners_with_access.append({
-            'access_detail': access_detail,
-            'company_name': company_profile.name if company_profile else "No Company Profile",
-            'company_email': company_profile.email if company_profile else "",
-            'company_role': company_profile.role if company_profile else "",
-            'permission_id': permission.id,
-            # Include any other fields you want from the CompanyProfile
-            
-        })
-
+    
+    partners_with_access = get_partners_with_access(product)
+    
     # Ensure the user requesting this page is the product owner
     if product.user != user:
         messages.error(request, "You are not authorized to manage access for this product.")
@@ -212,68 +211,60 @@ def manage_access(request, product_id):
     form = AccessPermissionForm(request.POST or None, user=user, product_id=product_id)
     # Processing form submission (grant access)
     if request.method == 'POST' and form.is_valid():
-        messages_list = []
         action = request.POST.get('action')
+        partners = form.cleaned_data['partners']  # This should be a queryset of User instances.
+        folder_ids = request.POST.getlist('folders')
+        document_ids = request.POST.getlist('documents')
+
         with transaction.atomic():
-            if action == 'remove_access':
+            if action == 'update_access':
                 request.session['last_active_tab'] = 'current'
-                permissions_to_remove = form.cleaned_data.get('remove_permissions', [])
-                removed_count = 0
-
-                if permissions_to_remove:
-                    for permission in permissions_to_remove:
-                        permission.delete()
-                        removed_count += 1
-
-                    if removed_count > 0:
-                        # If at least one permission was successfully removed
-                        messages.success(request, f"Access removed successfully for {removed_count} items.")
-                    else:
-                        # If the list was not empty, but no permissions were actually removed
-                        messages.error(request, "Could not remove access. Please try again.")
-                else:
-                    # If no permissions were selected for removal
-                    messages.info(request, "No changes were made. Please select access permissions for removal.")
-
-            
+                update_access(request, product.id)
             elif action == 'grant_access':
                 # Extracting selected partner IDs, folder IDs, and document IDs from form.cleaned_data
-                    request.session['last_active_tab'] = 'all'
-                    partners = form.cleaned_data['partners']  # This should be a queryset of User instances.
-                    folder_ids = request.POST.getlist('folders')
-                    folders = Folder.objects.filter(id__in=folder_ids)
-                    root_folder_selected = folders.filter(is_root=True).exists()
-                    document_ids = request.POST.getlist('documents')
-                    granting_product_level_access = not folder_ids and not document_ids or root_folder_selected
-                    granted_new_access = False
-                    redundant_access = False
+                request.session['last_active_tab'] = 'all'
+                total_folders = Folder.objects.filter(product=product).exclude(name='Root').values_list('id', flat=True)
+                total_documents = Document.objects.filter(folder__product=product).values_list('id', flat=True)
 
-                    for partner in partners:
-                        if granting_product_level_access:
-                            if grant_product_access(user, partner, product):
+                total_folder_ids = set(map(str, total_folders))
+                total_document_ids = set(map(str, total_documents))
+
+
+                all_folders_selected = total_folder_ids <= set(folder_ids)
+                all_documents_selected = total_document_ids <= set(document_ids)
+
+                granting_product_level_access = all_folders_selected and all_documents_selected
+
+                granted_new_access = False
+                redundant_access = False
+
+                for partner in partners:
+                    if granting_product_level_access:
+                        if grant_product_access(user, partner, product):
+                            granted_new_access = True
+                        else:
+                            redundant_access = True
+                    else:
+                        for folder_id in folder_ids:
+                            folder = get_object_or_404(Folder, id=folder_id)
+                            if grant_folder_or_document_access(user, partner, product, folder=folder):
                                 granted_new_access = True
                             else:
                                 redundant_access = True
-                        else:
-                            for folder_id in folder_ids:
-                                folder = get_object_or_404(Folder, id=folder_id)
-                                if grant_folder_or_document_access(user, partner, product, folder=folder):
-                                    granted_new_access = True
-                                else:
-                                    redundant_access = True
-                            for document_id in document_ids:
-                                document = get_object_or_404(Document, id=document_id)
-                                if grant_folder_or_document_access(user, partner, product, document=document):
-                                    granted_new_access = True
-                                else:
-                                    redundant_access = True
+                        for document_id in document_ids:
+                            document = get_object_or_404(Document, id=document_id)
+                            if grant_folder_or_document_access(user, partner, product, document=document):
+                                granted_new_access = True
+                            else:
+                                redundant_access = True
 
-                    if granted_new_access:
-                        messages.success(request, "Access granted successfully.")
-                    elif redundant_access:
-                        messages.info(request, "No new access was granted. Existing access was sufficient.")
-                    else:
-                        messages.warning(request, "No access changes were made. Please select partners and items for granting access.")
+                if granted_new_access:
+                    messages.success(request, "Access granted successfully.")
+                elif redundant_access:
+                    messages.info(request, "No new access was granted. Existing access was sufficient.")
+                else:
+                    messages.warning(request, "No access changes were made. Please select partners and items for granting access.")
+
             else:
                 request.session['last_active_tab'] = 'all'
 
@@ -285,7 +276,6 @@ def manage_access(request, product_id):
         form = AccessPermissionForm(user=request.user, product_id=product_id)
         
     # Fetching active partnerships, folders, and documents as before for display
-
     root_folders = Folder.objects.filter(product=product, parent__isnull=True)
     documents = Document.objects.filter(folder__in=root_folders)
 
@@ -320,27 +310,43 @@ def manage_access(request, product_id):
 
 
 def grant_product_access(user, partner, product):
-    # First, remove any specific folder/document-level permissions.
-    AccessPermission.objects.filter(
-        product=product, 
-        partner1=user, 
-        partner2=partner
-    ).exclude(
-        folder__isnull=True, 
-        document__isnull=True
-    ).delete()
-
-    # Next, get or create a single product-level permission.
-    _, created = AccessPermission.objects.get_or_create(
+    # Check if a product-level permission already exists to avoid redundant operations
+    existing_permission = AccessPermission.objects.filter(
         product=product, 
         partner1=user, 
         partner2=partner,
-        defaults={'folder': None, 'document': None}
-    )
-    # If a new product-level permission was created, indicate so.
-    if created:
-        AccessPermission.objects.filter(product=product, partner2=partner).exclude(id=_.id).delete()
-    return created
+        folder__isnull=True, 
+        document__isnull=True
+    ).first()
+
+    if existing_permission:
+        # If it exists, ensure no other permissions exist
+        AccessPermission.objects.filter(
+            product=product, 
+            partner1=user, 
+            partner2=partner
+        ).exclude(
+            id=existing_permission.id
+        ).delete()
+        return False  # No new permission was created
+    else:
+        # Create a product-level permission
+        permission, created = AccessPermission.objects.get_or_create(
+            product=product,
+            partner1=user,
+            partner2=partner,
+            defaults={'folder': None, 'document': None}
+        )
+        # Ensure no other permissions exist
+        if created:
+            AccessPermission.objects.filter(
+                product=product, 
+                partner1=user, 
+                partner2=partner
+            ).exclude(
+                id=permission.id
+            ).delete()
+        return created
     
 
 def grant_folder_or_document_access(user, partner, product, folder=None, document=None):
@@ -381,3 +387,111 @@ def grant_folder_or_document_access(user, partner, product, folder=None, documen
         return created
 
     return False
+
+
+@login_required
+def get_partners_with_access_json(request, item_id, item_type):
+    if item_type not in ['document', 'folder']:
+        return JsonResponse({'error': 'Invalid item type'}, status=400)
+    
+    item_model = Document if item_type == "document" else Folder
+    item = get_object_or_404(item_model, pk=item_id)
+
+    if item_type == "folder":
+        item = get_object_or_404(Folder, pk=item_id)
+        product_condition = Q(product=item.product)
+    elif item_type == "document":
+        item = get_object_or_404(Document, pk=item_id)
+        product_condition = Q(product=item.folder.product)  # Assuming Document is related to Folder which in turn is related to Product
+
+    # Filter for specific item or product-level permissions
+    permissions = AccessPermission.objects.filter(
+        Q(**{item_type: item}) | product_condition & Q(folder__isnull=True, document__isnull=True)
+    ).distinct().select_related('partner2').prefetch_related(
+        Prefetch('partner2__userprofile', queryset=UserProfile.objects.select_related('companyprofile'))
+    )
+
+    partners_data = []
+    for permission in permissions:
+        user_profile = getattr(permission.partner2, 'userprofile', None)
+        company_profile = getattr(user_profile, 'companyprofile', None) if user_profile else None
+        partners_data.append({
+            'partner2_id': permission.partner2.id,
+            'company_name': getattr(company_profile, 'name', 'N/A'),
+            'company_role': getattr(company_profile, 'role', 'N/A').capitalize(),
+            'access_detail': 'Full Access'
+        })
+
+    return JsonResponse(partners_data, safe=False)
+
+
+
+@login_required
+@require_POST
+def remove_access(request, product_id, partner_id):
+    request.session['last_active_tab'] = 'current'
+    if request.user.is_authenticated:
+        product = get_object_or_404(Product, pk=product_id)
+        if product.user != request.user:
+            return JsonResponse({'success': False, 'error': 'Unauthorized'}, status=403)
+        
+        AccessPermission.objects.filter(product=product, partner2_id=partner_id).delete()
+        
+        return JsonResponse({'success': True})
+    return JsonResponse({'success': False, 'error': 'Unauthorized'}, status=404)
+
+
+@login_required
+@require_POST
+def remove_specific_access(request, product_id, entity_type, entity_id):
+    product = get_object_or_404(Product, pk=product_id)
+    if product.user != request.user:
+        return JsonResponse({'success': False, 'error': 'Unauthorized'}, status=403)
+
+    entity_model = None
+    if entity_type == 'folder':
+        entity_model = get_object_or_404(Folder, pk=entity_id)
+    elif entity_type == 'document':
+        entity_model = get_object_or_404(Document, pk=entity_id)
+    
+    if entity_model and AccessPermission.objects.filter(product=product, partner2_id=request.POST.get('partner_id'), **{entity_type: entity_model}).exists():
+        AccessPermission.objects.filter(product=product, partner2_id=request.POST.get('partner_id'), **{entity_type: entity_model}).delete()
+        return JsonResponse({'success': True})
+    
+    return JsonResponse({'success': False, 'error': 'Not Found'}, status=403)
+
+
+@login_required
+@require_POST
+def remove_specific_access(request, product_id, entity_type, entity_id):
+    # Check if the product exists and the user has rights
+    product = get_object_or_404(Product, pk=product_id)
+    if product.user != request.user:
+        return JsonResponse({'success': False, 'error': 'Unauthorized'}, status=403)
+    
+    # Determine the entity model based on the type
+    entity_model = None
+    if entity_type == 'folder':
+        entity_model = get_object_or_404(Folder, pk=entity_id)
+    elif entity_type == 'document':
+        entity_model = get_object_or_404(Document, pk=entity_id)
+    
+    # Get partner_id from POST data
+    partner_id = request.POST.get('partner_id')
+    if not partner_id:
+        return JsonResponse({'success': False, 'error': 'Partner ID is required'}, status=400)
+
+    # Perform the deletion if the permission exists
+    if entity_model:
+        permission_qs = AccessPermission.objects.filter(
+            product=product,
+            partner2_id=partner_id,
+            **{entity_type: entity_model}
+        )
+        if permission_qs.exists():
+            permission_qs.delete()
+            return JsonResponse({'success': True})
+        else:
+            return JsonResponse({'success': False, 'error': 'No such permission'}, status=404)
+    
+    return JsonResponse({'success': False, 'error': 'Invalid entity type'}, status=400)

@@ -1,0 +1,48 @@
+<style>
+    .modal-content-lg {
+        width: 100%; /* Could be more or less, depending on screen size */
+        max-width: 1280px; /* Maximum width */
+    }
+    .version-table {
+        width: 100%;
+        table-layout: fixed;
+    }
+    .version-table th, .version-table td {
+        overflow: hidden; /* Ensures content doesn't overflow */
+        text-overflow: ellipsis; /* Adds an ellipsis if the text overflows */
+        white-space: nowrap; /* Keeps the content on a single line */
+        text-align: center;
+    }
+    .version-table th:nth-child(1) { width: 10%; } /* Version */
+    .version-table th:nth-child(2) { width: 40%; } /* Filename */
+    .version-table th:nth-child(3) { width: 25%; } /* Last Modified */
+    .version-table th:nth-child(4) { width: 15%; } /* Uploader */
+    .version-table th:nth-child(5) { width: 10%; } /* Actions */
+</style>
+
+<div class="modal fade" id="documentVersionsModal" tabindex="-1" aria-labelledby="documentVersionsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content modal-content-lg">
+            <div class="modal-header border-0">
+                <h5 class="modal-title" id="documentVersionsModalLabel">Document Versions</h5>
+            </div>
+            <div class="modal-body">
+                <table class="table version-table">
+                    <thead>
+                        <tr class="small">
+                            <th>Version</th>
+                            <th class="">Filename</th>
+                            <th>Last Modified</th>
+                            <th>Uploader</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="versionList" class="small"></tbody>
+                </table>
+            </div>
+            <div class="modal-footer border-0 p-0">
+                <button type="button" class="btn text-primary-custom text-15" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>

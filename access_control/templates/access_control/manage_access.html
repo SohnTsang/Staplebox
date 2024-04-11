@@ -7,6 +7,46 @@
 
 {% block extra_css %}
 <style>
+.custom-modal {
+    display: none; /* Hidden by default */
+    position: fixed;
+    z-index: 1051; /* Slightly above message popup */
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgba(0,0,0,0.4); /* Dim background */
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 15% auto; /* 15% from the top and centered */
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%; /* Could be more or less, depending on screen size */
+    max-width: 500px; /* Maximum width */
+}
+
+.modal-header, .modal-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.close-modal-btn {
+    cursor: pointer;
+    border: none;
+    background: none;
+}
+
+.modal-header h5 {
+    margin: 0;
+}
+
+.modal-body p {
+    margin: 15px 0;
+}
 
 .table > :not(caption) > * > * {
   color: var(--bs-table-color-state, var(--bs-table-color-type, var(--bs-table-color)));
@@ -32,6 +72,9 @@
 
 }
 
+.list-group-item:focus-within, .list-group-item:active {
+    background-color: #1e7bee44; /* Adjust color to suit your design */
+}
 
 .list-group-item:not(:focus):not(:active):hover {
     background-color: #7e9abe22; /* Lighter background color on hover */
@@ -42,6 +85,9 @@
     background-color: #1e7bee44 !important; /* Keep background color when active/focused */
 }
 
+.list-group-item.focus {
+    background-color: #1e7bee44 !important; /* Keep background color when active/focused */
+}
 
 /* Wrapping div for responsive table with max-height and vertical scrolling */
 .table-responsive {
@@ -108,6 +154,73 @@
     }
 }
 
+.img-wrapper {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+
+}
+
+.img-wrapper img{
+    cursor: pointer;
+}
+
+.img-wrapper:hover::before {
+    content: '';
+    position: absolute;
+    width: 36px; /* Adjust based on the desired size of the circle */
+    height: 36px; /* Same as width to make it a circle */
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.1); /* Example background color */
+    z-index: 1;
+}
+
+
+.tooltip-text {
+    visibility: hidden;
+    width: 100px;
+    font-size:13px;
+    background-color: #2e2e2e;
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 5px 0;
+    position: absolute;
+    z-index: 1;
+    top: 100%;
+    left: 50%;
+    margin-left: -20px; /* Use half of the width to center the tooltip */
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    z-index: 1000;
+}
+
+.img-wrapper:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+.img-wrapper img {
+    z-index: 9999;
+}
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+}
+
+.action-button-bar {
+    text-align: right; /* Aligns the button to the right */
+    padding-right: 20px; /* Provides some padding on the right */
+}
+
 </style>
 {% endblock extra_css %}
 
@@ -115,20 +228,6 @@
 
 {% block content %}
 
-
-{% if messages %}
-    <div class="container mt-3">
-        <div class="row">
-            <div class="col-12">
-                <ul class="messages list-unstyled">
-                    {% for message in messages %}
-                        <li{% if message.tags %} class="alert {{ message.tags }}"{% endif %}>{{ message }}</li>
-                    {% endfor %}
-                </ul>
-            </div>
-        </div>
-    </div>
-{% endif %}
 
 <div class="container mt-5">
     <div class="row">
@@ -145,7 +244,7 @@
                                 <div class="button-text small">All</div>
                             </button>
                         </li>
-                        <li class="nav-item col-6" role="presentation">
+                        <li class="nav-item col-6 border-0" role="presentation">
                             <button class="nav-link tab-link py-2-custom {% if last_active_tab == 'current' %}active{% endif %}" id="current-tab" data-bs-toggle="tab" data-bs-target="#current" type="button" role="tab" aria-controls="sent" aria-selected="{% if last_active_tab == 'current' %}true{% else %}false{% endif %}">
                                 <div class="button-text small">Granted</div>
                             </button>
@@ -154,20 +253,21 @@
                 </div>
                 <div class="tab-content" id="information">
                     <div class="tab-pane fade {% if last_active_tab == 'all' %}show active{% endif %}" id="all" role="tabpanel" aria-labelledby="all-tab">
-                        <div class="list-group" id="access-information">
-                            <form method="post" action="{% url 'access_control:manage_access' product.id %}">
-                                {% csrf_token %}
-                                <div class="list-group">
+                        <div class="list-group" id="all-partners">
+                            <div class="col-12 mb-3">
+                                <form method="post" action="{% url 'access_control:manage_access' product.id %}">
+                                    {% csrf_token %}
                                     {% for partner in partners %}
-                                    <div class="list-group-item flex-column align-items-start">
+                                    <div class="list-group-item flex-column">
                                         <div class="d-flex py-1">
-                                            <div class="" style="align-self: center;">
+                                            <div class="visually-hidden" style="align-self: center;">
                                                 <!-- Ensure the name is correctly set for collecting multiple partner IDs -->
                                                 <input type="checkbox" name="partners" value="{{ partner.partner_id }}" id="partner_{{ partner.partner_id }}">
                                             </div>
                                             <div class="ps-3">
                                                 <div class="fw-bold">{{ partner.company_name }}</div>
-                                                <div class="text-primary-custom fw-medium">{{ partner.company_role|title }}</div>
+                                                <div class="text-primary-custom fw-medium small">{{ partner.company_role|title }}</div>
+                                                
                                             </div>
                                             
                                             <div class="dropdown">
@@ -181,46 +281,59 @@
                                         <small class="text-center mt-3">Partners added will be shown here</small>
                                     </div>
                                     {% endfor %}
-                                </div>
-                                <div class="row mt-3">
-                                    <div class="col-12">
-                                        <div>
-                                            <!-- This button now submits the form enclosing the partner checkboxes -->
-                                            <button type="submit" name="action" value="grant_access" class="btn btn-primary">Grant Access</button>
+                                    <div class="row mt-3">
+                                        <div class="col-12">
+                                            <div>
+                                                <!-- This button now submits the form enclosing the partner checkboxes -->
+                                                <button type="submit" name="action" value="grant_access" class="btn btn-primary">Grant Access</button>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            </form>
+                                </form>
+                            </div>
                         </div>
                     </div>
                     <div class="tab-pane fade {% if last_active_tab == 'current' %}show active{% endif %}" id="current" role="tabpanel" aria-labelledby="current-tab">
                         <div class="list-group" id="current-access">
                             <div class="col-12 mb-3">
-                                <div class="list-group" id="partners-with-access">
-                                    {% for access in partners_with_access %}
-                                    <div class="list-group-item list-group-item-action d-flex align-items-center">
-                                        <div class="d-flex align-items-center me-3">
-                                            <!-- This space can be used for other elements if needed -->
+                                <div class="" id="partners-with-access">
+                                    <form method="post" action="{% url 'access_control:manage_access' product.id %}">
+                                        {% csrf_token %}
+                                        <div class="toolbar d-flex justify-content-start ps-3 py-1 gap-4 rounded-pill" style="background-color: #1e7bee33;">
+                                            <div class="align-content-center">
+                                                <button type="submit" name="action" value="update_access" class="btn d-flex align-items-center justify-content-center img-wrapper">
+                                                    <img src="{% static 'images/navbar_icon/update_access.png' %}" alt="Update Access" class="text-center" style="align-self:center;" width="21.7237" height="20">
+                                                    <span class="tooltip-text">Update Access</span>
+                                                </button>
+                                            </div>
                                         </div>
-                                        <div class="flex-grow-1 d-flex flex-column">
-                                            <div class="fw-bold">{{ access.company_name }}</div>
-                                            <div class="fw-bold">{{ access.company_email }}</div>
-                                            <div>{{ access.access_detail }}</div>
+                                        {% for access in partners_with_access %}
+                                        <div class="list-group-item list-group-item-action partner-access-item" data-partner-id="{{ access.partner2_id }}" tabindex="0">
+                                            
+                                            <div class="d-flex py-1">
+                                                
+                                                <div class="visually-hidden" style="align-self: center;">
+                                                    <input type="radio" name="partners" value="{{ access.partner2_id }}" id="partner_{{ access.partner2_id }}">
+                                                </div>
+                                                    <div class="flex-grow-1 d-flex flex-column ms-3">
+                                                        <div class="fw-bold">{{ access.company_name }}</div>
+                                                        <div class="text-primary-custom fw-medium small">{{ access.company_role|title }}</div>
+                                                        <div class="small">{{ access.access_detail }}</div>
+                                                        
+                                                    </div>
+                                                    <button type="button" class="btn btn-danger btn-sm remove-access" data-partner-id="{{ access.partner2_id }}" onclick="removeAccess(this.getAttribute('data-partner-id'))" style="align-self:center;">Remove</button>
+
+                                                <!-- Remove Button Form -->
+                                                
+                                            </div>
                                         </div>
-                                        <!-- Remove Button Form -->
-                                        <form action="{% url 'access_control:manage_access' product.id %}" method="post">
-                                            {% csrf_token %}
-                                            <input type="hidden" name="action" value="remove_access">
-                                            <input type="hidden" name="remove_permissions" value="{{ access.permission_id }}">
-                                            <button type="submit" value="remove_access" class="btn btn-danger btn-sm" data-tab="#current">Remove</button>
-                                        </form>
-                                    </div>
-                                    {% empty %}
-                                    <div class="list-group" id="all-partners">
-                                        <img src="{% static 'images/empty_state/no_partners.png' %}" alt="No Parnters" class="mt-5 text-center" style="align-self:center;" width="210" height="190">
-                                        <small class="text-center mt-3">Partners granted access will be shown here</small>
-                                    </div>
-                                    {% endfor %}
+                                        {% empty %}
+                                        <div class="list-group" id="all-partners">
+                                            <img src="{% static 'images/empty_state/no_partners.png' %}" alt="No Parnters" class="mt-5 text-center" style="align-self:center;" width="210" height="190">
+                                            <small class="text-center mt-3">Partners granted access will be shown here</small>
+                                        </div>
+                                        {% endfor %}
+                                    </form>
                                 </div>
                             </div>
                         </div>
@@ -235,13 +348,20 @@
                 <div class="title">
                     <h4 class="text-primary-custom fw-bold px-3">{{ product.product_name }}</h4>
                 </div>
+                <div class="toolbar d-flex justify-content-start ps-3 py-2 gap-4 rounded-pill" style="background-color: #1e7bee33;">
+                    <div class="align-content-center">
+                        <!-- Checkbox as 'All' option -->
+                        <input type="checkbox" id="selectAll" class="">
+                        <label for="selectAll" class="ms-1">All</label>
+                    </div>
+                </div>
                 <div class="table-responsive border-0">
                     <table class="table">
                         <thead class="sticky">
                             <tr class="">
                                 <th class="ps-3 py-2-custom">Name</th>
-                                <th class="d-md-none d-lg-table-cell py-2-custom">Type</th>
-                                <th class="py-2-custom">Date Modified</th>
+                                <th class="d-none d-md-none d-lg-table-cell py-2-custom">Type</th>
+                                <th class="d-none d-sm-none d-md-table-cell py-2-custom">Date Modified</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -256,46 +376,229 @@
     </div>
 </div>
 
-
+<!-- Custom Confirmation Modal -->
+<div id="confirmationModal" class="custom-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h5>Confirm Removal</h5>
+            <button type="button" class="close-modal-btn">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>Are you sure you want to remove access?</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" value="remove_access" id="confirmBtn" class="btn btn-danger">Remove</button>
+            <button type="button" class="btn btn-secondary close-modal-btn">Cancel</button>
+        </div>
+    </div>
+</div>
 
 {% block javascript %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="{% static 'products/js/access_control.js' %}"></script>
+
+<script>
+    
+var removeAccessBaseUrl = "{% url 'access_control:remove_access' product.id 9999 %}".replace('/9999', '');
+
+function showMessage(message, type) {
+    // Assuming type can be 'success' or 'error' to add specific styling if needed
+    const messagePopup = document.createElement('div');
+    messagePopup.className = `message-popup ${type} rounded shadow-sm`;
+    messagePopup.innerHTML = `<div class="alert">${message}</div>`;
+    document.body.appendChild(messagePopup);
+
+    // Slide down animation
+    messagePopup.style.top = "20px"; // Adjust if necessary
+
+}
+    
+function removeAccess(partnerId) {
+    
+    document.getElementById('confirmationModal').style.display = 'block';
+
+    document.getElementById('confirmBtn').onclick = function() {
+        const url = `${removeAccessBaseUrl}${partnerId}/`;
+        const data = { 'csrfmiddlewaretoken': '{{ csrf_token }}' };
+        $.post(url, data, function(response) {
+            if(response.success) {
+                sessionStorage.setItem('message', 'Access removed successfully.');
+                sessionStorage.setItem('messageType', 'success');
+            } else {
+                sessionStorage.setItem('message', 'Failed to remove access. Please try again.');
+                sessionStorage.setItem('messageType', 'error');
+            }
+        }).fail(function() {
+            sessionStorage.setItem('message', 'Error connecting to the server. Please try again.');
+            sessionStorage.setItem('messageType', 'error');
+        }).always(function() {
+            location.reload(); // Reload the page to display the message
+        });
+    };
+    document.querySelectorAll('.close-modal-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.getElementById('confirmationModal').style.display = 'none';
+        });
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const message = sessionStorage.getItem('message');
+    const messageType = sessionStorage.getItem('messageType');
+
+    if (message && messageType) {
+        showMessage(message, messageType); // Use your existing showMessage function
+        sessionStorage.removeItem('message'); // Clear the message
+        sessionStorage.removeItem('messageType'); // Clear the message type
+    }
+});
+</script>
+
+<script>
+    // Define 'productId' at the top of your script or in a separate script block before using it
+    const productId = "{{ product.id }}"; // Dynamically set the productId using Django's template language
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Select all the .list-group-item elements within the #partners-with-access container
+        var clickableDivs = document.querySelectorAll('#all-partners #partners-with-access .list-group-item');
+    
+        clickableDivs.forEach(function(div) {
+            div.addEventListener('click', function() {
+                // Find the radio button inside the clicked div and check it
+                var radioButton = this.querySelector('input[type=radio]');
+                if (radioButton) {
+                    radioButton.checked = true;
+                }
+            });
+        });
+    });
+</script>
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {
-        // Select the form by its action attribute or any unique identifier
-        const form = document.querySelector('form[action="{% url 'access_control:manage_access' product.id %}"]');
-    
-        form.addEventListener("submit", function(event) {
-            // Prevent multiple submissions of hidden inputs if the form is submitted more than once
-            removeHiddenInputs();
-    
-            // Select all checked folder checkboxes
-            const selectedFolders = document.querySelectorAll('input[name="folders"]:checked');
-            // For each selected folder, create a hidden input in the form
-            selectedFolders.forEach(function(folder) {
-                const hiddenInput = document.createElement("input");
-                hiddenInput.type = "hidden";
-                hiddenInput.name = "folders";
-                hiddenInput.value = folder.value;
-                form.appendChild(hiddenInput);
+        const selectAllCheckbox = document.getElementById('selectAll');
+        const checkboxes = document.querySelectorAll('.table input[type="checkbox"]'); // Ensure this targets only the intended checkboxes
+
+        selectAllCheckbox.addEventListener('change', function() {
+            const isChecked = this.checked;
+            checkboxes.forEach(function(checkbox) {
+                checkbox.checked = isChecked;
+                // Manually dispatch a 'change' event for each checkbox
+                const event = new Event('change', {
+                    'bubbles': true, // Allow the event to bubble up through the DOM
+                    'cancelable': true // Allow the event to be cancellable
+                });
+                checkbox.dispatchEvent(event);
             });
-    
-            // Select all checked document checkboxes
-            const selectedDocuments = document.querySelectorAll('input[name="documents"]:checked');
-            // For each selected document, create a hidden input in the form
-            selectedDocuments.forEach(function(document) {
-                const hiddenInput = document.createElement("input");
-                hiddenInput.type = "hidden";
-                hiddenInput.name = "documents";
-                hiddenInput.value = document.value;
-                form.appendChild(hiddenInput);
+        });
+    });
+</script>
+
+<!-- fetch clicked partner access and show in the folder explorer -->
+<script>
+    function fetchPartnerAccessDetails(partnerId) {
+        const url = `/access_control/fetch_access_details/${productId}/${partnerId}/`;
+        fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                updateAccessCheckboxes(data.folders, data.documents, data.product_access);
+            })
+            .catch(error => console.error('Error fetching access details:', error));
+    }
+
+    function updateAccessCheckboxes(folders, documents, grantingProductLevelAccess) {
+        // Reset all checkboxes
+        document.querySelectorAll('input[name="folders"], input[name="documents"]').forEach(input => {
+            input.checked = false; // Reset checkbox state
+        });
+
+        // Check the 'selectAll' checkbox based on grantingProductLevelAccess
+        const selectAllCheckbox = document.getElementById('selectAll');
+        if(grantingProductLevelAccess) {
+            selectAllCheckbox.checked = true;
+        } else {
+            selectAllCheckbox.checked = false;
+        }
+        // Manually dispatch a change event for the 'selectAll' checkbox
+        selectAllCheckbox.dispatchEvent(new Event('change', { 'bubbles': true }));
+
+        // Check folders and documents as before
+        folders.forEach(folderId => {
+            const folderCheckbox = document.querySelector(`input[name="folders"][value="${folderId}"]`);
+            if (folderCheckbox) {
+                folderCheckbox.checked = true;
+                folderCheckbox.dispatchEvent(new Event('change', { 'bubbles': true }));
+            }
+        });
+
+        documents.forEach(documentId => {
+            const documentCheckbox = document.querySelector(`input[name="documents"][value="${documentId}"]`);
+            if (documentCheckbox) {
+                documentCheckbox.checked = true;
+                documentCheckbox.dispatchEvent(new Event('change', { 'bubbles': true }));
+            }
+        });
+    }
+    document.addEventListener("DOMContentLoaded", function() {
+        const partnerItems = document.querySelectorAll(".partner-access-item");
+        partnerItems.forEach(item => {
+            item.addEventListener("click", function() {
+                const partnerId = this.dataset.partnerId;
+                fetchPartnerAccessDetails(partnerId);
             });
+        });
+    });
+</script>
+
     
-            // No need to call event.preventDefault() as we want to submit the form
+<!-- Submit form action of manage_access with folder and document ids-->
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Select both forms by their action attribute or any unique identifier
+        const forms = document.querySelectorAll('form[action="{% url 'access_control:manage_access' product.id %}"]');
+    
+        forms.forEach((form) => {
+            form.addEventListener("submit", function(event) {
+                // Prevent multiple submissions of hidden inputs if the form is submitted more than once
+                removeHiddenInputs(form);
+    
+                // Assuming you want to keep using 'folders' and 'documents' as names for the checkboxes
+                // You'll need to ensure these inputs exist in your HTML
+    
+                // Select all checked folder checkboxes
+                const selectedFolders = document.querySelectorAll('input[name="folders"]:checked');
+                // For each selected folder, create a hidden input in the form
+                selectedFolders.forEach(function(folder) {
+                    const hiddenInput = document.createElement("input");
+                    hiddenInput.type = "hidden";
+                    hiddenInput.name = "folders";
+                    hiddenInput.value = folder.value;
+                    form.appendChild(hiddenInput);
+                });
+    
+                // Select all checked document checkboxes
+                const selectedDocuments = document.querySelectorAll('input[name="documents"]:checked');
+                // For each selected document, create a hidden input in the form
+                selectedDocuments.forEach(function(docItem) { // Renamed parameter to avoid conflict
+                    const hiddenInput = document.createElement("input");
+                    hiddenInput.type = "hidden";
+                    hiddenInput.name = "documents";
+                    hiddenInput.value = docItem.value; // Updated variable name here as well
+                    form.appendChild(hiddenInput);
+                });
+    
+                // No need to call event.preventDefault() as we want to submit the form
+            });
         });
     
-        function removeHiddenInputs() {
+        function removeHiddenInputs(form) {
             // Remove any previously added hidden inputs for folders and documents
             const hiddenFolderInputs = form.querySelectorAll('input[type="hidden"][name="folders"]');
             const hiddenDocumentInputs = form.querySelectorAll('input[type="hidden"][name="documents"]');
@@ -306,7 +609,98 @@
     });
 </script>
 
+<!-- Preserve Focus State on Click and Clear Focus on Tab Change or Selecting Another User with clear all checkboxes checked in folder explorer -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+// Track the currently focused list item
+    let currentlyFocusedItem = null;
+    
+    // Add click event listeners to all radio buttons
+    document.querySelectorAll('.list-group-item-action').forEach(item => {
+        item.addEventListener('click', function(event) {
+            const radioButton = this.querySelector('input[type="radio"]');
+            // If there's a previously focused item, remove the focus class
+            if (currentlyFocusedItem && currentlyFocusedItem !== this) {
+                currentlyFocusedItem.classList.remove('focus');
+            }
+            if (radioButton) {
+                radioButton.checked = true; // Explicitly set the radio button to checked
+                radioButton.dispatchEvent(new Event('change', { 'bubbles': true })); // Dispatch a change event
+            }
+            // Set the focus class on the newly clicked item
+            this.classList.add('focus');
+            currentlyFocusedItem = this; // Update the currently focused item
+        });
+    });
 
+    // Event listener for tab changes
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', function() {
+            if (currentlyFocusedItem) {
+                currentlyFocusedItem.classList.remove('focus');
+                clearAllCheckboxes();
+                currentlyFocusedItem = null; // Reset focus tracking
+            }
+        });
+    });
+});
+
+function clearAllCheckboxes() {
+    document.querySelectorAll('input[name="folders"], input[name="documents"]').forEach(input => {
+        input.checked = false;
+        input.dispatchEvent(new Event('change', { 'bubbles': true })); // Dispatch change event if needed
+    });
+    // Also, uncheck the 'selectAll' checkbox if applicable
+    const selectAllCheckbox = document.getElementById('selectAll');
+    if (selectAllCheckbox) {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.dispatchEvent(new Event('change', { 'bubbles': true }));
+    }
+}
+
+function resetSelections() {
+    // Uncheck all checkboxes in partner items
+    document.querySelectorAll('.list-group-item.flex-column input[type="checkbox"]').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+
+    // Remove focus class from all partner items
+    document.querySelectorAll('.list-group-item.flex-column').forEach(item => {
+        item.classList.remove('focus');
+    });
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    
+    const togglePartnerSelection = (element) => {
+        const checkbox = element.querySelector('input[type="checkbox"]');
+        checkbox.checked = !checkbox.checked; // Toggle the checked state
+
+        // Toggle active styling
+        if (checkbox.checked) {
+            
+            element.classList.add('focus');
+        } else {
+            element.classList.remove('focus');
+        }
+    };
+
+    // Listen for clicks on partner items
+    document.querySelectorAll('.list-group-item.flex-column').forEach(item => {
+        item.addEventListener('click', function() {
+            togglePartnerSelection(this);
+        });
+    });
+    
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', function() {
+            resetSelections();
+            clearAllCheckboxes();
+        });
+    });
+});
+
+</script>
 {% endblock %}
 
 {% endblock %}

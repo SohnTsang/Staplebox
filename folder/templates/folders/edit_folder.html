@@ -1,9 +1,16 @@
-{% extends "base.html" %}  {# or your base template #}
+
 {% block content %}
-<h2>Edit Folder</h2>
-<form method="post">
+<form method="post" action="{% url 'folder:edit_folder' product_id=product_id folder_id=folder_id %}">
     {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Save changes</button>
+    <div class="" style="margin-bottom: 20px;">
+        <input type="text" class="form-control" id="id_name" name="name" placeholder="Enter folder name" value="{{ form.name.value|default_if_none:'' }}" required>
+        <input type="hidden" id="id_parent" name="parent" value="{{ form.parent.value }}">
+    </div>
+    <div class="modal-footer border-0 p-0">
+        <button type="button" class="btn text-primary-custom text-15" data-bs-dismiss="modal">Close</button>
+        <button type="submit" class="btn fw-less-bold text-primary-custom text-15">Save</button>
+    </div>
 </form>
 {% endblock %}
+
+

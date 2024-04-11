@@ -21,6 +21,7 @@ from django.http import HttpResponseForbidden
 from django.utils.html import escape  # Use escape to prevent XSS attacks
 from .forms import DocumentEditForm  # Assuming you will create this form
 from django.utils import timezone 
+from django.utils.timezone import localtime
 
 
 #For checking file integrity
@@ -100,11 +101,11 @@ def edit_document(request, document_id):
                 # Update the original_filename to reflect the uploaded file's name
                 edited_instance.original_filename = uploaded_file.name
             edited_instance.save()
-            document.updated_at = timezone.now()  # Ensure to import timezone from django.utils
+            document.updated_at = timezone.now()  # Ensure to import timezone from django.utilsdocument.original_filename
             document.save(update_fields=['updated_at'])
             form.save_m2m()  # Required for saving ManyToMany fields if any
             
-            messages.success(request, 'Update successful.')
+            messages.success(request, 'Update successful')
             return redirect(reverse('products:product_explorer_folder', kwargs={
                 'product_id': document.folder.product_id, 
                 'folder_id': document.folder_id
@@ -118,6 +119,18 @@ def edit_document(request, document_id):
     })
 
 
+@login_required
+def ajax_get_document_details(request, document_id):
+    document = get_object_or_404(Document, id=document_id)
+    document_types = DocumentType.objects.all().values('id', 'type_name')
+    data = {
+        'document_type_id': document.document_type_id,
+        'document_types': list(document_types),
+        'original_filename': document.original_filename,
+        'comments': document.comments,
+    }
+    return JsonResponse(data)
+
 
 @login_required
 def document_versions(request, document_id):
@@ -126,10 +139,44 @@ def document_versions(request, document_id):
     # Directly fetch versions related to the document from DocumentVersion model
     versions = DocumentVersion.objects.filter(document=original_document).order_by('-version')
 
+
     return render(request, 'documents/document_versions.html', {
         'original_document': original_document,
         'versions': versions
     })
+
+
+
+@login_required
+def ajax_document_versions(request, document_id):
+    original_document = get_object_or_404(Document, id=document_id)
+    versions = DocumentVersion.objects.filter(document=original_document).order_by('-version')
+
+    versions_data = [{
+        'version': version.version,
+        'filename': version.original_filename,
+        'modified': localtime(version.created_at).strftime("%Y-%m-%d %H:%M"),
+        'uploader': version.uploaded_by.username,  # Assuming you have a method to get user's full name
+        'download_url': reverse('documents:download_document', kwargs={'document_id': original_document.id, 'version_id': version.id})
+    } for version in versions]
+
+    # Include the original document as Version 1 if not already included
+    if not versions or (versions and versions.last().version != 1):
+        versions_data.append({
+            'version': 1,
+            'filename': original_document.original_filename,
+            'modified': localtime(original_document.created_at).strftime("%Y-%m-%d %H:%M"),
+            'uploader': original_document.uploaded_by.username,
+            'download_url': reverse('documents:download_document', kwargs={'document_id': original_document.id})
+        })
+
+
+    data = {
+        'original_filename': original_document.original_filename,
+        'versions': versions_data
+    }
+    return JsonResponse(data)
+
 
 
 @login_required

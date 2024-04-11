@@ -1,105 +1,8 @@
 {% load static %}
 
 {% block extra_css %}
-<style>
 
-.modal-dialog-custom {
-    margin-top: 10vh; /* Default for most sizes */
-}
-
-/* For smaller screens, you might want to have less of a top margin */
-@media (max-width: 768px) {
-    .modal-dialog-custom {
-        margin-top: 5vh;
-    }
-}
-
-.drag-and-drop-area {
-    border: 2px dashed #cccccc;
-    text-align: center;
-    cursor: pointer;
-    margin-bottom: 20px;
-    position: relative;
-}
-
-.drag-and-drop-area label {
-
-    cursor: pointer;
-}
-
-.text-primary-custom:hover {
-    background-color: #2f82c033;
-}
-
-.text-15 {
-    font-size: 15px;
-
-}
-
-.drag-and-drop-area:hover {
-    background-color: #f9f9f9;
-}
-
-.upload-icon {
-    width: 50px; /* Adjust based on your needs */
-    margin-bottom: 10px;
-}
-
-#file-name {
-    display: block; /* Makes the file name appear on a new line */
-    margin-top: 10px;
-    color: #555;
-    font-style: italic;
-}
-
-textarea { 
-    resize: none;
-}
-
-
-.file-input {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    margin-bottom: 15px;
-    background-color: #f7f7f7;
-    padding: 10px;
-    border-radius: 5px;
-}
-
-.input-group {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-
-.file-name-input, .document-type-select {
-    flex-grow: 1;
-    padding: 3px 6px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    background-color: #fff;
-    font-size: 14px;
-}
-
-.remove-btn {
-    padding: 3px 6px;
-    background-color: #ff161a;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 14px;
-}
-
-.remove-btn:hover {
-    background-color: rgb(255, 90, 90);
-    color: rgb(255, 255, 255);
-}
-
-</style>
-{% endblock extra_css %}
-
+{% endblock %}
 
 <div class="modal fade" id="createFolderModal" tabindex="-1" aria-labelledby="createFolderModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-custom">
@@ -110,19 +13,18 @@ textarea {
             <div class="modal-body pt-0">
                     <form id="create-folder-form-modal" method="post" action="{% url 'products:folder_create' product_id=product.id %}">
                         {% csrf_token %}
-                        
-                            <div class="" style="margin-bottom: 20px;">
-                                <input type="text" style="font-size: 14px;" class="form-control" id="folderNameModal" name="name" placeholder="Enter folder name" required>
-                            </div>
-                            {% if current_folder %}
-                                <input type="hidden" id="parentFolderIdModal" name="parent_id" value="{{ current_folder.id }}">
-                            {% else %}
-                                <input type="hidden" id="parentFolderIdModal" name="parent_id" value="{{ root_folder.id }}">
-                            {% endif %}
+                        <div class="" style="margin-bottom: 20px;">
+                            <input type="text" style="font-size: 14px;" class="form-control" id="folderNameModal" name="name" placeholder="Enter folder name" required>
+                        </div>
+                        {% if current_folder %}
+                            <input type="hidden" id="parentFolderIdModal" name="parent_id" value="{{ current_folder.id }}">
+                        {% else %}
+                            <input type="hidden" id="parentFolderIdModal" name="parent_id" value="{{ root_folder.id }}">
+                        {% endif %}
                         <div class="modal-footer border-0 p-0">
                             <button type="button" class="btn text-primary-custom text-15" data-bs-dismiss="modal">Close</button>
                             <button type="submit" class="btn fw-less-bold text-primary-custom text-15">Create</button>
-                        
+                        </div>
                     </form>
                 </div>
             </div>

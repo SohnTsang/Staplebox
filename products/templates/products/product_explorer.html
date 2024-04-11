@@ -15,14 +15,19 @@ body {
     font-family: 'Inter', sans-serif;
 }
 
+a {
+    cursor: pointer;
+}
+
 .dropdown-menu {
     border-radius: 5px;
     font-size: 14px;
+    min-width: 200px;
 }
 
 .dropdown-menu li {
-    padding-top: 0.2rem;
-    padding-bottom: 0.2rem;
+    padding-top: 0.1rem;
+    padding-bottom: 0.1rem;
 }
 
 .btn-modern {
@@ -110,8 +115,10 @@ body {
 }
 
 #information {
+    position: relative;  /* This makes it the positioning context for the overlay */
     overflow-y: auto;
     display: block;
+    min-height: 300px;  /* Ensure it has a minimum height for better UX */
 }
 
 /* Sticky table header */
@@ -135,6 +142,10 @@ body {
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
+}
+
+.truncate-name a {
+    vertical-align: middle;
 }
 
 .truncate-original-name {
@@ -226,7 +237,7 @@ body {
     padding-top: 1rem;
 }
 
-.detail-item strong {
+.detail-item strong, .access-item strong{
     font-size: 0.95rem;
     display: block;
     color: rgb(44, 44, 44);
@@ -319,7 +330,7 @@ body {
                             <!-- Folders -->
                             {% for folder in subfolders %}
                             <!--<tr class="clickable-row" onclick="window.location='{% url 'products:product_explorer_folder' product_id=product.id folder_id=folder.id %}';">-->
-                                <tr class="clickable-row" data-owner="{{ folder.created_by }}" data-name="{{ folder.name }}" data-modified="{{ folder.updated_at|date:"Y-m-d H:i" }}" data-created="{{ folder.created_at|date:"Y-m-d H:i" }}" data-type="folder">
+                                <tr class="clickable-row" data-id="{{ folder.id }}" data-owner="{{ folder.created_by }}" data-name="{{ folder.name }}" data-modified="{{ folder.updated_at|date:"Y-m-d H:i" }}" data-created="{{ folder.created_at|date:"Y-m-d H:i" }}" data-type="folder">
                                         <td class="checkbox-column"><input type="checkbox" name="selected_items" value="folder_{{ folder.id }}"></td>
                                     <td class="small truncate-name">
                                         <svg class="me-2" width="23" height="20" viewBox="0 0 17 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -358,7 +369,7 @@ body {
                                                 </li>
 
                                                 <li>
-                                                    <a class="dropdown-item" href="{% url 'folder:edit_folder' product_id=product.id folder_id=folder.id%}">
+                                                    <a class="dropdown-item edit-folder" data-bs-toggle="modal" data-bs-target="#editFolderModal" data-folder-id="{{ folder.id }}" data-product-id="{{ product.id }}">
                                                         <i class="fas fa-user"></i> &nbsp; Edit
                                                     </a>
                                                 </li>
@@ -387,7 +398,7 @@ body {
                             
                             <!-- Documents -->
                             {% for document in documents %}
-                            <tr class="clickable-row" data-owner="{{ document.uploaded_by }}" data-version="{{ document.version }}" data-filetype="{{ document.file_type }}" data-name="{{ document.display_filename }}" data-modified="{{ document.updated_at|date:"Y-m-d H:i" }}" data-original="{{ document.original_filename }}" data-category="{{ document.document_type.type_name }}" data-created-by="{{ document.latest_uploaded_by }}" data-created="{{ document.created_at|date:"Y-m-d H:i" }}" data-latest-comment="{{ document.latest_comment }}" data-filesize="{{ document.latest_file_size }}" data-type="document" ">
+                            <tr class="clickable-row" data-id="{{ document.id }}" data-owner="{{ document.uploaded_by }}" data-version="{{ document.version }}" data-filetype="{{ document.file_type }}" data-name="{{ document.display_filename }}" data-modified="{{ document.updated_at|date:"Y-m-d H:i" }}" data-original="{{ document.original_filename }}" data-category="{{ document.document_type.type_name }}" data-created-by="{{ document.latest_uploaded_by }}" data-created="{{ document.created_at|date:"Y-m-d H:i" }}" data-latest-comment="{{ document.latest_comment }}" data-filesize="{{ document.latest_file_size }}" data-type="document" ">
                                 <td class="checkbox-column"><input type="checkbox" name="selected_items" value="document_{{ document.id }}"></td>
                                 <td class="small truncate-name">
                                     <a href="{% url 'documents:download_document' document.id %}" data-document-id="{{ document.id }}">
@@ -450,7 +461,7 @@ body {
                                             </li>
 
                                             <li>
-                                                <a href="{% url 'documents:edit_document' document_id=document.id %}" class="dropdown-item">
+                                                <a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#editDocumentModal" data-document-id="{{ document.id }}">
                                                     <i class="fas fa-user"></i> &nbsp; Edit
                                                 </a>
                                             </li>
@@ -474,7 +485,7 @@ body {
                                             </li>
 
                                             <li>
-                                                <a class="dropdown-item" href="{% url 'documents:document_versions' document_id=document.id %}">
+                                                <a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#documentVersionsModal" data-document-id="{{ document.id }}">
                                                     <i class="fas fa-history"></i> &nbsp; Version History
                                                 </a>
                                             </li>
@@ -521,9 +532,12 @@ body {
 					</ul>
 				</div>
 				<div class="tab-content" id="information">
+                    <div id="loadingSpinner" class="loading-spinner-overlay" style="display: none;">
+                        <div class="loader"></div>
+                    </div>
 					<div class="tab-pane fade show active" id="access" role="tabpanel" aria-labelledby="access-tab">
 						<div class="list-group" id="access-information">
-							<img src="{% static 'images/empty_state/show_info2.png' %}" alt="No Items Selected" class="mt-5 text-center" style="align-self:center;" width="210" height="180">
+							<img src="{% static 'images/empty_state/no_partners.png' %}" alt="No Items Selected" class="mt-5 text-center" style="align-self:center;" width="210" height="180">
                             <small class="text-center mt-3">Select an item to show information</small>
                         </div>
 					</div>
@@ -543,6 +557,10 @@ body {
 <!--{% include "modal/create_folder_modal.html" %}-->
 {% include "modal/upload_document_modal.html" %}
 {% include "modal/create_folder_modal.html" %}
+{% include "modal/edit_folder_modal.html" %}
+{% include "modal/remove_access_confirm_modal.html" %}
+{% include "modal/edit_document_modal.html" %}
+{% include "modal/document_version_modal.html" %}
 
 
 
@@ -550,6 +568,168 @@ body {
 
 <!--<script src="{% static 'products/js/product_explorer.js' %}"></script>-->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var versionsModal = document.getElementById('documentVersionsModal');
+        versionsModal.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget;
+            var documentId = button.getAttribute('data-document-id');
+            var modalTitle = document.getElementById('versionModalTitle');
+            var versionList = document.getElementById('versionList');
+
+            fetch(`/documents/document/ajax/versions/${documentId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    versionList.innerHTML = ''; // Clear previous entries
+
+                    data.versions.forEach(function(version) {
+                        var row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td class="text-center align-middle">${version.version}</td>
+                            <td class="text-start align-middle">${version.filename}</td>
+                            <td class="text-center align-middle">${version.modified}</td>
+                            <td class="text-center align-middle">${version.uploader}</td>
+                            <td class="text-center align-middle"><a href="${version.download_url}" class="badge bg-primary-custom rounded-pill p-2 text-white align-middle">Download</a></td>
+                        `;
+                        versionList.appendChild(row);
+                    });
+                })
+                .catch(error => console.error('Error loading versions:', error));
+        });
+    });
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var editModal = document.getElementById('editDocumentModal');
+        editModal.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget; // Button that triggered the modal
+            var documentId = button.getAttribute('data-document-id'); // Extract info from data-* attributes
+            var form = document.getElementById('editDocumentForm');
+            form.action = `/documents/document/edit/${documentId}/`; // Update the form's action attribute
+
+            // Fetch document details via AJAX
+            fetch(`/documents/document/ajax/${documentId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    var documentTypeSelect = document.getElementById('id_document_type');
+                    documentTypeSelect.innerHTML = ''; // Clear previous options
+
+                    // Populate document types
+                    data.document_types.forEach(function(type) {
+                        var option = new Option(type.type_name, type.id); // Corrected from type.name to type.type_name
+                        documentTypeSelect.add(option);
+                    });
+
+                    // Set the selected value
+                    documentTypeSelect.value = data.document_type_id;
+
+                    console.log(data); // Confirming the data structure
+
+                    document.getElementById('id_original_filename').value = data.original_filename;
+                    document.getElementById('id_comments').value = data.comments; // Use .value for textarea to ensure text is set correctly
+                })
+                .catch(error => console.error('Error loading document data:', error));
+        });
+    });
+</script>
+
+
+<script>
+    const productId = '{{ product.id }}'; // Make sure this is rendered server-side or appropriately defined somewhere accessible
+</script>
+
+<script>
+    
+    function showMessage(message, type) {
+        // Assuming type can be 'success' or 'error' to add specific styling if needed
+        const messagePopup = document.createElement('div');
+        messagePopup.className = `message-popup ${type} rounded shadow-sm`;
+        messagePopup.innerHTML = `<div class="alert">${message}</div>`;
+        document.body.appendChild(messagePopup);
+    
+        // Slide down animation
+        messagePopup.style.top = "20px"; // Adjust if necessary
+    
+    }
+        
+    function removeAccess(partnerId, entityType, entityId, productId) {
+        document.getElementById('confirmationModal').style.display = 'block';
+
+        document.getElementById('confirmBtn').onclick = function() {
+            const url = `/access_control/remove_specific_access/${productId}/${entityType}/${entityId}/`;
+            const data = {
+                'csrfmiddlewaretoken': '{{ csrf_token }}',
+                'partner_id': partnerId
+            };
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    sessionStorage.setItem('message', 'Access removed successfully.');
+                    sessionStorage.setItem('messageType', 'success');
+                } else {
+                    sessionStorage.setItem('message', 'Failed to remove access. Please try again.');
+                    sessionStorage.setItem('messageType', 'error');
+                }
+            })
+            .catch(error => {
+                sessionStorage.setItem('message', 'Error connecting to the server. Please try again.');
+                sessionStorage.setItem('messageType', 'error');
+            })
+            .finally(() => {
+                location.reload(); // Reload the page to display the message
+                document.getElementById('confirmationModal').style.display = 'none';
+            });
+        };
+
+        document.querySelectorAll('.close-modal-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.getElementById('confirmationModal').style.display = 'none';
+            });
+        });
+    }
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        const message = sessionStorage.getItem('message');
+        const messageType = sessionStorage.getItem('messageType');
+    
+        if (message && messageType) {
+            showMessage(message, messageType); // Use your existing showMessage function
+            sessionStorage.removeItem('message'); // Clear the message
+            sessionStorage.removeItem('messageType'); // Clear the message type
+        }
+    });
+
+</script>
+
+<script>
+document.querySelectorAll('.edit-folder').forEach(item => {
+    item.addEventListener('click', function() {
+        const folderId = this.getAttribute('data-folder-id');
+        const productId = this.getAttribute('data-product-id');
+        const formUrl = `/folder/${productId}/explorer/${folderId}/edit_folder/`; // Adjust URL as necessary
+
+        fetch(formUrl)
+            .then(response => response.text())
+            .then(html => {
+                document.querySelector('#editFolderModal .modal-body').innerHTML = html;
+                // Update form action dynamically
+                const form = document.querySelector('#editFolderModal form');
+                form.action = formUrl;
+            })
+            .catch(error => console.error('Error loading form:', error));
+    });
+});
+</script>
+
 
 <script>
     $(document).ready(function() {
@@ -598,9 +778,84 @@ body {
         const initialProductName = document.querySelector('#right-panel-title').textContent;
         const productNameElement = document.querySelector('#right-panel-title');
 
+        document.addEventListener('click', function(event) {
+            const modal = document.getElementById('confirmationModal');
+            const isModalOpen = modal.style.display === 'block';
+            
+            // Condition to check if the click is outside clickable rows, outside detail panel, and no modal is currently shown
+            if (!event.target.closest('.clickable-row') && !event.target.closest('#detail') && !isModalOpen) {
+                showLoading();
+                document.querySelectorAll('.clickable-row').forEach(row => row.classList.remove('highlighted-row'));
+                productNameElement.textContent = initialProductName;
+                resetRightPanel();
+                resetLeftPanel();
+                hideLoading();
+            }
+        });
+
+        document.querySelectorAll('.clickable-row').forEach(row => {
+            row.addEventListener('click', function() {
+                const isSelected = this.classList.contains('highlighted-row');
+                if (!isSelected) {
+                    showLoading();
+                    document.querySelectorAll('.clickable-row').forEach(r => r.classList.remove('highlighted-row'));
+                    this.classList.add('highlighted-row');
+                    updatePanelsBasedOnSelection(this);
+                } else {
+                    productNameElement.textContent = initialProductName;
+                    resetRightPanel();
+                    resetLeftPanel();
+                    hideLoading();
+                }
+            });
+        });
+
+        function fetchPartnersWithAccess(itemType, itemId) {
+            const url = `/access_control/get_partners_with_access_json/${itemId}/${itemType}/`;
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    updateLeftPanel(data, itemType, itemId);
+                    hideLoading(); // Hide loading after async operation is complete
+                })
+                .catch(error => {
+                    console.error('Error loading partners:', error);
+                    hideLoading(); // Ensure loading is hidden on error
+                });
+        }
+
+        function updateLeftPanel(partners, itemType, itemId) {
+            const panel = document.getElementById('access-information');
+            let html = partners.length > 0 ? '' : '<div class="detail-item"><strong>No Partners Granted Access</strong></div>';
+            partners.forEach(partner => {
+                html += `<div class="list-group-item list-group-item-action partner-access-item" data-partner-id="${partner.partner2_id}" tabindex="0">
+                    <div class="d-flex py-1">
+                        <div class="visually-hidden" style="align-self: center;"><input type="radio" name="partners" value="${partner.partner2_id}" id="partner_${partner.partner2_id}"></div>
+                        <div class="flex-grow-1 d-flex flex-column ms-3">
+                            <div class="fw-bold">${partner.company_name}</div>
+                            <div class="text-primary-custom fw-medium small">${partner.company_role}</div>
+                            <div class="small">${partner.access_detail}</div>
+                        </div>
+                        <button type="button" class="btn btn-danger btn-sm remove-access" onclick="removeAccess(this.getAttribute('data-partner-id'), '${itemType}', ${itemId}, ${productId})" data-partner-id="${partner.partner2_id}" style="align-self:center;">Remove</button>
+                    </div>
+                </div>`;
+            });
+            panel.innerHTML = html;
+        }
+
+        function resetLeftPanel() {
+            // Implement according to what needs to be reset or cleared in the right panel
+            // For example:
+            document.getElementById("access-information").innerHTML = `
+                <img src="{% static 'images/empty_state/no_partners.png' %}" alt="Select an item to show information" class="mt-5 text-center" style="align-self:center;" width="210" height="180">
+                <small class="text-center mt-3">Select an item to show information</small>
+                `;
+            document.querySelectorAll('.clickable-row').forEach(r => r.classList.remove('highlighted-row'));
+        }
+
         // Function to update the right panel with selected item details
-        function updateRightPanel(owner, type, version, fileType, name, original, modified, category, createdBy, created, filesize, latestComment) {
-            console.log("Type: ", type)
+        function updateRightPanel(data) {
+            const { owner, type, version, fileType, name, original, modified, category, createdBy, created, filesize, latestComment } = data;
             if (type === "document") {
                 document.getElementById("details-information").innerHTML = `
                     <div class="detail-item"><strong>Original Name</strong><small>${original}</small></div>
@@ -625,12 +880,13 @@ body {
                     // new bootstrap.Tab(document.querySelector('#details-tab')).show();
             }
         }
+        
 
         function resetRightPanel() {
             // Implement according to what needs to be reset or cleared in the right panel
             // For example:
             document.getElementById("details-information").innerHTML = `
-                <img src="{% static 'images/empty_state/show_info2.png' %}" alt="Select an item to show information" class="mt-5 text-center" style="align-self:center;" width="233.7" height="200">
+                <img src="{% static 'images/empty_state/show_info2.png' %}" alt="Select an item to show information" class="mt-5 text-center" style="align-self:center;" width="210" height="180">
                 <small class="text-center mt-3">Select an item to show information</small>
                 `;
             document.querySelectorAll('.clickable-row').forEach(r => r.classList.remove('highlighted-row'));
@@ -653,44 +909,23 @@ body {
 
             return icons[fileType.toUpperCase()] || icons['DEFAULT']; // Return matching icon or default
         }
-        
-        // Event listener for row clicks
-        document.querySelectorAll('.clickable-row').forEach(row => {
-            row.addEventListener('click', function() {
-                const isSelected = this.classList.contains('highlighted-row');
-                const fileType = this.dataset.filetype;
-                const iconHTML = getIconHTML(fileType);
-                const name = this.dataset.name;
 
-                // Remove highlighting from previously selected row
-                if (!isSelected) {
-                    // Highlight this row
-                    document.querySelectorAll('.clickable-row').forEach(r => r.classList.remove('highlighted-row'));
+        function updatePanelsBasedOnSelection(selectedRow) {
+            const fileType = selectedRow.dataset.filetype;
+            const iconHTML = getIconHTML(fileType);
+            const name = selectedRow.dataset.name;
+            const itemId = selectedRow.dataset.id;
+            const itemType = selectedRow.dataset.type;
 
-                    this.classList.add('highlighted-row');
-                    // Update the product/folder/document name
-                    productNameElement.innerHTML = `${iconHTML} <span class="name-container py-3">${name}</span>`;
-                    // Update right panel with this row's data
-                    updateRightPanel(this.dataset.owner, this.dataset.type, this.dataset.version, this.dataset.filetype, this.dataset.name, this.dataset.original, this.dataset.modified, this.dataset.category, this.dataset.createdBy, this.dataset.created, this.dataset.filesize, this.dataset.latestComment);
-                } else {
-                    
-                    // If the row was already selected, revert the text and don't highlight any row
-                    productNameElement.textContent = initialProductName;
-                    resetRightPanel();
-                }
-            });
-        });
-        document.addEventListener('click', function(event) {
-            if (!event.target.closest('.clickable-row') && !event.target.closest('#detail')) {
-                document.querySelectorAll('.clickable-row').forEach(r => r.classList.remove('highlighted-row'));
-                productNameElement.textContent = initialProductName;
-                resetRightPanel(); // Clear or reset the right panel details
-            }
-        });
+            productNameElement.innerHTML = `${iconHTML} <span class="name-container py-3">${name}</span>`;
+            updateRightPanel(selectedRow.dataset);
+            fetchPartnersWithAccess(itemType, itemId);
+        }
 
-        
     });
 </script>
+
+
 {% endblock %}
 
 {% endblock %}

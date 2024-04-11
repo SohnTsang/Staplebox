@@ -15,6 +15,9 @@ urlpatterns = [
     path('edit_comment/', views.edit_comment, name='edit_comment'),  # For editing the original document comment
     path('edit_comment/<int:version_id>/', views.edit_comment, name='edit_comment'),
     path('document/<int:document_id>/comments/', views.comment_versions, name='comment_versions'),
-    path('document/<int:document_id>/edit/', views.edit_document, name='edit_document'),
+    path('document/edit/<int:document_id>/', views.edit_document, name='edit_document'),
+    path('document/ajax/<int:document_id>/', views.ajax_get_document_details, name='ajax_get_document_details'),
+    path('document/ajax/versions/<int:document_id>/', views.ajax_document_versions, name='ajax_document_versions'),
+
 
 ]

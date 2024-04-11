@@ -1,0 +1,38 @@
+<div id="editDocumentModal" class="modal fade" tabindex="-1" aria-labelledby="editDocumentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title" id="createFolderModalLabel">Edit Document</h5>
+            </div>
+            
+            <div class="modal-body">
+                <form method="post" enctype="multipart/form-data" id="editDocumentForm">
+                    {% csrf_token %}
+                    <!-- Document Type Dropdown -->
+                    <div class="mb-3">
+                        <label for="id_document_type" class="form-label small">Document Type:</label>
+                        <select name="document_type" id="id_document_type" class="form-select">
+                            <!-- Options populated dynamically -->
+                        </select>
+                    </div>
+                    
+                    <!-- Original Filename Input -->
+                    <div class="mb-3">
+                        <label for="id_original_filename" class="form-label small">File Name:</label>
+                        <input type="text" name="original_filename" id="id_original_filename" class="form-control" value="{{ form.original_filename.value }}">
+                    </div>
+                
+                    <div class="mb-3">
+                        <label for="id_comments" class="form-label small">Comments:</label>
+                        <textarea name="comments" id="id_comments" class="form-control">{{ form.comments.value }}</textarea>
+                    </div>
+                    <div class="modal-footer border-0 p-0">
+                        <button type="button" class="btn text-primary-custom text-15" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn fw-less-bold text-primary-custom text-15">Create</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+

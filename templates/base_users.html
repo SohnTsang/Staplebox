@@ -11,9 +11,12 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" type="text/css" href="{% static 'css/base.css' %}">
     <link rel="stylesheet" type="text/css" href="{% static 'css/styles.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'css/modal.css' %}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.3.12/themes/default/style.min.css" />
     <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
-    
+    <link rel="stylesheet" type="text/css" href="{% static 'css/loading.css' %}">
+    <script src="{% static 'js/loading.js' %}"></script>
+
     <style>
 
         .checkbox-column {
@@ -38,6 +41,9 @@
         .text-primary-custom {
             color: var(--bs-primary) !important;
         }
+        .text-primary-custom:hover {
+            background-color: transparent !important;
+        }
         .sidebar {
             min-width: 250px;
             max-width: 250px;
@@ -51,12 +57,14 @@
             width: 100%;
             flex-direction: column; /* Stack children vertically */
             box-shadow: 1px 2px 5px rgba(0,0,0,.08);
+            overflow: hidden;
         }
 
         .wrapper-left {
             display: flex;
             flex-direction: column; /* Stack children vertically */
             box-shadow: 1px 2px 5px rgba(0,0,0,.08);
+            overflow:hidden;
         }
         
         .list-group-item:first-child{
@@ -74,6 +82,7 @@
             width: 100%; /* Ensure full width */
             margin-left: 0; /* Align with parent's left edge */
             margin-right: 0; /* Align with parent's right edge */
+            cursor: pointer;
         }
 
         input, textarea, select{
@@ -174,11 +183,85 @@
             font-weight: 500;
         }
 
+        /* Styles for the message popup */
+        .message-popup {
+            display: inline-block;
+            margin: auto; /* Center the alert in the middle of the page */
+            position: fixed;
+            top: -200px; /* Start hidden above the viewport */
+            left: 0;
+            right: 0;
+            z-index: 1050; /* Ensure it's above most elements */
+            padding: 6px 3px 6px 3px;
+            text-align: center;
+            animation: slideDown 0.5s forwards !important; /* Animation to slide down */
+            background-color: #5678a8;
+        }
+
+        .message-popup .alert {
+            margin-bottom: 0;
+            background-color: #5678a8; /* Light red for error */
+            color: white; /* Dark red text */
+        }
+
+        .message-popup.success {
+            margin-bottom: 0;
+            background-color: #5678a8; /* Light green for success */
+            color: white; /* Dark green text */
+        }
+
+        .message-popup.error {
+            margin-bottom: 0;
+            background-color: #721c24; /* Light red for error */
+            color: white; /* Dark red text */
+        }
+
+
+        /* Keyframes for slide-down animation */
+        @keyframes slideDown {
+            to {
+                top: 20px; /* Adjust this value to control where the message stops */
+            }
+        }
+
+        @media (max-width: 768px) {
+            .message-popup {
+                max-width: 60%; /* Make the alert box narrower on larger screens */
+            }
+        }
+
+        /* Medium devices (tablets, 768px and up) */
+        @media (min-width: 768px) {
+            .message-popup {
+                max-width: 30%; /* Make the alert box narrower on larger screens */
+            }
+        }
+
+        /* Large devices (desktops, 992px and up) */
+        @media (min-width: 992px) {
+            .message-popup {
+                max-width: 30%; /* Even narrower on large screens */
+            }
+        }
+
+        @media (min-width: 1280px) {
+            .message-popup {
+                max-width: 20%; /* Even narrower on large screens */
+            }
+        }
+
     </style>
     {% block extra_css %}
     {% endblock extra_css %}
 </head>
 <body>
+    {% if messages %}
+        <div class="message-popup rounded shadow-sm">
+            {% for message in messages %}
+                <div class="alert {{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
     <div class="container-fluid overflow-hidden">
         <div id="main-content" class="row vh-100 overflow-auto">
             <!--{# include 'top_navbar.html' %}-->
@@ -235,6 +318,23 @@
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js" integrity="sha384-7+zCNj/IqJ95wo16oMtfsKbZ9ccEh31eOz1HGyDuCQ6wgnyJNSYdrPa03rtR1zdB" crossorigin="anonymous"></script>
 
 {% block extra_js %}
+
+
+<script>
+    $(document).ready(function() {
+        // Check if the message popup exists
+        if ($('.message-popup').length) {
+            // After 3 seconds, slide up and remove the message popup
+            setTimeout(function() {
+                $('.message-popup').slideUp(500, function() {
+                    $(this).remove(); // Remove the element from DOM after sliding up
+                });
+            }, 3000); // 3000 milliseconds = 3 seconds
+        }
+    });
+</script>
+
+
 {% endblock extra_js %}
 </body>
 </html>

@@ -9,8 +9,8 @@
 
 <!-- _subfolder_structure.html -->
 <!-- Subfolder Row: Initially Hidden, Shown on Parent Folder Expand -->
-<tr class="folder-row collapse folderContent{{ folder.parent_id }}" tabindex="0" data-bs-target=".folderContent{{ folder.id }}" aria-expanded="false">
-    <td class="lh-lg ps-3 py-1">
+<tr class="folder-row collapse folderContent{{ folder.parent_id }} no-select-on-dblclick" onmousedown="enableSelection(this)" tabindex="0" data-bs-target=".folderContent{{ folder.id }}" aria-expanded="false">
+    <td class="lh-lg ps-3 py-2 small-custom">
         <input type="checkbox" name="folders" value="{{ folder.id }}">
         <span class="arrow-icon" style="display: inline-block; width: 20px;">
             <svg class="arrow-icon" width="24" height="24" viewBox="0 0 24 26" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -28,8 +28,8 @@
         
         <span class="folder-name fw-less-bold">{{ folder.name }}</span>
     </td>
-    <td class="d-md-none d-lg-table-cell text-muted-weight small">Folder</td> <!-- Placeholder for subfolders -->
-    <td class="text-muted-weight small">{{ folder.updated_at|date:"Y-m-d H:i" }}</td>
+    <td class="d-none d-md-none d-lg-table-cell text-muted-weight small">Folder</td> <!-- Placeholder for subfolders -->
+    <td class="d-none d-sm-none d-md-table-cell text-muted-weight small">{{ folder.updated_at|date:"Y-m-d H:i" }}</td>
 </tr>
 
 <!-- Nested Subfolders -->
@@ -39,8 +39,8 @@
 
 <!-- Documents under Subfolder -->
 {% for document in documents %}
-    <tr class="folder-content collapse folderContent{{ folder.id }}" tabindex="0">
-        <td class="document-name lh-lg ps-3 py-1">
+    <tr class="folder-content collapse folderContent{{ folder.id }} no-select-on-dblclick" onmousedown="enableSelection(this)" tabindex="0">
+        <td class="document-name lh-lg ps-3 py-2 small-custom">
             <input type="checkbox" name="documents" value="{{ document.id }}">
             <svg width="20" height="20" viewBox="0 0 18 28" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <g clip-path="url(#clip0_1428_85)">
@@ -58,8 +58,8 @@
             
             <span class="fw-less-bold">{{ document.display_filename }}</span>
         </td>
-        <td class="d-md-none d-lg-table-cell text-muted-weight small">Document</td>
-        <td class="text-muted-weight small">{{ document.updated_at|date:"Y-m-d H:i" }}</td>
+        <td class="d-none d-md-none d-lg-table-cell text-muted-weight small">Document</td>
+        <td class="d-none d-sm-none d-md-table-cell text-muted-weight small">{{ document.updated_at|date:"Y-m-d H:i" }}</td>
     </tr>
 {% endfor %}
 

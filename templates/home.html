@@ -25,7 +25,7 @@
             <div class="list-group">
                 {% for item in products_with_root %}
                 <!-- Use the root_folder_id from each item -->
-                <a href="{% url 'products:product_explorer' item.product.id %}?folderId={{ item.root_folder_id }}" class="list-group-item list-group-item-action">
+                <a href="{% url 'products:product_explorer_folder' product_id=item.product.id folder_id=item.root_folder_id %}" class="list-group-item list-group-item-action">
                     {{ item.product.product_name }} - {{ item.product.product_description|default:"No Description" }}
                 </a>
                 {% empty %}

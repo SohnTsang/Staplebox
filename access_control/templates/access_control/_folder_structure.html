@@ -78,8 +78,24 @@ td {
     vertical-align: middle !important;
 }
 
+.small-custom {
+    font-size: 0.9rem;
+}
 
+.no-select-on-dblclick {
+    cursor:default;
+    user-select: none; /* Default to no selection */
+}
 
+.checked-row span{
+    color: #236CC8; /* Example color; adjust as needed */
+    font-weight: 700;
+}
+
+.checked-row td{
+    color: #236CC8; /* Example color; adjust as needed */
+    font-weight: 600;
+}
 
 
 </style>
@@ -88,8 +104,8 @@ td {
 <!-- _folder_structure.html -->
 {% if folder %}
     <!-- Folder Row: Toggle Visibility for Associated Content -->
-    <tr class="folder-row" tabindex="0" data-bs-target=".folderContent{{ folder.id }}" aria-expanded="false" data-depth="0">
-        <td class="lh-lg ps-3 py-1">
+    <tr class="folder-row no-select-on-dblclick" onmousedown="enableSelection(this)" tabindex="0" data-bs-target=".folderContent{{ folder.id }}" aria-expanded="false" data-depth="0">
+        <td class="lh-lg ps-3 py-2 small-custom">
             <input type="checkbox" name="folders" value="{{ folder.id }}">
             <span class="arrow-icon" style="display: inline-block; width: 20px;">
                 <svg class="arrow-icon" width="24" height="24" viewBox="0 0 24 26" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -105,10 +121,10 @@ td {
                 </svg>
             </span> <!-- Reserve space for the icon -->
             
-            <span class="folder-name fw-less-bold">{{ folder.name }}</span>
+            <span class="fw-less-bold">{{ folder.name }}</span>
         </td>
-        <td class="d-md-none d-lg-table-cell text-muted-weight small">Folder</td> <!-- Placeholder for folders -->
-        <td class="text-muted-weight small">{{ folder.updated_at|date:"Y-m-d H:i" }}</td>
+        <td class="d-none d-md-none d-lg-table-cell text-muted-weight small">Folder</td> <!-- Placeholder for folders -->
+        <td class="d-none d-sm-none d-md-table-cell text-muted-weight small">{{ folder.updated_at|date:"Y-m-d H:i" }}</td>
     </tr>
 
     <!-- Handle Subfolders -->
@@ -119,9 +135,9 @@ td {
     {% if folder.documents.exists %}
         {% for document in folder.documents.all %}
             <!-- Document Row: Initially Hidden, Shown on Folder Expand -->
-            <tr class="folder-content collapse folderContent{{ folder.id }} expanded-level-folder" tabindex="0">
+            <tr class="folder-content collapse folderContent{{ folder.id }} expanded-level-folder no-select-on-dblclick" onmousedown="enableSelection(this)" tabindex="0">
                 
-                <td class="document-name lh-lg ps-3 py-1">
+                <td class="document-name lh-lg ps-3 py-2 small-custom">
                     <input type="checkbox" name="documents" value="{{ document.id }}">
                     <svg width="20" height="20" viewBox="0 0 18 28" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <g clip-path="url(#clip0_1428_85)">
@@ -140,8 +156,8 @@ td {
                     <span class="fw-less-bold">{{ document.display_filename }}</span>
                 </td>
                 
-                <td class="d-md-none d-lg-table-cell text-muted-weight small">Document</td>
-                <td class="text-muted-weight small">{{ document.updated_at|date:"Y-m-d H:i" }}</td>
+                <td class="d-none d-md-none d-lg-table-cell text-muted-weight small">Document</td>
+                <td class="d-none d-sm-none d-md-table-cell text-muted-weight small">{{ document.updated_at|date:"Y-m-d H:i" }}</td>
             </tr>
         {% endfor %}
     {% endif %}
@@ -151,8 +167,8 @@ td {
     {% for document in documents %}
         {% if not document.folder.parent %}
             <!-- Document Row: Initially Hidden, Shown on Folder Expand -->
-            <tr class="folder-content" tabindex="0">
-                <td class="document-name lh-lg ps-3 py-1">
+            <tr class="folder-content no-select-on-dblclick" onmousedown="enableSelection(this)" tabindex="0">
+                <td class="document-name lh-lg ps-3 py-2 small-custom">
                     <input type="checkbox" name="documents" value="{{ document.id }}">
                     <svg width="20" height="20" viewBox="0 0 18 28" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <g clip-path="url(#clip0_1428_85)">
@@ -170,8 +186,8 @@ td {
                     
                     <span class="fw-less-bold">{{ document.display_filename }}</span>
                 </td>
-                <td class="d-md-none d-lg-table-cell text-muted-weight small">Document</td>
-                <td class="text-muted-weight small">{{ document.updated_at|date:"Y-m-d H:i" }}</td>
+                <td class="d-none d-md-none d-lg-table-cell text-muted-weight small">Document</td>
+                <td class="d-none d-sm-none d-md-table-cell text-muted-weight small">{{ document.updated_at|date:"Y-m-d H:i" }}</td>
             </tr>
         {% endif %}
     {% endfor %}
@@ -179,6 +195,19 @@ td {
 
 {% block javascript %}
 
+
+<script>
+    
+    function enableSelection(element) {
+        // Enable selection if it's a drag
+        document.onmousemove = function() {
+            element.style.userSelect = "text";
+        }
+        document.onmouseup = function() {
+            document.onmousemove = document.onmouseup = null; // Clean up
+        }
+    }
+</script>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -295,9 +324,9 @@ td {
 
 
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
-    // Function to recursively disable or enable nested checkboxes
-    function toggleNestedCheckboxes(folderRow, isEnabled) {
+document.addEventListener("DOMContentLoaded", function() {
+    // Function to recursively check/uncheck and disable/enable nested checkboxes
+    function toggleNestedCheckboxes(folderRow, isChecked) {
         // Check if data-bs-target is defined before attempting to replace characters
         if (typeof folderRow.dataset.bsTarget !== 'undefined') {
             const targetClass = folderRow.dataset.bsTarget.replace('.', '');
@@ -306,11 +335,13 @@ td {
             nestedRows.forEach(row => {
                 const checkbox = row.querySelector('input[type="checkbox"]');
                 if (checkbox) {
-                    checkbox.disabled = !isEnabled; // Disable or enable based on the parameter
-                    row.style.opacity = isEnabled ? "1" : "0.6"; // Adjust opacity to visually indicate disabled state
+                    checkbox.disabled = isChecked; // Disable if parent is checked
+                    checkbox.checked = isChecked; // Check/uncheck to match the parent checkbox's state
+                    row.style.opacity = isChecked ? "0.6" : "1"; // Adjust opacity to visually indicate disabled/enabled state
+                    checkbox.dispatchEvent(new Event('change', { 'bubbles': true }));
                 }
                 // Apply the same logic recursively to all nested rows
-                toggleNestedCheckboxes(row, isEnabled);
+                toggleNestedCheckboxes(row, isChecked);
             });
         }
     }
@@ -321,8 +352,9 @@ td {
         checkbox.addEventListener('change', function() {
             const folderRow = this.closest('.folder-row');
             if (folderRow) {
-                // If checkbox is checked, disable all nested checkboxes. Otherwise, enable them.
-                toggleNestedCheckboxes(folderRow, !this.checked);
+                // If checkbox is checked, check all nested checkboxes and disable them. Otherwise, uncheck and enable them.
+                toggleNestedCheckboxes(folderRow, this.checked);
+                
             }
         });
     });
@@ -357,8 +389,33 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 </script>
 
+<!-- When checked box trigger  -->
 <script>
-    
+    document.addEventListener("DOMContentLoaded", function() {
+        function toggleRowClassBasedOnCheckbox() {
+            const checkboxes = document.querySelectorAll('input[type="checkbox"][name="folders"], input[type="checkbox"][name="documents"]');
+            
+            checkboxes.forEach(checkbox => {
+                updateRowClass(checkbox, checkbox.checked);
+                checkbox.addEventListener('change', function() {
+                    updateRowClass(this, this.checked);
+                });
+            });
+        }
+
+        function updateRowClass(checkbox, isChecked) {
+            const row = checkbox.closest('tr');
+            if (row) {
+                if (isChecked) {
+                    row.classList.add('checked-row');
+                } else {
+                    row.classList.remove('checked-row');
+                }
+            }
+        }
+        
+        toggleRowClassBasedOnCheckbox();
+    });
 </script>
 
 {% endblock %}
