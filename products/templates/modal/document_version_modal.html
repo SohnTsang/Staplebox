@@ -18,6 +18,11 @@
     .version-table th:nth-child(3) { width: 25%; } /* Last Modified */
     .version-table th:nth-child(4) { width: 15%; } /* Uploader */
     .version-table th:nth-child(5) { width: 10%; } /* Actions */
+
+
+    .owner-view th, .owner-view td { color: #007bff; } /* Styling for owner view */
+    .access-user-view th, .access-user-view td { color: #6c757d; } /* Styling for access users */
+
 </style>
 
 <div class="modal fade" id="documentVersionsModal" tabindex="-1" aria-labelledby="documentVersionsModalLabel" aria-hidden="true">
@@ -40,7 +45,7 @@
                     <tbody id="versionList" class="small"></tbody>
                 </table>
             </div>
-            <div class="modal-footer border-0 p-0">
+            <div class="modal-footer border-0 p-2">
                 <button type="button" class="btn text-primary-custom text-15" data-bs-dismiss="modal">Close</button>
             </div>
         </div>

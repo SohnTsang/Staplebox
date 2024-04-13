@@ -257,6 +257,14 @@ a {
 
 {% block content %}
 
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert {{ message.tags }}">
+            {{ message }}
+        </div>
+    {% endfor %}
+{% endif %}
+
 
 <div id="product-explorer" data-product-id="{{ product.id }}" data-root-folder-id="{{ root_folder_id }}" class="container-fluid mt-5">
     <div class="row">
@@ -369,8 +377,8 @@ a {
                                                 </li>
 
                                                 <li>
-                                                    <a class="dropdown-item edit-folder" data-bs-toggle="modal" data-bs-target="#editFolderModal" data-folder-id="{{ folder.id }}" data-product-id="{{ product.id }}">
-                                                        <i class="fas fa-user"></i> &nbsp; Edit
+                                                    <a class="dropdown-item edit-folder" href="#" data-bs-toggle="modal" data-bs-target="#editFolderModal" data-folder-id="{{ folder.id }}" data-product-id="{{ product.id }}">
+                                                        <i class="fas fa-edit"></i> &nbsp; Edit
                                                     </a>
                                                 </li>
 
@@ -467,7 +475,7 @@ a {
                                             </li>
 
                                             <li>
-                                                <a href="{% url 'documents:comment_versions' document_id=document.id %}" class="dropdown-item">
+                                                <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#commentModal" data-document-id="{{ document.id }}">
                                                     <i class="fas fa-user"></i> &nbsp; Comment
                                                 </a>
                                             </li>
@@ -479,7 +487,7 @@ a {
                                             </li>
 
                                             <li>
-                                                <a class="dropdown-item" href="{% url 'documents:update_document' document_id=document.id %}">
+                                                <a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#updateDocumentModal" data-document-id="{{ document.id }}">
                                                     <i class="fas fa-edit"></i> &nbsp; Upload New Version
                                                 </a>
                                             </li>
@@ -561,6 +569,8 @@ a {
 {% include "modal/remove_access_confirm_modal.html" %}
 {% include "modal/edit_document_modal.html" %}
 {% include "modal/document_version_modal.html" %}
+{% include "modal/update_document_modal.html" %}
+{% include "modal/comment_modal.html" %}
 
 
 
@@ -569,36 +579,172 @@ a {
 <!--<script src="{% static 'products/js/product_explorer.js' %}"></script>-->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 
+<!-- View and Edit Comment Modal-->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var commentModal = document.getElementById('commentModal');
+        commentModal.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget;
+            var documentId = button.getAttribute('data-document-id');
+            var modalBody = document.querySelector('#commentModal .modal-body');
+            var tableBody = document.querySelector('#commentsTable tbody');
+
+            modalBody.dataset.documentId = documentId;
+
+            fetch(`/documents/document/ajax/comments/${documentId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    tableBody.innerHTML = ''; // Clear previous entries
+                    data.versions.forEach(function(version) {
+                        var row = document.createElement('tr'); // Create a new table row
+                        row.innerHTML = `
+                            <td class="text-center align-middle">${version.version}</td>
+                            <td id="modified-time-${version.version}" class="text-center align-middle">${version.modified}</td>
+                            <td class="text-center align-middle">${version.uploader}</td>
+                            <td id="comment-text-${version.version}" class="text-start align-middle">${version.comment}</td>
+                            <td id="" class="text-center align-middle">${version.is_editable ? `<button class="btn btn-sm btn-edit-save btn-primary" onclick="editComment(${documentId}, ${version.version})">Edit</button>` : ''}</td>
+                        `;
+                        tableBody.appendChild(row); // Append the row to the table body
+                    });
+                })
+                .catch(error => console.error('Error loading comments:', error));
+        });
+    });
+
+    function editComment(documentId, versionNumber) {
+        const commentCell = document.getElementById(`comment-text-${versionNumber}`);
+        const originalComment = commentCell.textContent; // Get the current comment text
+        const buttonCell = commentCell.nextElementSibling; // Assuming the button is next to the comment cell
+
+        commentCell.innerHTML = `<textarea class="form-control form-control-sm">${originalComment}</textarea>`;
+        buttonCell.innerHTML = `<button class="btn btn-sm btn-edit-save btn-primary" onclick="saveComment(${documentId}, ${versionNumber})">Save</button>`;
+    }
+
+    function saveComment(documentId, versionNumber) {
+        const commentCell = document.getElementById(`comment-text-${versionNumber}`);
+        const textarea = commentCell.querySelector('textarea');
+        const newText = textarea.value;
+
+        fetch(`/documents/document/${documentId}/edit_comment/version/${versionNumber}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: `comment=${encodeURIComponent(newText)}`
+        })
+        .then(response => response.json()) // Ensure server sends back JSON
+        .then(data => {
+            if (data.success) {
+
+                commentCell.innerHTML = newText; // Update the comment cell with new text
+                const buttonCell = commentCell.nextElementSibling; // Get the cell containing the button
+                const modifiedTimeCell = document.querySelector(`#modified-time-${versionNumber}`);
+                modifiedTimeCell.innerText = data.modified;
+
+                buttonCell.innerHTML = `<button class="btn btn-sm btn-edit-save btn-primary" onclick="editComment(${documentId}, ${versionNumber})">Edit</button>`;
+            } else {
+                console.error(data.error || 'Failed to update comment. Please try again.');
+                alert(data.error || 'Failed to update comment. Please try again.');
+            }
+        })
+        .catch(error => {
+            console.error('Error updating comment:', error);
+        });
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+</script>
+
+<!-- Update Document modal -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var updateForm = document.getElementById('updateDocumentForm');
+        updateForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            var formData = new FormData(updateForm);
+            var documentId = updateForm.querySelector('#product_id').value;  // Ensure correct value assignment
+            fetch(`/documents/document/ajax/update/${documentId}/`, {
+                method: 'POST',
+                body: formData,
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    alert(data.message);
+                    $('#updateDocumentModal').modal('hide');
+                    // Optionally refresh some part of your page or redirect
+                }
+            })
+            .catch(error => console.error('Error updating document:', error));
+        });
+    });
+</script>
+
+
+<!-- document version modal -->
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         var versionsModal = document.getElementById('documentVersionsModal');
         versionsModal.addEventListener('show.bs.modal', function (event) {
             var button = event.relatedTarget;
             var documentId = button.getAttribute('data-document-id');
-            var modalTitle = document.getElementById('versionModalTitle');
             var versionList = document.getElementById('versionList');
 
             fetch(`/documents/document/ajax/versions/${documentId}/`)
                 .then(response => response.json())
                 .then(data => {
                     versionList.innerHTML = ''; // Clear previous entries
-
-                    data.versions.forEach(function(version) {
-                        var row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td class="text-center align-middle">${version.version}</td>
-                            <td class="text-start align-middle">${version.filename}</td>
-                            <td class="text-center align-middle">${version.modified}</td>
-                            <td class="text-center align-middle">${version.uploader}</td>
-                            <td class="text-center align-middle"><a href="${version.download_url}" class="badge bg-primary-custom rounded-pill p-2 text-white align-middle">Download</a></td>
-                        `;
-                        versionList.appendChild(row);
-                    });
+                    if (data.is_owner) {
+                        // Render owner-specific view
+                        data.versions.forEach(function(version) {
+                            var row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td class="text-center align-middle">${version.version}</td>
+                                <td class="text-start align-middle">${version.filename}</td>
+                                <td class="text-center align-middle">${version.modified}</td>
+                                <td class="text-center align-middle">${version.uploader}</td>
+                                <td class="text-center align-middle"><a href="${version.download_url}" class="badge bg-primary-custom rounded-pill p-2 text-white align-middle">Download</a></td>
+                            `;
+                            versionList.appendChild(row);
+                        });
+                    } else {
+                        // Render general user view
+                        data.versions.forEach(function(version) {
+                            var row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td class="text-center">${version.version}</td>
+                                <td class="text-start">${version.filename}</td>
+                                <td class="text-center">${version.modified}</td>
+                                <td class="text-center">${version.uploader}</td>
+                                <td class="text-center align-middle"><a href="${version.download_url}" class="badge bg-primary-custom rounded-pill p-2 text-white align-middle">Download</a></td>
+                            `;
+                            versionList.appendChild(row);
+                        });
+                    }
                 })
                 .catch(error => console.error('Error loading versions:', error));
         });
     });
 </script>
+
+<!-- edit document modal -->
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
@@ -624,8 +770,6 @@ a {
 
                     // Set the selected value
                     documentTypeSelect.value = data.document_type_id;
-
-                    console.log(data); // Confirming the data structure
 
                     document.getElementById('id_original_filename').value = data.original_filename;
                     document.getElementById('id_comments').value = data.comments; // Use .value for textarea to ensure text is set correctly
@@ -710,24 +854,28 @@ a {
 
 </script>
 
+<!-- edit folder mdoal -->
 <script>
-document.querySelectorAll('.edit-folder').forEach(item => {
-    item.addEventListener('click', function() {
-        const folderId = this.getAttribute('data-folder-id');
-        const productId = this.getAttribute('data-product-id');
-        const formUrl = `/folder/${productId}/explorer/${folderId}/edit_folder/`; // Adjust URL as necessary
+    document.addEventListener('DOMContentLoaded', function () {
+        var editModal = document.getElementById('editFolderModal');
+        editModal.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget; // Button that triggered the modal
+            var folderId = button.getAttribute('data-folder-id');
+            var productId = button.getAttribute('data-product-id');
+            var form = document.getElementById('editFolderForm'); // Ensure this ID is set on the form element
 
-        fetch(formUrl)
-            .then(response => response.text())
-            .then(html => {
-                document.querySelector('#editFolderModal .modal-body').innerHTML = html;
-                // Update form action dynamically
-                const form = document.querySelector('#editFolderModal form');
-                form.action = formUrl;
-            })
-            .catch(error => console.error('Error loading form:', error));
+            form.action = `/folder/${productId}/explorer/${folderId}/edit_folder/`; // Set form action
+
+            // Fetch folder details via AJAX
+            fetch(`/folder/ajax/${productId}/${folderId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('id_name').value = data.name;
+                    document.getElementById('id_parent').value = data.parent_id; // Handle hidden parent input if used
+                })
+                .catch(error => console.error('Error loading folder data:', error));
+        });
     });
-});
 </script>
 
 

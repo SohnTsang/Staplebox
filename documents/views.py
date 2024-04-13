@@ -56,7 +56,7 @@ def upload_document(request, product_id, folder_id):
                     comments=comment,
                 )
 
-            messages.success(request, 'Documents uploaded successfully.')
+            messages.success(request, 'Documents uploaded')
         except Exception as e:
             messages.error(request, f'Failed to upload documents. Error: {e}')
 
@@ -105,7 +105,7 @@ def edit_document(request, document_id):
             document.save(update_fields=['updated_at'])
             form.save_m2m()  # Required for saving ManyToMany fields if any
             
-            messages.success(request, 'Update successful')
+            messages.success(request, 'Document updated')
             return redirect(reverse('products:product_explorer_folder', kwargs={
                 'product_id': document.folder.product_id, 
                 'folder_id': document.folder_id
@@ -150,17 +150,28 @@ def document_versions(request, document_id):
 @login_required
 def ajax_document_versions(request, document_id):
     original_document = get_object_or_404(Document, id=document_id)
+    user = request.user
+
+    # Determine if the user is the owner
+    is_owner = original_document.uploaded_by == user
+
+    # Fetch all versions
     versions = DocumentVersion.objects.filter(document=original_document).order_by('-version')
+
+    # Filter versions based on access rights
+    if not is_owner:
+        # Non-owners see only their updates and the owner's updates
+        versions = versions.filter(uploaded_by__in=[user, original_document.uploaded_by])
 
     versions_data = [{
         'version': version.version,
         'filename': version.original_filename,
         'modified': localtime(version.created_at).strftime("%Y-%m-%d %H:%M"),
-        'uploader': version.uploaded_by.username,  # Assuming you have a method to get user's full name
+        'uploader': version.uploaded_by.username,
         'download_url': reverse('documents:download_document', kwargs={'document_id': original_document.id, 'version_id': version.id})
     } for version in versions]
 
-    # Include the original document as Version 1 if not already included
+    # Include the original document as Version 1, if not present
     if not versions or (versions and versions.last().version != 1):
         versions_data.append({
             'version': 1,
@@ -170,8 +181,8 @@ def ajax_document_versions(request, document_id):
             'download_url': reverse('documents:download_document', kwargs={'document_id': original_document.id})
         })
 
-
     data = {
+        'is_owner': is_owner,
         'original_filename': original_document.original_filename,
         'versions': versions_data
     }
@@ -182,26 +193,59 @@ def ajax_document_versions(request, document_id):
 @login_required
 def update_document(request, document_id):
     document = get_object_or_404(Document, id=document_id)
+    user = request.user
+
+    # Check if the user is the owner or has been granted access
+    is_owner = document.uploaded_by == user
+    has_access = AccessPermission.objects.filter(partner2=user, document=document).exists()
+
+    if not (is_owner or has_access):
+        return HttpResponseForbidden("You do not have permission to update this document.")
+
     if request.method == 'POST':
         uploaded_file = request.FILES.get('file')
-        comments = request.POST.get('comments')  # Correctly capture the comments from the form
-        product_id = request.POST.get('product_id')  # Adjusted to directly use document reference
-        folder_id = request.POST.get('folder_id')  # Adjusted to directly use document reference
+        comments = request.POST.get('comments')
+        product_id = document.folder.product.id
+        folder_id = document.folder.id
 
         if uploaded_file:
-            new_hash = file_hash(uploaded_file)  # Use your file_hash function
-            # Now pass the captured comments to the update_version method
-            document.update_version(uploaded_file, new_hash, comments)
+            # Assuming you have a function to compute file hash
+            new_hash = file_hash(uploaded_file)
+            document.update_version(uploaded_file, new_hash, comments, user)
 
-            messages.success(request, 'Document updated successfully!')
+            messages.success(request, 'Document updated')
             return redirect(reverse('products:product_explorer_folder', kwargs={'product_id': product_id, 'folder_id': folder_id}))
-    
-    # If not POST or if the form is invalid, render the form again
+
     return render(request, 'documents/update_document_form.html', {
         'document': document,
         'product_id': document.folder.product_id,
         'folder_id': document.folder_id
     })
+
+
+@login_required
+@require_POST  # Ensure this view only accepts POST requests
+def ajax_update_document(request, document_id):
+    document = get_object_or_404(Document, id=document_id)
+    user = request.user
+
+    # Permission checks
+    is_owner = document.uploaded_by == user
+    has_access = AccessPermission.objects.filter(partner2=user, document=document).exists()
+
+    if not (is_owner or has_access):
+        return JsonResponse({'error': 'You do not have permission to update this document.'}, status=403)
+
+    uploaded_file = request.FILES.get('file')
+    comments = request.POST.get('comments')
+
+    if uploaded_file:
+        new_hash = file_hash(uploaded_file)  # Your file_hash function needs to be defined
+        document.update_version(uploaded_file, new_hash, comments, user)
+
+        return JsonResponse({'message': 'Document updated successfully!'})
+
+    return JsonResponse({'error': 'No file was uploaded.'}, status=400)
 
 
 @require_POST  # Ensures only POST requests are handled
@@ -281,37 +325,89 @@ def comment_versions(request, document_id):
         'versions': versions
     })
 
+
+
+
 @login_required
-def edit_comment(request, version_id=None):
-    if version_id:
-        # Editing a specific version's comment
-        version = get_object_or_404(DocumentVersion, id=version_id)
-        document = version.document
+def ajax_comments_versions(request, document_id):
+    document = get_object_or_404(Document, id=document_id)
+    user = request.user
+
+    # Check if the user is the owner
+    is_owner = document.uploaded_by == user
+
+    # Fetch all versions
+    versions = DocumentVersion.objects.filter(document=document).order_by('-version')
+
+    # Filter versions based on access rights
+    if not is_owner:
+        # Non-owners see only their updates and the owner's updates
+        versions = versions.filter(uploaded_by__in=[user, document.uploaded_by])
+    
+    versions_data = [{
+        'id': version.id,
+        'version': version.version,
+        'comment': version.comments or "No comment",
+        'is_editable': version.uploaded_by == user or is_owner,
+        'modified': localtime(version.updated_at).strftime("%Y-%m-%d %H:%M"),  # Formatting date
+        'uploader': version.uploaded_by.username,
+    } for version in versions]
+
+
+    # Check if the initial comment is present in versions, if not, manually add the original document's comment
+    if not versions or (versions and versions.last().version != 1):
+        versions_data.append({
+            'id': document.id,
+            'version': 1,
+            'comment': document.comments or "No initial comment",
+            'is_editable': is_owner,
+            'modified': localtime(document.updated_at).strftime("%Y-%m-%d %H:%M"),  # Formatting date
+            'uploader': document.uploaded_by.username,
+        })
+
+    return JsonResponse({
+        'is_owner': is_owner,
+        'versions': versions_data
+    })
+
+
+
+@login_required
+def edit_comment(request, document_id, version_number=None):
+    document = get_object_or_404(Document, id=document_id)
+    
+    if version_number is not None and int(version_number) > 1:
+        version = get_object_or_404(DocumentVersion, document=document, version=version_number)
     else:
-        # Editing the original document's comment (assuming there's a way to identify it)
-        document = get_object_or_404(Document, id=request.GET.get('document_id'))
         version = None
-
-    # Perform permission check here
-
+    
     if request.method == 'POST':
         comment = request.POST.get('comment', '').strip()
         if comment:
             if version:
                 version.comments = comment
                 version.save()
-                document_id = version.document.id
+                return JsonResponse({
+                    'success': True, 
+                    'message': 'Comment updated',
+                    'modified': version.formatted_modified_date  # Return the new modified time
+                })
             else:
                 document.comments = comment
                 document.save()
-                document_id = document.id
-            # Redirect to a success page or the document versions page
-            return redirect(reverse('documents:comment_versions', kwargs={'document_id': document_id}))
-    
-    else:
-        comment = version.comments if version else document.comments
+                return JsonResponse({
+                    'success': True, 
+                    'message': 'Comment updated',
+                    'modified': document.formatted_modified_date  # Return the new modified time for the document
+                })
+        else:
+            return JsonResponse({'success': False, 'error': 'No comment provided'}, status=400)
 
-    return render(request, 'documents/edit_comment.html', {'comment': comment, 'document': document, 'version': version})
+    return JsonResponse({'success': False, 'error': 'Invalid request'}, status=405)
+
+
+
+
 
 def user_has_access(user, document):
     # Check if the user is the uploader of the document

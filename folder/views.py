@@ -11,7 +11,8 @@ from django.urls import reverse
 from django.views.decorators.http import require_http_methods
 from django import forms
 from django.utils import timezone
-import logging
+from django.forms.models import model_to_dict
+
 
 @login_required
 def folder_create(request, product_id):
@@ -71,6 +72,16 @@ def edit_folder(request, product_id, folder_id):
         form.fields['parent'].widget = forms.HiddenInput()  # Hide the parent field
 
     return render(request, 'folders/edit_folder.html', {'form': form, 'product_id': product_id, 'folder_id': folder_id})
+
+
+@login_required
+def ajax_get_folder_details(request, product_id, folder_id):
+    folder = get_object_or_404(Folder, id=folder_id, product_id=product_id)
+    data = {
+        'name': folder.name,
+        'parent_id': folder.parent_id if folder.parent else '',
+    }
+    return JsonResponse(data)
 
 
 @login_required

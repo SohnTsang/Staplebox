@@ -49,27 +49,24 @@ class Document(models.Model):
     @property
     def formatted_file_size(self):
         return format_file_size(self.file.size)
+    
+    @property
+    def formatted_modified_date(self):
+        return localtime(self.updated_at).strftime("%Y-%m-%d %H:%M")
 
-    def update_version(self, new_file, new_hash, comments=None):
-    # Create a new DocumentVersion instance with the new file
+    def update_version(self, new_file, new_hash, comments=None, uploaded_by=None):
+        # Create a new DocumentVersion instance with the new file
         new_version = DocumentVersion.objects.create(
             document=self,
             file=new_file,
-            version=self.version + 1,  # Increment version
-            uploaded_by=self.uploaded_by,
+            version=self.version + 1,
+            uploaded_by=uploaded_by if uploaded_by else self.uploaded_by,
             original_filename=new_file.name,
-            file_hash=new_hash,  # Save the hash in DocumentVersion as well
+            file_hash=new_hash,
             comments=comments,
         )
-
-        # Update the Document to reference the latest version's file
-        # Instead of saving the file again in the Document model, we update metadata
         self.version = new_version.version
         self.file_hash = new_hash
-        # Optionally, if you want to keep the reference to the latest file in the Document as well, do so carefully
-        # Note: This step can be skipped if you decide to always serve the latest file from the DocumentVersion model
-        # This approach avoids duplication but maintains a reference to the latest file in the Document model
-        self.file.name = new_version.file.name
         self.save()
     
     
@@ -80,11 +77,16 @@ class DocumentVersion(models.Model):
     version = models.IntegerField()
     created_at = models.DateTimeField(default=timezone.now)
     uploaded_at = models.DateTimeField(auto_now=True)
+    updated_at = models.DateTimeField(auto_now=True) 
     uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     original_filename = models.CharField(max_length=255)  # New field to store the filename
     file_hash = models.CharField(max_length=64, blank=True, editable=False)  # SHA-256 hash strings are 64 characters
     comments = models.TextField(blank=True, null=True)  # Add this line
     
+    
+    class Meta:
+        unique_together = [('document', 'version')]
+
     @property
     def file_size(self):
         return self.file.size
@@ -92,6 +94,10 @@ class DocumentVersion(models.Model):
     @property
     def formatted_file_size(self):
         return format_file_size(self.file.size)
+    
+    @property
+    def formatted_modified_date(self):
+        return localtime(self.updated_at).strftime("%Y-%m-%d %H:%M")
 
 def format_file_size(size_in_bytes):
     """

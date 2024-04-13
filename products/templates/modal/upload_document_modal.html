@@ -12,9 +12,9 @@
             <div class="modal-header border-0">
                 <h5 class="modal-title" id="uploadDocumentModalLabel">Upload File</h5>
             </div>
-            <div class="modal-body pt-0">
-                <form id="upload-document-form" action="{% url 'products:upload_document' product_id=product.id folder_id=current_folder.id %}" method="post" enctype="multipart/form-data">
-                    {% csrf_token %}
+            <form id="upload-document-form" action="{% url 'products:upload_document' product_id=product.id folder_id=current_folder.id %}" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body">
                     <div class="drag-and-drop-area" ondragover="event.preventDefault();" ondrop="handleDrop(event);">
                         <input type="file" id="documentFile" name="document_files" hidden required multiple>
                         <label for="documentFile" class="w-100">
@@ -24,28 +24,13 @@
                         </label>
                     </div>
                     <div id="file-inputs-container"></div>
-                    <!--
-                    <div class="form-group" style="margin-bottom:10px;">
-                        <label for="comments">Comments:</label>
-                        <textarea id="comments" rows="3" name="comments" class="form-control fixed-height"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="documentType">Document Type</label>
-                        <select class="form-control" id="documentType" name="document_type">
-                            {% for doc_type in document_types %}
-                                <option value="{{ doc_type.id }}">{{ doc_type.type_name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <input type="hidden" id="folderId" name="folder_id" value="{{ folder.id }}">
-                    -->
-                </form>
+                </div>
         
-                <div class="modal-footer border-0 p-0">
+                <div class="modal-footer border-0 p-1">
                     <button type="button" class="btn small h6 text-primary-custom text-15" data-bs-dismiss="modal">Close</button>
                     <button type="submit" class="btn small h6 fw-less-bold text-primary-custom text-15" form="upload-document-form">Upload</button>
                 </div>
-            </div>
+            </form>
         </div>
     </div>
 </div>
