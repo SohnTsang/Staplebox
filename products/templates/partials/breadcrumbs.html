@@ -1,0 +1,15 @@
+<div class="breadcrumb-container">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            {% for breadcrumb in breadcrumbs %}
+                <li class="breadcrumb-item">
+                    {% if forloop.last %}
+                        <span class="p-2 h6 fw-bold small">{{ breadcrumb.name }}</span>
+                    {% else %}
+                        <a href="#" class="breadcrumb-link text-primary-custom opacity-75 breadcrumb-navigation p-2 h6 small" data-folder-id="{{ breadcrumb.id }}" data-product-id="{{ product.id }}">{{ breadcrumb.name }}</a>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ol>
+    </nav>
+</div>

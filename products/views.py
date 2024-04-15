@@ -4,7 +4,6 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .models import Product
 from .forms import ProductForm
-from users.models import UserProfile
 from folder.models import Folder  # Assuming the Folder model is in the folder app
 from django.http import JsonResponse
 from django.db.models import Q
@@ -12,7 +11,9 @@ from django.urls import reverse
 from document_types.models import DocumentType
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from documents.models import Document
-
+from django.template.loader import render_to_string
+from django.db import transaction
+from .utils import get_breadcrumbs
 
 @login_required
 def product_list(request):
@@ -225,25 +226,36 @@ def move_entity(request, product_id, entity_type, entity_id, current_folder_id=N
     root_folder, _ = Folder.objects.get_or_create(product=product, name='Root', defaults={'parent': None})
     current_folder = get_object_or_404(Folder, pk=current_folder_id) if current_folder_id else root_folder
     
-    if request.method == 'POST':
-        target_folder_id = request.POST.get('target_folder_id', root_folder.id)
-        target_folder = get_object_or_404(Folder, pk=target_folder_id)
-        if entity_type == 'folder':
-            entity.parent = target_folder
-        else:
-            entity.folder = target_folder
-        entity.save()
-        messages.success(request, 'Entity moved successfully.')
-        
-        # Redirect to the target folder view inside product explorer
-        return redirect(reverse('products:product_explorer_folder', kwargs={'product_id': product_id, 'folder_id': target_folder.id}))
+    
+    if current_folder_id and current_folder_id != root_folder.id:
+        current_folder = get_object_or_404(Folder, id=current_folder_id)
+        # Get ancestors of the current folder including itself for the breadcrumbs
+        folder_ancestors = list(current_folder.get_ancestors(include_self=True))
+        # Replace the first item (root folder) with a custom entry for the product name
+        breadcrumbs = [{'id': root_folder.id, 'name': product.product_name}]
+        # Extend breadcrumbs with current folder's ancestors, skipping the first one if it's the root
+        breadcrumbs.extend([{'id': folder.id, 'name': folder.name} for folder in folder_ancestors[1:]])
+    else:
+        current_folder = root_folder
+        # Only use the product name for the root breadcrumb
+        breadcrumbs = [{'id': root_folder.id, 'name': product.product_name}]
 
-    # Prepare breadcrumbs
-    breadcrumbs = [{'name': product.product_name, 'url': reverse('products:move_entity', args=[product_id, entity_type, entity_id])}]
-    parent = current_folder
-    while parent is not None and parent != root_folder:
-        breadcrumbs.insert(1, {'name': parent.name, 'url': reverse('products:move_entity', args=[product_id, entity_type, entity_id, parent.id])})
-        parent = parent.parent
+    if request.method == 'POST':
+        target_folder_id = request.POST.get('target_folder_id', current_folder.id)
+        target_folder = get_object_or_404(Folder, pk=target_folder_id)
+        print(f"Moving {entity_type} with ID {entity_id} to folder {target_folder_id}")
+
+        with transaction.atomic():
+            if entity_type == 'folder':
+                entity.parent = target_folder
+            else:
+                entity.folder = target_folder
+            entity.save()
+            print(f"Entity {entity_id} moved to {target_folder_id}")
+        
+        redirect_url = reverse('products:product_explorer_folder', kwargs={'product_id': product_id, 'folder_id': current_folder.id})
+        return JsonResponse({'success': True, 'message': 'Item moved', 'redirect': redirect_url})
+
 
     # Navigation context
     folders = Folder.objects.filter(parent=current_folder).exclude(id=entity.id if entity_type == 'folder' else None).order_by('name')
@@ -259,4 +271,56 @@ def move_entity(request, product_id, entity_type, entity_id, current_folder_id=N
         'root_folder': root_folder,
         'breadcrumbs': breadcrumbs,
     }
-    return render(request, 'products/move_entity.html', context)
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        html = render_to_string('products/move_entity_fragment.html', context, request=request)
+        return JsonResponse({'html': html})
+    
+    return render(request, 'products/product_explorer.html', context)
+
+
+@login_required
+def folder_content(request, product_id, folder_id, moving_folder_id=None):
+    product = get_object_or_404(Product, pk=product_id)
+    folder = get_object_or_404(Folder, pk=folder_id, product=product)
+    subfolders = Folder.objects.filter(parent=folder).order_by('name')
+    documents = Document.objects.filter(folder=folder)
+    is_empty = not subfolders.exists() and not documents.exists()
+    moving_folder_id = request.GET.get('moving_folder_id', None)
+
+    if moving_folder_id and moving_folder_id.isdigit():
+        moving_folder_id = int(moving_folder_id)
+    else:
+        moving_folder_id = None
+
+    # Determine the root folder and compute breadcrumbs
+    root_folder = Folder.objects.filter(product=product, name='Root').first()
+
+    # Initial breadcrumb for the product's root directory
+    breadcrumbs = [{'id': root_folder.id, 'name': product.product_name}]
+
+    # Include ancestors, ensuring no duplication of the root entry
+    folder_ancestors = list(folder.get_ancestors(include_self=True))
+    if folder_ancestors and folder_ancestors[0] == root_folder:
+        # If the root folder is the first ancestor, skip adding it again
+        breadcrumbs.extend([{'id': ancestor.id, 'name': ancestor.name} for ancestor in folder_ancestors[1:]])
+    else:
+        # Otherwise, add all ancestors
+        breadcrumbs.extend([{'id': ancestor.id, 'name': ancestor.name} for ancestor in folder_ancestors])
+
+    context = {
+        'folder': folder,
+        'subfolders': subfolders,
+        'documents': documents,
+        'is_empty': is_empty,
+        'breadcrumbs': breadcrumbs,
+        'moving_folder_id': moving_folder_id  # Add this to context
+    }
+
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        html_content = render_to_string('partials/folder_content.html', context, request=request)
+        return JsonResponse({
+            'html': html_content,
+            'breadcrumbs': breadcrumbs
+        })
+    else:
+        return render(request, 'partials/folder_content.html', context)

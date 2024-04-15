@@ -1,0 +1,16 @@
+
+{% for folder in subfolders %}
+    {% if folder.id != moving_folder_id %}
+        <div class="content-item rounded-pill mb-1 d-flex align-items-center clickable-div open-folder" data-folder-id="{{ folder.id }}" data-product-id="{{ product.id }}">
+            <svg class="me-2" width="23" height="20" viewBox="0 0 17 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M16 6.32099V12.642C16 13.4751 15.3473 14.1576 14.5194 14.2179L14.4 14.2222H1.6C0.75651 14.2222 0.0654679 13.5776 0.00438862 12.7599L0 12.642L0 6.32099L16 6.32099ZM6.0155 0C6.45292 0 6.86907 0.176755 7.16925 0.485378L7.26488 0.593075L8.38448 1.97531L14.4 1.97531C15.2435 1.97531 15.9345 2.61995 15.9956 3.43762L16 3.55556V4.74074L0 4.74074L0 1.58025C0 0.747171 0.652702 0.0646597 1.48059 0.00433444L1.6 0L6.0155 0Z" fill="#CCA92D"/>
+            </svg>
+            <button id="openFolderBtn" class="btn btn-link text-primary-custom open-folder p-0 fw-less-bold" data-folder-id="{{ folder.id }}" data-product-id="{{ product.id }}">{{ folder.name }}</button>
+        </div>
+    {% endif %}
+{% endfor %}
+{% if not subfolders %}
+    <p class="small">No contents in this folder</p>
+{% endif %}
+
+

@@ -266,7 +266,7 @@ a {
 {% endif %}
 
 
-<div id="product-explorer" data-product-id="{{ product.id }}" data-root-folder-id="{{ root_folder_id }}" class="container-fluid mt-5">
+<div id="product-explorer" data-product-id="{{ product.id }}" data-root-folder-id="{{ root_folder_id }}" class="container-fluid mt-5" data-product-id="{{ product.id }}">
     <div class="row">
         <div id="left-explorer" class="col-md-12 col-lg-8 pe-lg-2">
             <div class="bg-white rounded-2 wrapper vh-90">
@@ -384,10 +384,13 @@ a {
 
                                                 <!-- Update Action -->
                                                 <li>
-                                                    <a href="{% url 'products:move_entity' product_id=product.id entity_type='folder' entity_id=folder.id %}" class="dropdown-item">
-                                                        <i class="fas fa-edit"></i> &nbsp; Move Folder
+                                                    <a href="#" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#moveEntityModal"
+                                                       data-entity-type="folder" data-entity-id="{{ folder.id }}" data-product-id="{{ product.id }}" data-moving-folder-id="{{ folder.id }}"
+                                                       data-current-folder-id="{{ folder.parent.id }}" data-url="{% url 'products:move_entity' product_id=product.id entity_type='folder' entity_id=folder.id current_folder_id=folder.parent.id %}">
+                                                        <i class="fas fa-user"></i> &nbsp; Move Folder
                                                     </a>
                                                 </li>
+
                                                 <li><hr class="dropdown-divider"></li>
                                                 <!-- Delete Action -->
                                                 <li>
@@ -481,7 +484,9 @@ a {
                                             </li>
                                             
                                             <li>
-                                                <a href="{% url 'products:move_entity' product_id=product.id entity_type='document' entity_id=document.id %}" class="dropdown-item">
+                                                <a href="#" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#moveEntityModal"
+                                                   data-entity-type="document" data-entity-id="{{ document.id }}" data-product-id="{{ product.id }}"
+                                                   data-current-folder-id="{{ document.folder.id }}" data-url="{% url 'products:move_entity' product_id=product.id entity_type='document' entity_id=document.id current_folder_id=document.folder.id %}">
                                                     <i class="fas fa-user"></i> &nbsp; Move Document
                                                 </a>
                                             </li>
@@ -571,6 +576,7 @@ a {
 {% include "modal/document_version_modal.html" %}
 {% include "modal/update_document_modal.html" %}
 {% include "modal/comment_modal.html" %}
+{% include "modal/move_entity_modal.html" %}
 
 
 
@@ -579,6 +585,140 @@ a {
 <!--<script src="{% static 'products/js/product_explorer.js' %}"></script>-->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 
+<script>
+    const productId = '{{ product.id }}'; // Make sure this is rendered server-side or appropriately defined somewhere accessible
+</script>
+
+
+
+<script>
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    $.ajaxSetup({
+        beforeSend: function(xhr, settings) {
+            if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type) && !this.crossDomain) {
+                xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
+            }
+        }
+    });
+</script>
+
+<!-- move entity modal -->
+<script>
+    
+    var movingFolderId = null;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        $('#moveEntityModal').on('show.bs.modal', function(event) {
+            var button = $(event.relatedTarget);
+            var modal = $(this);
+            var entityType = button.data('entity-type');
+
+            var movingFolderId = entityType === 'folder' ? button.data('moving-folder-id') : null;
+            var url = button.data('url'); // Ensure this attribute is passed correctly
+            
+            $.ajax({
+                url: url,
+                success: function(response) {
+                    modal.find('.modal-body').html(response.html);
+                },
+                error: function() {
+                    modal.find('.modal-body').html('<p>Error loading information.</p>');
+                }
+            });
+        });
+
+        // Handling form submission within the modal
+        $(document).on('submit', '.action-form', function(e) {
+            e.preventDefault();
+            var form = $(this);
+            $.ajax({
+                type: 'POST',
+                url: form.attr('action'),
+                data: form.serialize(),
+                headers: {'X-CSRFToken': getCookie('csrftoken')},
+                success: function(response) {
+                    if (response.success) {
+                        alert(response.message);
+                        window.location.href = response.redirect; // Ensure this is the desired behavior
+                    } else {
+                        alert('Failed to move entity.');
+                    }
+                },
+                error: function() {
+                    alert('Error moving entity.');
+                }
+            });
+        });
+
+        // Opening folders within the modal
+        document.body.addEventListener('click', function(event) {
+            const target = event.target;
+            if (target.classList.contains('open-folder') || target.classList.contains('breadcrumb-link')) {
+                const folderId = target.dataset.folderId;
+                const local_productId = productId;
+                if (!folderId || !local_productId) {
+                    console.error('Folder ID or Product ID is missing!');
+                    return;
+                }
+
+                const url = `/products/${local_productId}/explorer/folder/${folderId}/content/?moving_folder_id=${movingFolderId}`;
+                fetch(url, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'  // This line is crucial
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    document.querySelector('.content-section').innerHTML = data.html;
+                    updateBreadcrumbs(data.breadcrumbs);
+                    document.querySelector('input[name="target_folder_id"]').value = folderId;
+                })
+                .catch(error => {
+                    console.error('Error loading folder contents:', error);
+                });
+            }
+        });
+
+        function updateBreadcrumbs(breadcrumbs) {
+            const breadcrumbContainer = document.querySelector('.breadcrumb-container ol');
+            breadcrumbContainer.innerHTML = ''; // Clear existing breadcrumbs
+            breadcrumbs.forEach((breadcrumb, index) => {
+                const li = document.createElement('li');
+                li.className = 'breadcrumb-item';
+                if (index === breadcrumbs.length - 1) {
+                    const span = document.createElement('span');
+                    span.className = 'p-2 h6 fw-bold small';
+                    span.textContent = breadcrumb.name;
+                    li.appendChild(span);
+                } else {
+                    const a = document.createElement('a');
+                    a.href = "#";
+                    a.textContent = index === 0 ? '{{ product.product_name }}' : breadcrumb.name;
+                    a.className = 'breadcrumb-link text-primary-custom opacity-75 breadcrumb-navigation p-2 h6 small';
+                    a.setAttribute('data-folder-id', breadcrumb.id);
+                    a.setAttribute('data-product-id', productId);
+                    a.setAttribute('data-moving-folder-id', movingFolderId);
+                    li.appendChild(a);
+                }
+                breadcrumbContainer.appendChild(li);
+            });
+        }
+        
+    });
+</script>
 <!-- View and Edit Comment Modal-->
 <script>
     document.addEventListener('DOMContentLoaded', function () {
@@ -653,20 +793,7 @@ a {
         });
     }
 
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
-        }
-        return cookieValue;
-    }
+    //get cookie
 
 </script>
 
@@ -780,9 +907,7 @@ a {
 </script>
 
 
-<script>
-    const productId = '{{ product.id }}'; // Make sure this is rendered server-side or appropriately defined somewhere accessible
-</script>
+
 
 <script>
     
@@ -1073,6 +1198,9 @@ a {
     });
 </script>
 
+<script>
+    
+</script>
 
 {% endblock %}
 
