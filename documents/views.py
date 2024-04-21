@@ -234,7 +234,7 @@ def ajax_update_document(request, document_id):
     has_access = AccessPermission.objects.filter(partner2=user, document=document).exists()
 
     if not (is_owner or has_access):
-        return JsonResponse({'error': 'You do not have permission to update this document.'}, status=403)
+        return JsonResponse({'error': 'You do not have permission to update this document'}, status=403)
 
     uploaded_file = request.FILES.get('file')
     comments = request.POST.get('comments')
@@ -243,9 +243,9 @@ def ajax_update_document(request, document_id):
         new_hash = file_hash(uploaded_file)  # Your file_hash function needs to be defined
         document.update_version(uploaded_file, new_hash, comments, user)
 
-        return JsonResponse({'message': 'Document updated successfully!'})
+        return JsonResponse({'message': 'Document updated'})
 
-    return JsonResponse({'error': 'No file was uploaded.'}, status=400)
+    return JsonResponse({'error': 'No file was uploaded'}, status=400)
 
 
 @require_POST  # Ensures only POST requests are handled

@@ -19,4 +19,6 @@ urlpatterns = [
     ),
 
     path('get_partners_with_access_json/<int:item_id>/<str:item_type>/', views.get_partners_with_access_json, name='get_partners_with_access_json'),
+    path('grant_access/<int:product_id>/', views.access_control_modal, name='grant_access'),
+
 ]

@@ -1,4 +1,6 @@
 # products/views.py
+
+from django.contrib.auth.models import User
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -13,7 +15,10 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from documents.models import Document
 from django.template.loader import render_to_string
 from django.db import transaction
-from .utils import get_breadcrumbs
+from django.views.decorators.http import require_http_methods
+from partners.utils import get_partner_info
+from django.http import HttpResponseNotAllowed
+    
 
 @login_required
 def product_list(request):
@@ -132,6 +137,9 @@ def edit_product(request, pk):
 
 @login_required
 def product_explorer(request, product_id, folder_id=None):
+    user = request.user
+    partner_info = get_partner_info(user)
+
     product = get_object_or_404(Product, id=product_id)
     root_folder, _ = Folder.objects.get_or_create(product=product, name='Root', defaults={'parent': None})
 
@@ -167,6 +175,7 @@ def product_explorer(request, product_id, folder_id=None):
             document.latest_version_date = document.created_at
 
     context = {
+        'partners': partner_info,
         'product': product,
         'root_folder': root_folder,
         'current_folder': current_folder,
@@ -241,9 +250,16 @@ def move_entity(request, product_id, entity_type, entity_id, current_folder_id=N
         breadcrumbs = [{'id': root_folder.id, 'name': product.product_name}]
 
     if request.method == 'POST':
-        target_folder_id = request.POST.get('target_folder_id', current_folder.id)
+        target_folder_id = request.POST.get('target_folder_id')
+        if target_folder_id == str(entity_id) and entity_type == 'folder':
+            return JsonResponse({'success': False, 'message': 'Cannot move a folder into itself.'})
+
         target_folder = get_object_or_404(Folder, pk=target_folder_id)
-        print(f"Moving {entity_type} with ID {entity_id} to folder {target_folder_id}")
+
+        if entity_type == 'folder' and entity.parent_id == target_folder_id:
+            return JsonResponse({'success': False, 'message': 'Folder is already in this location.'})
+        elif entity_type == 'document' and entity.folder_id == target_folder_id:
+            return JsonResponse({'success': False, 'message': 'Document is already in this folder.'})
 
         with transaction.atomic():
             if entity_type == 'folder':
@@ -251,7 +267,6 @@ def move_entity(request, product_id, entity_type, entity_id, current_folder_id=N
             else:
                 entity.folder = target_folder
             entity.save()
-            print(f"Entity {entity_id} moved to {target_folder_id}")
         
         redirect_url = reverse('products:product_explorer_folder', kwargs={'product_id': product_id, 'folder_id': current_folder.id})
         return JsonResponse({'success': True, 'message': 'Item moved', 'redirect': redirect_url})
@@ -276,6 +291,55 @@ def move_entity(request, product_id, entity_type, entity_id, current_folder_id=N
         return JsonResponse({'html': html})
     
     return render(request, 'products/product_explorer.html', context)
+
+
+@login_required
+@require_http_methods(["POST"])
+def move_entities(request, product_id, current_folder_id=None):
+    product = get_object_or_404(Product, pk=product_id)
+    root_folder, _ = Folder.objects.get_or_create(product=product, name='Root')
+    current_folder = get_object_or_404(Folder, pk=current_folder_id) if current_folder_id else root_folder
+
+
+    if request.method == 'POST':
+        entity_ids = request.POST.getlist('entity_ids[]')
+        entity_types = request.POST.getlist('entity_types[]')
+        target_folder_id = request.POST.get('target_folder_id')
+        target_folder = get_object_or_404(Folder, pk=target_folder_id)
+
+        print("Entity IDs length:", len(entity_ids), "Entity Types length:", len(entity_types), entity_types)
+
+        if len(entity_ids) != len(entity_types):
+            return JsonResponse({'success': False, 'message': 'Mismatch between entity IDs and types.'}, status=400)
+
+        entities_moved = []
+        with transaction.atomic():
+            for entity_id, entity_type in zip(entity_ids, entity_types):
+                if entity_type not in ['folder', 'document']:
+                    continue
+
+                model_class = Folder if entity_type == 'folder' else Document
+                entity = get_object_or_404(model_class, pk=entity_id)
+
+                if str(entity_id) == target_folder_id:
+                    continue  # Skip if trying to move a folder into itself
+                if entity_type == 'folder' and entity.parent_id == target_folder_id:
+                    continue  # Skip if already in the target folder
+                if entity_type == 'document' and entity.folder_id == target_folder_id:
+                    continue  # Skip if already in the target folder
+
+                if entity_type == 'folder':
+                    entity.parent = target_folder
+                else:
+                    entity.folder = target_folder
+                
+                entity.save()
+                entities_moved.append(entity_id)
+        
+        return JsonResponse({'success': True, 'message': f'Entities moved successfully: {entities_moved}'})
+
+    # If GET method or other, handle accordingly
+    return JsonResponse({'error': 'Invalid request method.'}, status=405)
 
 
 @login_required

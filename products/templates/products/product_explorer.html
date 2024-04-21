@@ -7,13 +7,10 @@
 
 
 {% block extra_css %}
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
 <style>
 
-body {
-    font-family: 'Inter', sans-serif;
-}
+
 
 a {
     cursor: pointer;
@@ -23,6 +20,7 @@ a {
     border-radius: 5px;
     font-size: 14px;
     min-width: 200px;
+    max-width: 200px;
 }
 
 .dropdown-menu li {
@@ -63,10 +61,13 @@ a {
 
 @media (min-width: 1055px) {
     #detail {
-        width: 350px;
+        max-width: 23%;
     }
-    
+    #left-explorer {
+        max-width: 80%;
+    }
 }
+
 
 @media (max-width: 1054px) {
     #detail {
@@ -207,7 +208,6 @@ a {
   + .breadcrumb-item::before {
     content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' viewBox='0 0 20 20'%3E%3Cpath d='M10 17L15 12' stroke='%23454545' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M15 12L10 7' stroke='%23454545' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
     color: #7d8daa;
-    
   }
 }
 
@@ -218,11 +218,11 @@ a {
 }
 
 .highlighted-row {
-    background-color: #1e7bee44 !important; /* Or any color you prefer */
+    background-color: #4f96ee33 !important; /* Or any color you prefer */
 }
 
 .detail-item {
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.6rem;
     padding-bottom: 0.5rem;
     padding-left: 1rem;
     padding-right: 1rem;
@@ -238,7 +238,7 @@ a {
 }
 
 .detail-item strong, .access-item strong{
-    font-size: 0.95rem;
+    font-size: 0.8rem;
     display: block;
     color: rgb(44, 44, 44);
     margin-bottom: .2rem;
@@ -249,7 +249,11 @@ a {
     margin: 0;
     padding: 0;
     color: #474747;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
+}
+
+.vh-92 {
+    height: 92vh;
 }
 
 </style>
@@ -257,21 +261,13 @@ a {
 
 {% block content %}
 
-{% if messages %}
-    {% for message in messages %}
-        <div class="alert {{ message.tags }}">
-            {{ message }}
-        </div>
-    {% endfor %}
-{% endif %}
 
-
-<div id="product-explorer" data-product-id="{{ product.id }}" data-root-folder-id="{{ root_folder_id }}" class="container-fluid mt-5" data-product-id="{{ product.id }}">
+<div id="product-explorer" data-product-id="{{ product.id }}" data-root-folder-id="{{ root_folder_id }}" class="container-fluid mt-1" data-product-id="{{ product.id }}">
     <div class="row">
-        <div id="left-explorer" class="col-md-12 col-lg-8 pe-lg-2">
-            <div class="bg-white rounded-2 wrapper vh-90">
+        <div id="left-explorer" class="col-md-12 col-lg-9 pe-lg-2">
+            <div class="bg-white rounded-2 wrapper vh-92">
                 <div class="title">
-                    <h4 class="text-primary-custom fw-bold px-3">{{ product.product_name}}</h4>
+                    <h4 class="text-primary-custom fw-bold px-4">{{ product.product_name }}</h4>
                 </div>
                 
 
@@ -291,7 +287,7 @@ a {
                     </nav>
                 </div>
                 
-                <div class="d-flex justify-content-start align-items-center pb-3 px-3">
+                <div class="d-flex justify-content-start align-items-center pb-3 px-4">
                     <noscript>
                         <form id="create-folder-form" method="post" action="{% url 'products:folder_create' product_id=product.id %}" class="">
                             {% csrf_token %}
@@ -309,8 +305,12 @@ a {
                         </form>
                     </noscript>
                     <!-- Spacer div to push the next element(s) to the right -->
-                    <button type="button" class="btn btn-modern" data-bs-toggle="modal" data-bs-target="#createFolderModal">Create Folder</button>
-                    <button type="button" class="btn btn-modern ms-2" data-bs-toggle="modal" data-bs-target="#uploadDocumentModal">Upload File</button>
+                    <div class="gap-3 d-flex">
+                        <button type="button" class="btn align-items-center justify-content-center img-wrapper" data-bs-toggle="modal" data-bs-target="#createFolderModal" style="background: none; border: none; padding: 0;">
+                            <img src="{% static 'images/navbar_icon/new_folder.png' %}" alt="Create Folder" style="height: 24px; width: 24px;">
+                        </button>                    
+                        <button type="button" class="btn btn-modern ms-2" data-bs-toggle="modal" data-bs-target="#uploadDocumentModal">Upload File</button>
+                    </div>
                     <div class="ms-auto"></div>
                     
                     <!-- This link/button will be aligned to the right -->
@@ -324,7 +324,6 @@ a {
                     <table class="table table-hover align-middle">
                         <thead>
                             <tr class="">
-                                <th scope="col" class="checkbox-column"></th>
                                 <th scope="col" class="small truncate-name">Name</th>
                                 <th scope="col" class="small truncate-original-name">Original Name</th>
                                 <th scope="col" class="small truncate-type">Category</th>
@@ -338,8 +337,7 @@ a {
                             <!-- Folders -->
                             {% for folder in subfolders %}
                             <!--<tr class="clickable-row" onclick="window.location='{% url 'products:product_explorer_folder' product_id=product.id folder_id=folder.id %}';">-->
-                                <tr class="clickable-row" data-id="{{ folder.id }}" data-owner="{{ folder.created_by }}" data-name="{{ folder.name }}" data-modified="{{ folder.updated_at|date:"Y-m-d H:i" }}" data-created="{{ folder.created_at|date:"Y-m-d H:i" }}" data-type="folder">
-                                        <td class="checkbox-column"><input type="checkbox" name="selected_items" value="folder_{{ folder.id }}"></td>
+                                <tr class="clickable-row" draggable="true" data-id="{{ folder.id }}" data-owner="{{ folder.created_by }}" data-name="{{ folder.name }}" data-modified="{{ folder.updated_at|date:"Y-m-d H:i" }}" data-created="{{ folder.created_at|date:"Y-m-d H:i" }}" data-type="folder">
                                     <td class="small truncate-name">
                                         <svg class="me-2" width="23" height="20" viewBox="0 0 17 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                                             <path d="M16 6.32099V12.642C16 13.4751 15.3473 14.1576 14.5194 14.2179L14.4 14.2222H1.6C0.75651 14.2222 0.0654679 13.5776 0.00438862 12.7599L0 12.642L0 6.32099L16 6.32099ZM6.0155 0C6.45292 0 6.86907 0.176755 7.16925 0.485378L7.26488 0.593075L8.38448 1.97531L14.4 1.97531C15.2435 1.97531 15.9345 2.61995 15.9956 3.43762L16 3.55556V4.74074L0 4.74074L0 1.58025C0 0.747171 0.652702 0.0646597 1.48059 0.00433444L1.6 0L6.0155 0Z" fill="#CCA92D"/>
@@ -371,7 +369,7 @@ a {
                                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionDropdown{{ forloop.counter }}">
                                                 <!-- Access Action -->
                                                 <li>
-                                                    <a class="dropdown-item" href="#">
+                                                    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#accessControlModal" data-folder-id="{{ folder.id }}" data-product-id="{{ product.id }}">
                                                         <i class="fas fa-user"></i> &nbsp; Access Control
                                                     </a>
                                                 </li>
@@ -409,8 +407,7 @@ a {
                             
                             <!-- Documents -->
                             {% for document in documents %}
-                            <tr class="clickable-row" data-id="{{ document.id }}" data-owner="{{ document.uploaded_by }}" data-version="{{ document.version }}" data-filetype="{{ document.file_type }}" data-name="{{ document.display_filename }}" data-modified="{{ document.updated_at|date:"Y-m-d H:i" }}" data-original="{{ document.original_filename }}" data-category="{{ document.document_type.type_name }}" data-created-by="{{ document.latest_uploaded_by }}" data-created="{{ document.created_at|date:"Y-m-d H:i" }}" data-latest-comment="{{ document.latest_comment }}" data-filesize="{{ document.latest_file_size }}" data-type="document" ">
-                                <td class="checkbox-column"><input type="checkbox" name="selected_items" value="document_{{ document.id }}"></td>
+                            <tr class="clickable-row" draggable="true" data-id="{{ document.id }}" data-owner="{{ document.uploaded_by }}" data-version="{{ document.version }}" data-filetype="{{ document.file_type }}" data-name="{{ document.display_filename }}" data-modified="{{ document.updated_at|date:"Y-m-d H:i" }}" data-original="{{ document.original_filename }}" data-category="{{ document.document_type.type_name }}" data-created-by="{{ document.latest_uploaded_by }}" data-created="{{ document.created_at|date:"Y-m-d H:i" }}" data-latest-comment="{{ document.latest_comment }}" data-filesize="{{ document.latest_file_size }}" data-type="document">
                                 <td class="small truncate-name">
                                     <a href="{% url 'documents:download_document' document.id %}" data-document-id="{{ document.id }}">
                                         {% with document.file_type|upper as doc_type %}
@@ -466,7 +463,7 @@ a {
                                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionDropdown{{ forloop.counter }}">
                                             <!-- Access Action -->
                                             <li>
-                                                <a class="dropdown-item" href="#">
+                                                <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#accessControlModal" data-document-id="{{ document.id }}" data-product-id="{{ product.id }}">
                                                     <i class="fas fa-user"></i> &nbsp; Access Control
                                                 </a>
                                             </li>
@@ -525,21 +522,22 @@ a {
                 </div>
             </div>
         </div>
-        <div id="detail" class="col-lg-2 ps-1">
-            <div class="bg-white rounded-2 wrapper vh-90">
+        <div id="detail" class="col-lg-3 ps-2">
+            <div class="bg-white rounded-2 wrapper vh-92">
                 <div class="title">
                     <h6 id="right-panel-title" class="text-primary-custom mb-0 px-3 fw-bold">{{ product.product_name }}</h6>
                 </div>
 				<div class="">
 					<ul class="nav nav-tabs modern-tabs col-12" id="invitationTab" role="tablist">
+						
 						<li class="nav-item col-6" role="presentation">
-							<button class="nav-link active tab-link py-2-custom" id="access-tab" data-bs-toggle="tab" data-bs-target="#access" type="button" role="tab" aria-controls="received" aria-selected="true">
-								<div class="button-text small">Access</div>
+							<button class="nav-link active tab-link py-2-custom" id="details-tab" data-bs-toggle="tab" data-bs-target="#details" type="button" role="tab" aria-controls="sent" aria-selected="false">
+								<div class="button-text small">Details</div>
 							</button>
 						</li>
-						<li class="nav-item col-6" role="presentation">
-							<button class="nav-link tab-link py-2-custom" id="details-tab" data-bs-toggle="tab" data-bs-target="#details" type="button" role="tab" aria-controls="sent" aria-selected="false">
-								<div class="button-text small">Details</div>
+                        <li class="nav-item col-6" role="presentation">
+							<button class="nav-link  tab-link py-2-custom" id="access-tab" data-bs-toggle="tab" data-bs-target="#access" type="button" role="tab" aria-controls="received" aria-selected="true">
+								<div class="button-text small">Access</div>
 							</button>
 						</li>
 					</ul>
@@ -548,17 +546,17 @@ a {
                     <div id="loadingSpinner" class="loading-spinner-overlay" style="display: none;">
                         <div class="loader"></div>
                     </div>
-					<div class="tab-pane fade show active" id="access" role="tabpanel" aria-labelledby="access-tab">
-						<div class="list-group" id="access-information">
-							<img src="{% static 'images/empty_state/no_partners.png' %}" alt="No Items Selected" class="mt-5 text-center" style="align-self:center;" width="210" height="180">
-                            <small class="text-center mt-3">Select an item to show information</small>
-                        </div>
-					</div>
-					<div class="tab-pane fade" id="details" role="tabpanel" aria-labelledby="details-tab">
+					<div class="tab-pane fade show active" id="details" role="tabpanel" aria-labelledby="details-tab">
 						<div class="list-group" id="details-information">
 							<img src="{% static 'images/empty_state/show_info2.png' %}" alt="No Items Selected" class="mt-5 text-center" style="align-self:center;" width="210" height="180">
                             <small class="text-center mt-3">Select an item to show information</small>
 						</div>
+					</div>
+                    <div class="tab-pane fade" id="access" role="tabpanel" aria-labelledby="access-tab">
+						<div class="list-group" id="access-information">
+							<img src="{% static 'images/empty_state/no_partners.png' %}" alt="No Items Selected" class="mt-5 text-center" style="align-self:center;" width="210" height="180">
+                            <small class="text-center mt-3">Select an item to show information</small>
+                        </div>
 					</div>
 				</div>
 			</div>
@@ -577,7 +575,7 @@ a {
 {% include "modal/update_document_modal.html" %}
 {% include "modal/comment_modal.html" %}
 {% include "modal/move_entity_modal.html" %}
-
+{% include "modal/access_control_modal.html" %}
 
 
 {% block javascript %}
@@ -589,7 +587,287 @@ a {
     const productId = '{{ product.id }}'; // Make sure this is rendered server-side or appropriately defined somewhere accessible
 </script>
 
+<!-- Access Control Moda -->
+<script>
+    document.querySelectorAll('[data-bs-toggle="modal"][data-bs-target="#accessControlModal"]').forEach(element => {
+        element.addEventListener('click', function() {
 
+            const modal = document.getElementById('accessControlModal');
+            const productId = this.getAttribute('data-product-id');
+            const folderId = this.getAttribute('data-folder-id');
+            const documentId = this.getAttribute('data-document-id');
+            const itemType = folderId ? 'folder' : 'document';
+            const itemId = folderId || documentId;
+
+            // Update the form hidden inputs for item_id and item_type
+            modal.querySelector('#item_id').value = itemId;
+            modal.querySelector('#item_type').value = itemType;
+
+            let url = `/access_control/get_partners_with_access_json/${itemId}/${itemType}/`;
+            
+            fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                const partnerContainer = modal.querySelector('#granted-partner-information');
+                partnerContainer.innerHTML = '';  // Clear previous entries
+
+                // Check if 'data' is an array as expected
+                if (Array.isArray(data) && data.length === 0) {
+                    partnerContainer.innerHTML = '<small class="mt-3">No access granted to any partners</small>';
+                } else if (Array.isArray(data)) {
+                    data.forEach(partner => {
+                        const div = document.createElement('div');
+                        div.className = 'list-group-item flex-column';
+                        div.innerHTML = `
+                            <div class="d-flex py-1">
+                                <div class="flex-grow-1 d-flex flex-column ms-3">
+                                    <div class="fw-less-bold">${partner.company_name}</div>
+                                    <div class="text-primary-custom fw-medium small">${partner.company_role}</div>
+                                </div>
+                                <button type="button" class="btn btn-danger btn-sm remove-access" onclick="removeAccess(this.getAttribute('data-partner-id'), '${itemType}', ${itemId}, ${productId})" data-partner-id="${partner.partner2_id}" style="align-self:center;">Remove</button>
+                            </div>
+                        `;
+                        partnerContainer.appendChild(div);
+                    });
+                } else {
+                    console.error('Unexpected data format:', data);
+                }
+            })
+            .catch(error => console.error('Error loading partner data:', error));
+        });
+    });
+
+</script>
+
+
+<!-- drag and drop to move folder -->
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const rows = document.querySelectorAll('.clickable-row');
+        let lastSelectedRow = null;
+        const initialProductName = document.querySelector('#right-panel-title').textContent;
+        const productNameElement = document.querySelector('#right-panel-title');
+
+        rows.forEach(row => {
+            row.addEventListener('click', function(e) {
+                if (e.shiftKey && lastSelectedRow) {
+                    const startRow = Array.from(rows).indexOf(lastSelectedRow);
+                    const endRow = Array.from(rows).indexOf(this);
+                    const [startIndex, endIndex] = [Math.min(startRow, endRow), Math.max(startRow, endRow)];
+                    for (let i = startIndex; i <= endIndex; i++) {
+                        rows[i].classList.add('highlighted-row');
+                    }
+                } else if (e.ctrlKey) {
+                    this.classList.toggle('highlighted-row');
+                } else {
+                    if (!this.classList.contains('highlighted-row')) {
+                        rows.forEach(r => r.classList.remove('highlighted-row'));
+                        this.classList.add('highlighted-row');
+                        updatePanelsBasedOnSelection(this); // Update panels when a new row is selected
+                    } else {
+                        rows.forEach(r => r.classList.remove('highlighted-row'));
+                        resetPanelsToDefault(initialProductName); // Reset panels when deselecting
+                    }
+                }
+                lastSelectedRow = this; // This row now becomes the last selected row
+            });
+
+            row.addEventListener('dblclick', function() {
+                if (this.dataset.type === 'folder') {
+                    const folderId = this.dataset.id; // Assuming `data-id` holds the folder ID
+                    window.location.href = `/products/${productId}/explorer/${folderId}/`; // Adjust URL as needed
+                }
+            });
+
+            row.addEventListener('dragstart', function(e) {
+                if (!this.classList.contains('highlighted-row')) {
+                    this.classList.add('highlighted-row');
+                }
+                const selectedItems = document.querySelectorAll('.highlighted-row');
+                const ids = Array.from(selectedItems).map(row => row.dataset.id);
+                const types = Array.from(selectedItems).map(row => row.dataset.type);
+
+                const dragData = ids.join(',') + '|' + types.join(',');
+                e.dataTransfer.setData('text/plain', dragData);
+            });
+
+            row.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+            });
+
+            row.addEventListener('drop', function(e) {
+                e.preventDefault();
+                const dropData = e.dataTransfer.getData('text/plain').split('|');
+                const ids = dropData[0].split(',');
+                const entityTypes = dropData[1] ? dropData[1].split(',') : [];
+
+                if (ids.length === 1 && ids[0] === '') {
+                    return;
+                }
+
+                const targetId = this.dataset.id;
+                const targetType = this.dataset.type;
+
+                if (targetType === 'document') {
+                    return; // Do nothing when the target is a document
+                }
+
+                if (ids.includes(targetId)) return; // Avoid moving into itself
+
+                moveEntities(ids, entityTypes, targetId);
+            });
+        });
+
+        function moveEntities(ids, entityTypes, targetId) {
+            showLoading();
+            const formData = new FormData();
+            ids.forEach((id, index) => {
+                formData.append('entity_ids[]', id);
+                formData.append('entity_types[]', entityTypes[index]); // Ensure each ID has a corresponding type appended
+            });
+            formData.append('target_folder_id', targetId);
+
+            fetch(`/products/${productId}/move_entities/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken') // CSRF token handling
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('Move successful:', data.message);
+                    window.location.reload();
+                } else {
+                    console.error('Move failed:', data.message);
+                    alert('Failed to move items: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error moving items:', error);
+                alert('An error occurred while moving items.');
+            })
+            .finally(() => {
+                hideLoading();
+            });
+        }
+
+        document.addEventListener('click', function(e) {
+            const modal = document.getElementById('confirmationModal');
+            const isModalOpen = modal && modal.style.display === 'block';
+            
+            if (!e.target.closest('.clickable-row') && !e.target.closest('#detail') && !isModalOpen) {
+                rows.forEach(row => row.classList.remove('highlighted-row'));
+                resetPanelsToDefault(initialProductName);
+            }
+        });
+
+        function updateLeftPanel(partners, itemType, itemId) {
+            const panel = document.getElementById('access-information');
+            let html = partners.length > 0 ? '' : '<div class="detail-item"><strong>No Partners Granted Access</strong></div>';
+            partners.forEach(partner => {
+                html += `<div class="list-group-item list-group-item-action partner-access-item" data-partner-id="${partner.partner2_id}" tabindex="0">
+                    <div class="d-flex py-1">
+                        <div class="visually-hidden" style="align-self: center;"><input type="radio" name="partners" value="${partner.partner2_id}" id="partner_${partner.partner2_id}"></div>
+                        <div class="flex-grow-1 d-flex flex-column ms-3">
+                            <div class="fw-less-bold">${partner.company_name}</div>
+                            <div class="text-primary-custom fw-medium small">${partner.company_role}</div>
+                            <!--<div class="small">${partner.access_detail}</div>-->
+                        </div>
+                    </div>
+                </div>`;
+            });
+            panel.innerHTML = html;
+        }
+
+        function updateRightPanel(data) {
+            const { owner, type, version, fileType, name, original, modified, category, createdBy, created, filesize, latestComment } = data;
+            if (type === "document") {
+                document.getElementById("details-information").innerHTML = `
+                    <div class="detail-item"><strong>Original Name</strong><small>${original}</small></div>
+                    <div class="detail-item"><strong>Category</strong><small>${category}</small></div>
+                    <div class="detail-item"><strong>Latest Comment</strong><small>${latestComment}</small></div>
+                    <div class="detail-item"><strong>Owner</strong><small>${owner}</small></div>
+                    <div class="detail-item"><strong>File Size</strong><small>${filesize}</small></div>
+                    <div class="detail-item"><strong>Version</strong><small>${version}</small></div>
+                    <div class="detail-item"><strong>Modified</strong><small>${modified} by ${createdBy}</small></div>
+                    <div class="detail-item"><strong>Created</strong><small>${created}</small></div>
+                    `;
+                    // Switch to the details tab
+                    // new bootstrap.Tab(document.querySelector('#details-tab')).show();
+            }
+            else if (type === "folder") {
+                document.getElementById("details-information").innerHTML = `
+                    <div class="detail-item"><strong>Owner</strong><small>${owner}</small></div>
+                    <div class="detail-item"><strong>Modified</strong><small>${modified}</small></div>
+                    <div class="detail-item"><strong>Created</strong><small>${created}</small></div>
+                    `;
+                    // Switch to the details tab
+                    // new bootstrap.Tab(document.querySelector('#details-tab')).show();
+            }
+        }
+
+        function getIconHTML(fileType) {
+            // Define your icons here
+            const icons = {
+                '.PDF': '<svg class="" width="20" height="23" viewBox="0 0 15 18" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6.8 0V5.525C6.8 6.18774 7.30568 6.73238 7.95221 6.79416L8.075 6.8H13.6V15.3C13.6 16.1962 12.9065 16.9304 12.0269 16.9953L11.9 17H1.7C0.803792 17 0.0695594 16.3065 0.0046627 15.4269L0 15.3L0 1.7C0 0.803792 0.693496 0.0695596 1.57313 0.00466291L1.7 0L6.8 0ZM8.5 0.036856C8.77387 0.094843 9.03044 0.219882 9.24584 0.402096L9.35 0.497921L13.1021 4.25C13.3031 4.451 13.4486 4.69715 13.5286 4.96461L13.5631 5.1H8.5V0.036856Z" fill="#295893"/></svg>',
+                '.WORD': '<img src="{% static "icons/word-icon.png" %}" alt="Word" width="16" height="16" class="">',
+                '.PNG': '<svg class="" width="23" height="19" viewBox="0 0 17 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14.4 0C15.2837 0 16 0.696446 16 1.55556V12.4444C16 13.3036 15.2837 14 14.4 14H1.6C0.716344 14 0 13.3036 0 12.4444L0 1.55556C0 0.696446 0.716344 0 1.6 0L14.4 0ZM14.4 1.55556L1.6 1.55556L1.6 9.4115L5.59584 5.52666C5.98637 5.147 6.61952 5.147 7.01008 5.52666L10.2627 8.68902L11.2527 7.7266C11.6432 7.34689 12.2764 7.34689 12.6669 7.7266L14.4 9.4115V1.55556ZM10.8 3.11111C11.4627 3.11111 12 3.63344 12 4.27778C12 4.92211 11.4627 5.44444 10.8 5.44444C10.1373 5.44444 9.6 4.92211 9.6 4.27778C9.6 3.63344 10.1373 3.11111 10.8 3.11111Z" fill="#AC3140"/></svg>',
+                '.JPG': '<svg class="" width="23" height="19" viewBox="0 0 17 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14.4 0C15.2837 0 16 0.696446 16 1.55556V12.4444C16 13.3036 15.2837 14 14.4 14H1.6C0.716344 14 0 13.3036 0 12.4444L0 1.55556C0 0.696446 0.716344 0 1.6 0L14.4 0ZM14.4 1.55556L1.6 1.55556L1.6 9.4115L5.59584 5.52666C5.98637 5.147 6.61952 5.147 7.01008 5.52666L10.2627 8.68902L11.2527 7.7266C11.6432 7.34689 12.2764 7.34689 12.6669 7.7266L14.4 9.4115V1.55556ZM10.8 3.11111C11.4627 3.11111 12 3.63344 12 4.27778C12 4.92211 11.4627 5.44444 10.8 5.44444C10.1373 5.44444 9.6 4.92211 9.6 4.27778C9.6 3.63344 10.1373 3.11111 10.8 3.11111Z" fill="#AC3140"/></svg>',
+                '.SVG': '<svg class="" width="23" height="19" viewBox="0 0 17 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14.4 0C15.2837 0 16 0.696446 16 1.55556V12.4444C16 13.3036 15.2837 14 14.4 14H1.6C0.716344 14 0 13.3036 0 12.4444L0 1.55556C0 0.696446 0.716344 0 1.6 0L14.4 0ZM14.4 1.55556L1.6 1.55556L1.6 9.4115L5.59584 5.52666C5.98637 5.147 6.61952 5.147 7.01008 5.52666L10.2627 8.68902L11.2527 7.7266C11.6432 7.34689 12.2764 7.34689 12.6669 7.7266L14.4 9.4115V1.55556ZM10.8 3.11111C11.4627 3.11111 12 3.63344 12 4.27778C12 4.92211 11.4627 5.44444 10.8 5.44444C10.1373 5.44444 9.6 4.92211 9.6 4.27778C9.6 3.63344 10.1373 3.11111 10.8 3.11111Z" fill="#AC3140"/></svg>',
+                // Add more as needed
+                'DEFAULT': '<svg class="icon-folder" xmlns="http://www.w3.org/2000/svg" width="22" height="20" fill="currentColor" viewBox="0 0 18 16"><path d="M16 6.32099V12.642C16 13.4751 15.3473 14.1576 14.5194 14.2179L14.4 14.2222H1.6C0.75651 14.2222 0.0654679 13.5776 0.00438862 12.7599L0 12.642L0 6.32099L16 6.32099ZM6.0155 0C6.45292 0 6.86907 0.176755 7.16925 0.485378L7.26488 0.593075L8.38448 1.97531L14.4 1.97531C15.2435 1.97531 15.9345 2.61995 15.9956 3.43762L16 3.55556V4.74074L0 4.74074L0 1.58025C0 0.747171 0.652702 0.0646597 1.48059 0.00433444L1.6 0L6.0155 0Z" fill="#CCA92D"/></svg>' // Default icon
+            };
+            if (!fileType) {
+                return icons['DEFAULT']; // Return default icon or an empty string if no icon should be shown
+            }
+
+            return icons[fileType.toUpperCase()] || icons['DEFAULT']; // Return matching icon or default
+        }
+
+        function fetchPartnersWithAccess(itemType, itemId) {
+            const url = `/access_control/get_partners_with_access_json/${itemId}/${itemType}/`;
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    updateLeftPanel(data, itemType, itemId);
+                    hideLoading(); // Hide loading after async operation is complete
+                })
+                .catch(error => {
+                    console.error('Error loading partners:', error);
+                    hideLoading(); // Ensure loading is hidden on error
+                });
+        }
+
+        function updatePanelsBasedOnSelection(selectedRow) {
+            const fileType = selectedRow.dataset.filetype;
+            const iconHTML = getIconHTML(fileType);
+            const name = selectedRow.dataset.name;
+            const itemId = selectedRow.dataset.id;
+            const itemType = selectedRow.dataset.type;
+
+            productNameElement.innerHTML = `${iconHTML} <span class="name-container py-3">${name}</span>`;
+            updateRightPanel(selectedRow.dataset);
+            fetchPartnersWithAccess(itemType, itemId);
+        }
+
+        function resetPanelsToDefault(productName) {
+            document.getElementById("details-information").innerHTML = `
+                <img src="{% static 'images/empty_state/show_info2.png' %}" alt="Select an item to show information" class="mt-5 text-center" style="align-self:center;" width="210" height="180">
+                <small class="text-center mt-3">Select an item to show information</small>
+                `;
+            document.getElementById("access-information").innerHTML = `
+                <img src="{% static 'images/empty_state/no_partners.png' %}" alt="Select an item to show information" class="mt-5 text-center" style="align-self:center;" width="210" height="180">
+                <small class="text-center mt-3">Select an item to show information</small>
+                `;
+            document.querySelectorAll('.clickable-row').forEach(r => r.classList.remove('highlighted-row'));
+        }
+    });
+
+
+</script>
 
 <script>
     function getCookie(name) {
@@ -617,7 +895,6 @@ a {
 
 <!-- move entity modal -->
 <script>
-    
     var movingFolderId = null;
 
     document.addEventListener('DOMContentLoaded', function() {
@@ -651,16 +928,20 @@ a {
                 headers: {'X-CSRFToken': getCookie('csrftoken')},
                 success: function(response) {
                     if (response.success) {
-                        alert(response.message);
-                        window.location.href = response.redirect; // Ensure this is the desired behavior
+                        setSessionMessage(response.message, 'success');
                     } else {
-                        alert('Failed to move entity.');
+                        setSessionMessage(response.error, 'error');  // Corrected from data.error to response.error
                     }
                 },
                 error: function() {
-                    alert('Error moving entity.');
+                    setSessionMessage('Failed to move due to a network error.', 'error');
+                },
+                complete: function() {
+                    location.reload();
+                      // Ensure message handling after the AJAX completes
                 }
             });
+            handleSessionMessage();
         });
 
         // Opening folders within the modal
@@ -716,9 +997,9 @@ a {
                 breadcrumbContainer.appendChild(li);
             });
         }
-        
     });
 </script>
+
 <!-- View and Edit Comment Modal-->
 <script>
     document.addEventListener('DOMContentLoaded', function () {
@@ -792,35 +1073,50 @@ a {
             console.error('Error updating comment:', error);
         });
     }
-
-    //get cookie
-
 </script>
 
 <!-- Update Document modal -->
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        $('#updateDocumentModal').on('show.bs.modal', function(event) {
+            var button = $(event.relatedTarget);  // Button that triggered the modal
+            var documentId = button.data('document-id');  // Use jQuery's data method to access data attributes
+
+            var modal = $(this);
+            modal.find('#product_id').val(documentId);  // Set the hidden input value to the document ID
+        });
+
         var updateForm = document.getElementById('updateDocumentForm');
         updateForm.addEventListener('submit', function(event) {
             event.preventDefault();
             var formData = new FormData(updateForm);
             var documentId = updateForm.querySelector('#product_id').value;  // Ensure correct value assignment
+            
             fetch(`/documents/document/ajax/update/${documentId}/`, {
                 method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': getCookie('csrftoken') // Ensure CSRF token is included
+                },
                 body: formData,
             })
             .then(response => response.json())
             .then(data => {
                 if (data.error) {
-                    alert(data.error);
+                    setSessionMessage(data.error, 'error');
                 } else {
-                    alert(data.message);
-                    $('#updateDocumentModal').modal('hide');
-                    // Optionally refresh some part of your page or redirect
+                    setSessionMessage(data.message, 'success');
                 }
             })
-            .catch(error => console.error('Error updating document:', error));
+            .catch(error => {
+                setSessionMessage('Failed to update due to a network error.', 'error');
+            })
+            .finally(() => {
+                location.reload();
+                $('#updateDocumentModal').modal('hide');
+            });
         });
+        handleSessionMessage();
     });
 </script>
 
@@ -829,6 +1125,7 @@ a {
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         var versionsModal = document.getElementById('documentVersionsModal');
+
         versionsModal.addEventListener('show.bs.modal', function (event) {
             var button = event.relatedTarget;
             var documentId = button.getAttribute('data-document-id');
@@ -866,13 +1163,12 @@ a {
                         });
                     }
                 })
-                .catch(error => console.error('Error loading versions:', error));
+            .catch(error => console.error('Error loading versions:', error));
         });
     });
 </script>
 
 <!-- edit document modal -->
-
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         var editModal = document.getElementById('editDocumentModal');
@@ -906,23 +1202,9 @@ a {
     });
 </script>
 
-
-
-
+<!-- remove access modal -->
 <script>
     
-    function showMessage(message, type) {
-        // Assuming type can be 'success' or 'error' to add specific styling if needed
-        const messagePopup = document.createElement('div');
-        messagePopup.className = `message-popup ${type} rounded shadow-sm`;
-        messagePopup.innerHTML = `<div class="alert">${message}</div>`;
-        document.body.appendChild(messagePopup);
-    
-        // Slide down animation
-        messagePopup.style.top = "20px"; // Adjust if necessary
-    
-    }
-        
     function removeAccess(partnerId, entityType, entityId, productId) {
         document.getElementById('confirmationModal').style.display = 'block';
 
@@ -942,7 +1224,7 @@ a {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    sessionStorage.setItem('message', 'Access removed successfully.');
+                    sessionStorage.setItem('message', 'Access removed');
                     sessionStorage.setItem('messageType', 'success');
                 } else {
                     sessionStorage.setItem('message', 'Failed to remove access. Please try again.');
@@ -957,7 +1239,10 @@ a {
                 location.reload(); // Reload the page to display the message
                 document.getElementById('confirmationModal').style.display = 'none';
             });
+            handleSessionMessage();
         };
+
+        
 
         document.querySelectorAll('.close-modal-btn').forEach(btn => {
             btn.addEventListener('click', function() {
@@ -1045,6 +1330,8 @@ a {
     });
 </script>
 
+<!-- Highlighting Row and Right Panel information showing and resetting -->
+<!--
 <script>
     document.addEventListener("DOMContentLoaded", function() {
         // Initial product name to revert back when no row is selected
@@ -1197,11 +1484,7 @@ a {
 
     });
 </script>
-
-<script>
-    
-</script>
-
+-->
 {% endblock %}
 
 {% endblock %}

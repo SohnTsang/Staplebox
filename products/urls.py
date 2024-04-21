@@ -5,6 +5,7 @@ from folder.views import folder_create, edit_folder
 from documents.views import upload_document, delete_document, get_documents
 from document_types.views import document_types_list
 from . import views
+from access_control.views import access_control_modal
 
 #products/urls.py
 
@@ -28,9 +29,13 @@ urlpatterns = [
     # New URL pattern for accessing a folder within the context of a specific product
     path('<int:product_id>/folders/<int:folder_id>/api/document_types/', document_types_list, name='document_types_list'),
 
+    # Move entity
     path('<int:product_id>/explorer/folder/<int:folder_id>/content/', views.folder_content, name='folder_content'),
     path('<int:product_id>/move/<str:entity_type>/<int:entity_id>/', views.move_entity, name='move_entity'),
     path('<int:product_id>/move/<str:entity_type>/<int:entity_id>/<int:current_folder_id>/', views.move_entity, name='move_entity'),
-  
+    path('<int:product_id>/move_entities/', views.move_entities, name='move_entities'),  # Make sure this line is correct
+
+    # Access Control
+
 
 ]

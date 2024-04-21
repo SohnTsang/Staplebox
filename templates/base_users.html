@@ -16,10 +16,17 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.3.12/themes/default/style.min.css" />
     <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
     <link rel="stylesheet" type="text/css" href="{% static 'css/loading.css' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
     <script src="{% static 'js/loading.js' %}"></script>
 
     <style>
-
+        * {
+            font-family: 'Inter', sans-serif;
+            
+        }
+        body {
+        }
         .checkbox-column {
             width: 40px !important; /* Adjust based on your design needs */
             max-width: 40px !important;
@@ -44,10 +51,6 @@
         }
         .text-primary-custom:hover {
             background-color: transparent !important;
-        }
-        .sidebar {
-            min-width: 250px;
-            max-width: 250px;
         }
         .bg-primary-custom {
             background-color: var(--bs-primary);
@@ -180,9 +183,6 @@
         .tab-link {
             width: 100%;
         }
-        .fw-medium {
-            font-weight: 500;
-        }
 
         /* Styles for the message popup */
         .message-popup {
@@ -251,50 +251,64 @@
             }
         }
 
+        .img-wrapper {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+
+        }
+
+        .img-wrapper img{
+            cursor: pointer;
+        }
+
+        .img-wrapper:hover::before {
+            content: '';
+            position: absolute;
+            width: 36px; /* Adjust based on the desired size of the circle */
+            height: 36px; /* Same as width to make it a circle */
+            border-radius: 50%;
+            background-color: rgba(63, 63, 63, 0.09); /* Example background color */
+            z-index: 1;
+        }
+
     </style>
     {% block extra_css %}
     {% endblock extra_css %}
 </head>
 <body>
     {% if messages %}
-        <div class="message-popup rounded shadow-sm">
+        <div class="message-popup rounded shadow-sm" id="message-popup">
             {% for message in messages %}
                 <div class="alert {{ message.tags }}">{{ message }}</div>
             {% endfor %}
         </div>
+        <script>
+            // Check if the message popup exists
+            window.onload = function() {
+                const messagePopup = document.getElementById('message-popup');
+                if (messagePopup) {
+                    // Trigger slide up animation after 3 seconds
+                    $('#message-popup').slideDown(500).delay(3000).slideUp(500);
+                }
+            };
+        </script>
     {% endif %}
     <div class="container-fluid overflow-hidden">
         <div id="main-content" class="row vh-100 overflow-auto">
             <!--{# include 'top_navbar.html' %}-->
                 <!-- Sidebar -->
-            <!--{# include 'left_navbar.html' %}-->
-            <div id="right-side" class="col d-flex flex-column h-sm-100" style="background-color: #29599311;">
+            <div class="col-md-3 col-lg-2 d-block d-md-block" style="background-color: #29599311;">
+                {% include 'left_navbar.html' %}
+            </div>
+            <div id="right-side" class="col-md-9 col-lg-10 d-flex flex-column h-sm-100 ps-3" style="background-color: #29599311;">
                 <!-- Your main content goes here -->
+                {% include 'top_bar.html' %}
                 <main id='content' class="overflow-auto" style="">
                     {% block content %}{% endblock %}
-                    <footer class="row bg-light py-4 px-5 mt-5 overflow-hidden mx-0">
-                        <div class="col"> Footer content here... </div>
-                    </footer>
-                    <footer class="row bg-light py-4 px-5 mt-5 overflow-hidden mx-0">
-                        <div class="col"> Footer content here... </div>
-                    </footer>
-                    <footer class="row bg-light py-4 px-5 mt-5 overflow-hidden mx-0">
-                        <div class="col"> Footer content here... </div>
-                    </footer>
-                    <footer class="row bg-light py-4 px-5 mt-5 overflow-hidden mx-0">
-                        <div class="col"> Footer content here... </div>
-                    </footer>
-                    <footer class="row bg-light py-4 px-5 mt-5 overflow-hidden mx-0">
-                        <div class="col"> Footer content here... </div>
-                    </footer>
-                    <footer class="row bg-light py-4 px-5 mt-5 overflow-hidden mx-0">
-                        <div class="col"> Footer content here... </div>
-                    </footer>
-                    <footer class="row bg-light py-4 px-5 mt-5 overflow-hidden mx-0">
-                        <div class="col"> Footer content here... </div>
-                    </footer>
-                    <footer class="row bg-light py-4 px-5 mt-5 overflow-hidden mx-0">
-                        <div class="col"> Footer content here... </div>
+                    <footer class="row bg-light py-4 px-5 overflow-hidden mx-0" style="background-color: #29599311;">
+                        <div class="col"> Footer content here.ccccccccccccccccccccccccccccccccccccccc.. </div>
                     </footer>
                 </main>
                 
@@ -319,20 +333,33 @@
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js" integrity="sha384-7+zCNj/IqJ95wo16oMtfsKbZ9ccEh31eOz1HGyDuCQ6wgnyJNSYdrPa03rtR1zdB" crossorigin="anonymous"></script>
 
 {% block extra_js %}
-
-
 <script>
-    $(document).ready(function() {
-        // Check if the message popup exists
-        if ($('.message-popup').length) {
-            // After 3 seconds, slide up and remove the message popup
-            setTimeout(function() {
-                $('.message-popup').slideUp(500, function() {
-                    $(this).remove(); // Remove the element from DOM after sliding up
-                });
-            }, 3000); // 3000 milliseconds = 3 seconds
+    function showMessage(message, type) {
+        const messagePopup = document.createElement('div');
+        messagePopup.className = `message-popup ${type} rounded shadow-sm`;
+        messagePopup.innerHTML = `<div class="alert">${message}</div>`;
+        document.body.appendChild(messagePopup);
+        messagePopup.style.top = "20px";
+        $(messagePopup).hide().slideDown(500).delay(3000).slideUp(500, function() {
+            this.remove();
+        });
+    }
+    function handleSessionMessage() {
+        const message = sessionStorage.getItem('message');
+        const messageType = sessionStorage.getItem('messageType');
+        
+        if (message && messageType) {
+            showMessage(message, messageType);  // Use your existing showMessage function
+            sessionStorage.removeItem('message');  // Clear the message
+            sessionStorage.removeItem('messageType');  // Clear the message type
         }
-    });
+    }
+    function setSessionMessage(message, type) {
+        sessionStorage.setItem('message', message);
+        sessionStorage.setItem('messageType', type);
+    }
+</script>
+<script>
 </script>
 
 

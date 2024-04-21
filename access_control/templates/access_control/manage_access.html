@@ -136,11 +136,15 @@
 }
 
 .table th:nth-child(2), .table td:nth-child(2) {
+    width: 15%;
+}
+
+.table th:nth-child(3), .table td:nth-child(3) {
     width: 20%;
 }
 
 .table th:nth-child(3), .table td:nth-child(3) {
-    width: 30%;
+    width: 15%;
 }
 
 /* Responsiveness and overflow handling */
@@ -154,27 +158,6 @@
     }
 }
 
-.img-wrapper {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-
-}
-
-.img-wrapper img{
-    cursor: pointer;
-}
-
-.img-wrapper:hover::before {
-    content: '';
-    position: absolute;
-    width: 36px; /* Adjust based on the desired size of the circle */
-    height: 36px; /* Same as width to make it a circle */
-    border-radius: 50%;
-    background-color: rgba(0, 0, 0, 0.1); /* Example background color */
-    z-index: 1;
-}
 
 
 .tooltip-text {
@@ -219,6 +202,10 @@
 .action-button-bar {
     text-align: right; /* Aligns the button to the right */
     padding-right: 20px; /* Provides some padding on the right */
+}
+.fw-sm-bold {
+    font-weight: 500;
+    color:#2e2e2e;
 }
 
 </style>
@@ -265,7 +252,7 @@
                                                 <input type="checkbox" name="partners" value="{{ partner.partner_id }}" id="partner_{{ partner.partner_id }}">
                                             </div>
                                             <div class="ps-3">
-                                                <div class="fw-bold">{{ partner.company_name }}</div>
+                                                <div class="fw-sm-bold">{{ partner.company_name }}</div>
                                                 <div class="text-primary-custom fw-medium small">{{ partner.company_role|title }}</div>
                                                 
                                             </div>
@@ -316,9 +303,8 @@
                                                     <input type="radio" name="partners" value="{{ access.partner2_id }}" id="partner_{{ access.partner2_id }}">
                                                 </div>
                                                     <div class="flex-grow-1 d-flex flex-column ms-3">
-                                                        <div class="fw-bold">{{ access.company_name }}</div>
+                                                        <div class="fw-sm-bold">{{ access.company_name }}</div>
                                                         <div class="text-primary-custom fw-medium small">{{ access.company_role|title }}</div>
-                                                        <div class="small">{{ access.access_detail }}</div>
                                                         
                                                     </div>
                                                     <button type="button" class="btn btn-danger btn-sm remove-access" data-partner-id="{{ access.partner2_id }}" onclick="removeAccess(this.getAttribute('data-partner-id'))" style="align-self:center;">Remove</button>

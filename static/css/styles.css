@@ -1379,11 +1379,11 @@ progress {
   }
   .col-lg-2 {
     flex: 0 0 auto;
-    width: 16.66666667%;
+    width: 13%;
   }
   .col-lg-3 {
     flex: 0 0 auto;
-    width: 25%;
+    width: 19%;
   }
   .col-lg-4 {
     flex: 0 0 auto;
@@ -1407,11 +1407,11 @@ progress {
   }
   .col-lg-9 {
     flex: 0 0 auto;
-    width: 75%;
+    width: 79%;
   }
   .col-lg-10 {
     flex: 0 0 auto;
-    width: 83.33333333%;
+    width: 87%;
   }
   .col-lg-11 {
     flex: 0 0 auto;
@@ -1911,9 +1911,9 @@ progress {
   --bs-table-bg-state: var(--bs-table-active-bg);
 }
 
-.table-hover > tbody > tr:hover > * {
-  background-color: #7e9abe22;
-  background-color: #7e9abe22;
+.table-hover > tbody > tr:hover {
+  background-color: #7e9abe15;
+  background-color: #7e9abe15;
 }
 
 .table-primary {

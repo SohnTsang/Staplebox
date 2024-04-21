@@ -15,11 +15,48 @@ from .forms import AccessPermissionForm
 from django.db import transaction
 from partners.utils import get_partner_info
 from companies.models import CompanyProfile
-from .utils import get_partners_with_access
+from access_control.utils import get_partners_with_access
 from django.http import JsonResponse
 from django.db.models import Q
 from users.models import UserProfile
+from .utils import grant_product_access, grant_folder_or_document_access
+from django.http import HttpResponseNotAllowed
+from django.views.decorators.http import require_http_methods
 
+
+@login_required
+@require_http_methods(["POST"])
+def access_control_modal(request, product_id):
+    print("Access control view reached.")
+    print("POST data:", request.POST)
+    if request.method == 'POST':
+        item_id = request.POST.get('item_id')
+        item_type = request.POST.get('item_type')
+        partner_ids = request.POST.getlist('partners')  # Assuming checkboxes have names set to 'partners'
+        user = request.user
+        product = get_object_or_404(Product, id=product_id)
+
+        # Retrieve selected partners based on IDs
+        selected_partners = User.objects.filter(id__in=partner_ids)
+        
+        # Based on item_type, find the corresponding folder or document
+        if item_type == 'folder':
+            item = get_object_or_404(Folder, id=item_id)
+            for partner in selected_partners:
+                grant_folder_or_document_access(user, partner, product, folder=item)
+        elif item_type == 'document':
+            item = get_object_or_404(Document, id=item_id)
+            for partner in selected_partners:
+                grant_folder_or_document_access(user, partner, product, document=item)
+        else:
+            return HttpResponseNotAllowed("Invalid item type")
+
+        return redirect('products:product_explorer', product_id=product_id)
+    else:
+        # Handle non-POST requests if necessary
+        return HttpResponseNotAllowed("This URL only accepts POST requests")
+    
+    
 @login_required
 def view_access(request):
     user = request.user
@@ -238,12 +275,15 @@ def manage_access(request, product_id):
                 granted_new_access = False
                 redundant_access = False
 
+                is_product_empty = not total_folders and not total_documents
+
                 for partner in partners:
                     if granting_product_level_access:
-                        if grant_product_access(user, partner, product):
-                            granted_new_access = True
-                        else:
-                            redundant_access = True
+                        if not is_product_empty:
+                            if grant_product_access(user, partner, product):
+                                granted_new_access = True
+                            else:
+                                redundant_access = True
                     else:
                         for folder_id in folder_ids:
                             folder = get_object_or_404(Folder, id=folder_id)
@@ -259,11 +299,11 @@ def manage_access(request, product_id):
                                 redundant_access = True
 
                 if granted_new_access:
-                    messages.success(request, "Access granted successfully.")
+                    messages.success(request, "Access granted.")
                 elif redundant_access:
-                    messages.info(request, "No new access was granted. Existing access was sufficient.")
+                    messages.info(request, "Existing access was sufficient.")
                 else:
-                    messages.warning(request, "No access changes were made. Please select partners and items for granting access.")
+                    messages.warning(request, "Please select partners and items for granting access")
 
             else:
                 request.session['last_active_tab'] = 'all'
@@ -309,88 +349,8 @@ def manage_access(request, product_id):
     return render(request, 'access_control/manage_access.html', context)
 
 
-def grant_product_access(user, partner, product):
-    # Check if a product-level permission already exists to avoid redundant operations
-    existing_permission = AccessPermission.objects.filter(
-        product=product, 
-        partner1=user, 
-        partner2=partner,
-        folder__isnull=True, 
-        document__isnull=True
-    ).first()
-
-    if existing_permission:
-        # If it exists, ensure no other permissions exist
-        AccessPermission.objects.filter(
-            product=product, 
-            partner1=user, 
-            partner2=partner
-        ).exclude(
-            id=existing_permission.id
-        ).delete()
-        return False  # No new permission was created
-    else:
-        # Create a product-level permission
-        permission, created = AccessPermission.objects.get_or_create(
-            product=product,
-            partner1=user,
-            partner2=partner,
-            defaults={'folder': None, 'document': None}
-        )
-        # Ensure no other permissions exist
-        if created:
-            AccessPermission.objects.filter(
-                product=product, 
-                partner1=user, 
-                partner2=partner
-            ).exclude(
-                id=permission.id
-            ).delete()
-        return created
-    
-
-def grant_folder_or_document_access(user, partner, product, folder=None, document=None):
-    # Check for existing product-level access.
-    product_access_exists = AccessPermission.objects.filter(
-        product=product, partner2=partner, folder__isnull=True, document__isnull=True
-    ).exists()
-
-    if product_access_exists:
-        # Product-level access already exists, no need to grant lower-level access.
-        return False
-
-    if folder:
-        # If granting access to the "Root" or product-level access is being granted.
-        if folder.is_root:
-            return grant_product_access(user, partner, product)
-        
-        # If granting access to a non-root folder, remove access to subfolders and documents within it.
-        AccessPermission.objects.filter(product=product, partner2=partner, folder__in=folder.subfolders.all()).delete()
-        AccessPermission.objects.filter(product=product, partner2=partner, document__folder=folder).delete()
-
-        # Ensure no higher-level access exists before granting folder access.
-        current_folder = folder.parent
-        while current_folder:
-            if AccessPermission.objects.filter(product=product, partner2=partner, folder=current_folder).exists():
-                return False  # Higher-level access exists.
-            current_folder = current_folder.parent
-
-        _, created = AccessPermission.objects.get_or_create(product=product, partner1=user, partner2=partner, folder=folder)
-        return created
-
-    if document:
-        # Check for existing product-level or folder access.
-        if AccessPermission.objects.filter(product=product, partner2=partner, folder=document.folder).exists():
-            return False  # Folder-level access exists.
-        
-        _, created = AccessPermission.objects.get_or_create(product=product, partner1=user, partner2=partner, document=document)
-        return created
-
-    return False
-
-
 @login_required
-def get_partners_with_access_json(request, item_id, item_type):
+def get_partners_with_access_json(request, item_id=None, item_type=None):
     if item_type not in ['document', 'folder']:
         return JsonResponse({'error': 'Invalid item type'}, status=400)
     

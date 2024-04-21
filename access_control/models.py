@@ -7,13 +7,19 @@ from django.core.cache import cache
 
 
 class AccessPermission(models.Model):
+    ACCESS_TYPES = [
+        ('read_only', 'Read Only'),
+        ('full', 'Full'),
+    ]
     partner1 = models.ForeignKey(User, related_name='granted_permissions', on_delete=models.CASCADE)
     partner2 = models.ForeignKey(User, related_name='received_permissions', on_delete=models.CASCADE)
     product = models.ForeignKey(Product, blank=True, null=True, on_delete=models.CASCADE)
     folder = models.ForeignKey(Folder, blank=True, null=True, on_delete=models.CASCADE)
     document = models.ForeignKey(Document, blank=True, null=True, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
+    access_type = models.CharField(max_length=50, choices=ACCESS_TYPES, default='full')
 
+    
     def __str__(self):
         return f"{self.partner1} grants {self.partner2} - Prod: {self.product}, Folder: {self.folder}, Doc: {self.document}"
 
