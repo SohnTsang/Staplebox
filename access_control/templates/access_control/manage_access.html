@@ -7,6 +7,10 @@
 
 {% block extra_css %}
 <style>
+
+span {
+    vertical-align: middle;
+}
 .custom-modal {
     display: none; /* Hidden by default */
     position: fixed;
@@ -216,7 +220,7 @@
 {% block content %}
 
 
-<div class="container mt-5">
+<div class="container mt-1">
     <div class="row">
         <!-- Left Side: Partners -->
         <div id="mypartners" class="col-md-4 col-lg-4 ps-1">
@@ -334,12 +338,9 @@
                 <div class="title">
                     <h4 class="text-primary-custom fw-bold px-3">{{ product.product_name }}</h4>
                 </div>
-                <div class="toolbar d-flex justify-content-start ps-3 py-2 gap-4 rounded-pill" style="background-color: #1e7bee33;">
-                    <div class="align-content-center">
-                        <!-- Checkbox as 'All' option -->
-                        <input type="checkbox" id="selectAll" class="">
-                        <label for="selectAll" class="ms-1">All</label>
-                    </div>
+                <div class="toolbar d-flex justify-content-start ps-3 py-2 gap-2 rounded-pill" style="background-color: #1e7bee33; align-items:center;">
+                    <input class="form-check-input custom-checkbox" type="checkbox" id="selectAll">
+                    <label class="form-check-label" for="selectAll">All</label>
                 </div>
                 <div class="table-responsive border-0">
                     <table class="table">

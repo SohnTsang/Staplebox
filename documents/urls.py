@@ -19,6 +19,10 @@ urlpatterns = [
     path('document/ajax/<int:document_id>/', views.ajax_get_document_details, name='ajax_get_document_details'),
     path('document/ajax/versions/<int:document_id>/', views.ajax_document_versions, name='ajax_document_versions'),
     path('document/ajax/update/<int:document_id>/', views.ajax_update_document, name='ajax_update_document'),  # AJAX endpoint for updating a document
+    
+    path('move_to_bin_document/<int:document_id>/', views.move_to_bin_document, name='move_to_bin_document'),
+    path('restore_document/<int:document_id>/', views.restore_document, name='restore_document'),
+
 
     path('document/ajax/comments/<int:document_id>/', views.ajax_comments_versions, name='ajax_comments_versions'),
     path('document/<int:document_id>/edit_comment/version/<int:version_number>/', views.edit_comment, name='edit_comment'),

@@ -14,14 +14,14 @@
 {% endblock extra_css %}
 
 {% block content %}
-<div class="container py-5">
+<div class="container mt-1">
     <div class="row justify-content-center">
         <div class="col-md-12">
             <div class="profile-card p-4 wrapper" style="border:none;">
                 <!-- Profile and Details -->
                 <div class="row">
                     <!-- Profile Image and Basic Info -->
-                    <div class="col-sm-12 col-md-4 col-lg-3 text-center p-3 px-5">
+                    <div class="col-sm-12 col-md-4 col-lg-4 text-center p-3 px-5">
                         <img src="https://via.placeholder.com/150" class="rounded-circle" alt="Profile Image" width="100" height="100">
                         <div class="">
                             {% if company_profile.name %}
@@ -43,7 +43,7 @@
                     </div>
                     <!-- Vertical Divider -->
                     <!-- Additional Details -->
-                    <div class="col-sm-12 col-md-8 pt-3 ps-3 d-flex flex-column">
+                    <div class="col-sm-12 col-md-8 pt-3 px-3 d-flex flex-column">
                         <div>
                             <h5 class="py-1 pb-2"><strong>About Us</strong></h5>
                             <p class="text-break">{{ company_profile.description }}</p>
@@ -74,18 +74,5 @@
 </div>
 
 {% block javascript %}
-<script>
-	document.addEventListener("DOMContentLoaded", function() {
-		// Get the current page variable from the template
-	
-		// Find the navigation item corresponding to the current page and add the "active" class
-		const navItems = document.querySelectorAll(".nav-bar-item");
-		navItems.forEach(item => {
-			if (item.querySelector("span").textContent.trim() === "Company") {
-				item.classList.add("active");
-			}
-		});
-	});
-</script>
 {% endblock %}
 {% endblock %}

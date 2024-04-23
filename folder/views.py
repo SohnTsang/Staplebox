@@ -4,14 +4,13 @@ from .models import Folder
 from .forms import FolderForm
 from products.models import Product
 from .models import Folder
-from documents.models import Document
 from django.http import JsonResponse
 from django.contrib import messages  # Optional: For user feedback
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods
 from django import forms
 from django.utils import timezone
-from django.forms.models import model_to_dict
+from .utils import handle_item_action, clean_bins
 
 
 @login_required
@@ -95,8 +94,25 @@ def delete_folder(request, folder_id):
         
         # Redirect to the parent folder if it exists, or the product's root if not
         if parent_id:
-            return redirect('products:product_explorer_folder', product_id=product_id, folder_id=parent_id)
+            return redirect('products:product_explorer_bin', product_id=product_id)
         else:
-            return redirect('products:product_explorer', product_id=product_id)
+            return redirect('products:product_explorer_bin', product_id=product_id)
     else:
         return redirect('products:product_explorer')  # Or some error handling
+    
+
+@login_required
+def move_to_bin_folder(request, folder_id):
+    folder = get_object_or_404(Folder, id=folder_id)
+    parent_id = folder.parent_id
+    bin_folder = Folder.objects.get_or_create(name="Bin", product=folder.product, is_bin=True)[0]  # Ensure a bin exists
+    handle_item_action("move_to_bin", folder, bin_folder=bin_folder)
+    clean_bins()
+    return redirect('products:product_explorer_folder', product_id=folder.product.id, folder_id=parent_id if folder.parent else '')
+
+
+@login_required
+def restore_folder(request, folder_id):
+    folder = get_object_or_404(Folder, id=folder_id)
+    handle_item_action("restore", folder)
+    return redirect('products:product_explorer_bin', product_id=folder.product.id)

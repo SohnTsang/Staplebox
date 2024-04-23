@@ -25,8 +25,10 @@ ul, li.nav-bar-item {
 
 }
 
-.nav-item.nav-bar-item.custom-svg-collapse:hover {
-    background-color: #eef5fa; /* Change this to your desired background color */
+.nav-item.nav-bar-item.custom-svg-collapse:hover, .nav-item.nav-bar-item.custom-svg-collapse.active {
+    background-color: #daefff; /* Your chosen hover and active color */
+    border-top-right-radius: 99px; /* Rounded top right corner */
+    border-bottom-right-radius: 99px; /* Rounded bottom right corner */
 }
 
 .nav-item.nav-bar-item.active {
@@ -40,4 +42,13 @@ ul, li.nav-bar-item {
         stroke: #295893 !important;
         stroke-width: 0.15rem;
     }
+}
+
+li span {
+    font-size: 0.875rem;
+}
+
+.nav-bar-item{
+    padding-top: 0.2rem;
+    padding-bottom: 0.2rem;
 }

@@ -60,7 +60,6 @@
             display: flex;
             width: 100%;
             flex-direction: column; /* Stack children vertically */
-            box-shadow: 1px 2px 5px rgba(0,0,0,.08);
             overflow: hidden;
         }
 
@@ -131,6 +130,7 @@
         
         .custom-container-fluid {
             width: var(--container-width);
+            
             max-width: none !important;
         }
         
@@ -273,6 +273,58 @@
             z-index: 1;
         }
 
+        .vh-92 {
+            height: 92vh;
+        }
+
+        
+        .title {
+            min-height: 70px;
+            align-items: center; /* This vertically centers the content */
+            display: flex;
+            flex-shrink: 0; /* Prevents these elements from shrinking, ensuring they maintain their size */
+        }
+
+        .dropdown-menu {
+            border-radius: 5px;
+            font-size: 14px;
+            min-width: 200px;
+            max-width: 200px;
+        }
+
+        .dropdown-menu li {
+            padding-top: 0.1rem;
+            padding-bottom: 0.1rem;
+        }
+        
+        .custom-checkbox {
+            appearance: none;
+            background-color: #ffffff;
+            border: 1px solid #295893;
+            width: 0.875rem;
+            height: 0.875rem;
+            vertical-align: middle;
+            margin-top: 0;
+            transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+        }
+
+        .custom-checkbox:checked {
+            background-color: #295893;
+            box-shadow: inset 0 0 0 0.25em #fff;
+        }
+
+        .custom-checkbox:focus {
+            outline: none;
+            border-color: #295893;
+        }
+
+        .form-check-label {
+            user-select: none; /* Prevents text selection */
+            cursor: pointer;
+        }
+        
+
     </style>
     {% block extra_css %}
     {% endblock extra_css %}
@@ -299,7 +351,7 @@
         <div id="main-content" class="row vh-100 overflow-auto">
             <!--{# include 'top_navbar.html' %}-->
                 <!-- Sidebar -->
-            <div class="col-md-3 col-lg-2 d-block d-md-block" style="background-color: #29599311;">
+            <div class="col-md-3 col-lg-2 d-block d-md-block" >
                 {% include 'left_navbar.html' %}
             </div>
             <div id="right-side" class="col-md-9 col-lg-10 d-flex flex-column h-sm-100 ps-3" style="background-color: #29599311;">

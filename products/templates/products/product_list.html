@@ -47,21 +47,54 @@
     .sortable-header {
         min-width: 150px;
     }
+
+    th a {
+        color: #000 !important;
+    }
+
+    th {
+        padding: 0.5rem 0.5rem;
+        color: var(--bs-table-color-state, var(--bs-table-color-type, var(--bs-table-color)));
+        background-color: var(--bs-table-bg);
+        border-bottom-width: var(--bs-border-width);
+        box-shadow: inset 0 0 0 9999px var(--bs-table-bg-state, var(--bs-table-bg-type, var(--bs-table-accent-bg)));
+    }
+
+    td {
+        padding: 0.3rem 0.5rem;
+        color: var(--bs-table-color-state, var(--bs-table-color-type, var(--bs-table-color)));
+        background-color: var(--bs-table-bg);
+        border-bottom-width: var(--bs-border-width);
+        box-shadow: inset 0 0 0 9999px var(--bs-table-bg-state, var(--bs-table-bg-type, var(--bs-table-accent-bg)));
+    }
+
+    
+
+
     
 
 </style>
 {% endblock extra_css %}
 
 {% block content %}
-<div id="product-list" class="container mt-5">
+<div id="product-list" class="container-fluid custom-container-fluid mt-1">
     <div class="row">
         <div class="col-12">
-            <div class="bg-white rounded-3 wrapper">
-                <h4 class="text-primary-custom mb-3 fw-bold px-5 py-3 border-bottom">My Products</h4>
-                <a href="{% url 'products:create_product' %}" class="btn btn-primary mb-0 mx-5"><small>Create New Product</small></a>
-                <a href="{% url 'home' %}" class="btn btn-primary me-2">Back to Home</a>
+            <div class="bg-white rounded-3 wrapper vh-92">
+                <div class="title">
+                    <h4 class="text-primary-custom fw-bold px-4">My Products</h4>
+                </div>
+                <div class="d-flex justify-content-start align-items-center pb-2 px-4">
+                    <div class="gap-3 ms-2 d-flex">
+                        <button type="button" class="btn align-items-center justify-content-center img-wrapper" data-bs-toggle="modal" data-bs-target="#createFolderModal" style="background: none; border: none; padding: 0;">
+                            <img src="{% static 'images/navbar_icon/new_product.png' %}" alt="Create Folder" style="height: 22px; width: 24px;">
+                        </button>
+                        <a href="{% url 'products:create_product' %}" class="btn btn-primary mb-0 "><small>New Product</small></a>
+                    </div>
+                </div>
                 
-                <div class="d-flex justify-content-start mb-3 pt-4 px-5">
+                
+                <div class="d-flex justify-content-start mb-3 pt-4 px-4">
                     <form method="get" class="row g-2 align-items-center">
                         <!-- Input field for filter value -->
                         <div class="col-sm w-auto">
@@ -72,7 +105,6 @@
                             <select class="form-select form-select-sm" name="filter_type" aria-label="Filter type">
                                 <option value="product_code" {% if request.GET.filter_type == 'product_code' %}selected{% endif %}>Code</option>
                                 <option value="product_name" {% if request.GET.filter_type == 'product_name' %}selected{% endif %}>Name</option>
-                                <option value="product_type" {% if request.GET.filter_type == 'product_type' %}selected{% endif %}>Type</option>
                             </select>
                         </div>
                         <!-- Filter button -->
@@ -93,10 +125,10 @@
                 </div>
                 
             
-                <div class="table-responsive px-5">
-                    <table class="table">
+                <div class="table-responsive px-4" style="overflow-y:hidden">
+                    <table class="table table-hover align-middle">
                         <thead>
-                            <tr>
+                            <tr class="small border-bottom">
                                 {% with current_sort=request.GET.sort|default:"updated_at" current_direction=request.GET.direction|default:"asc" %}
                                     {% if current_sort == 'product_code' %}
                                         {% if current_direction == 'asc' %}
@@ -274,10 +306,10 @@
                                 {% endwith %}
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody class="small">
                             {% for item in page_obj %}
                             <tr class="align-middle">
-                                <td>{{ item.product.product_code }}</td>
+                                <td class="">{{ item.product.product_code }}</td>
                                 <td class="truncate1 pe-3">{{ item.product.product_name }}</td>
                                 <td>{{ item.product.product_type }}</td>
                                 <!--<td class="truncate pe-3">{{ item.product.product_description|default:"" }}</td>-->
@@ -300,10 +332,15 @@
                                             </svg>
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionDropdown{{ forloop.counter }}">
-                                            <a href="{% url 'products:edit_product' pk=item.product.id %}" class="btn btn-primary me-2">Edit Product</a>
+                                            <li>
+                                                <a href="{% url 'products:edit_product' pk=item.product.id %}" class="dropdown-item">Edit</a>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
                                             <form action="{% url 'products:delete_product' pk=item.product.id %}" method="post" class="d-inline">
                                                 {% csrf_token %}
-                                                <button type="submit" class="btn btn-primary">Delete Product</button>
+                                                <button type="submit" class="dropdown-item text-danger">
+                                                    Delete
+                                                </button>
                                             </form>
                                             <a href="{% url 'products:product_explorer' item.product.id %}?folderId={{ item.root_folder_id }}" class="btn btn-sm" style="background-color: #295893; color: #ffffff;">View</a>
                                         </ul>
@@ -317,15 +354,15 @@
                             {% endfor %}
                         </tbody>
                     </table>
-                    <div class="pagination" style="float:inline-end">
-                        <ul class="pagination justify-content-end">
-                            {% for num in page_obj.paginator.page_range %}
-                                <li class="page-item {% if page_obj.number == num %}active{% endif %}">
-                                    <a class="page-link" href="?page={{ num }}&filter_value={{ request.GET.filter_value|urlencode }}&filter_type={{ request.GET.filter_type|urlencode }}&sort={{ current_sort|urlencode }}&direction={{ current_direction|urlencode }}">{{ num }}</a>
-                                </li>
-                            {% endfor %}
-                        </ul>
-                    </div>
+                </div>
+                <div class="mt-auto">
+                    <ul class="pagination justify-content-end px-4">
+                        {% for num in page_obj.paginator.page_range %}
+                            <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                                <a class="page-link" href="?page={{ num }}&filter_value={{ request.GET.filter_value|urlencode }}&filter_type={{ request.GET.filter_type|urlencode }}&sort={{ current_sort|urlencode }}&direction={{ current_direction|urlencode }}">{{ num }}</a>
+                            </li>
+                        {% endfor %}
+                    </ul>
                 </div>
             </div>
             
@@ -370,19 +407,6 @@
     });
 </script>
 
-<script>
-	document.addEventListener("DOMContentLoaded", function() {
-		// Get the current page variable from the template
-	
-		// Find the navigation item corresponding to the current page and add the "active" class
-		const navItems = document.querySelectorAll(".nav-bar-item");
-		navItems.forEach(item => {
-			if (item.querySelector("span").textContent.trim() === "Products") {
-				item.classList.add("active");
-			}
-		});
-	});
-</script>
 
 {% endblock %}
 {% endblock %}

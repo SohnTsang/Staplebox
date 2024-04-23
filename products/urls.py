@@ -18,6 +18,7 @@ urlpatterns = [
     path('delete/<int:pk>/', delete_product, name='delete_product'),
     path('<int:product_id>/explorer/', views.product_explorer, name='product_explorer'),
     path('<int:product_id>/explorer/<int:folder_id>/', views.product_explorer, name='product_explorer_folder'),
+    path('<int:product_id>/explorer/bin/', views.product_explorer_bin, name='product_explorer_bin'),
     path('<int:product_id>/explorer/folder/<int:folder_id>/', views.product_explorer, name='product_explorer_with_folder'),
     # Folder control
     path('<int:product_id>/create_folder/', folder_create, name='folder_create'),

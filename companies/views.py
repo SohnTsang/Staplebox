@@ -14,7 +14,11 @@ def company_profile_view(request):
         context = {'company_profile': None}
         return render(request, 'companies/company_profile.html', context)
 
-    context = {'company_profile': company_profile}
+    context = {
+        'company_profile': company_profile, 
+        'active_page': 'Company',
+    }
+
     return render(request, 'companies/company_profile.html', context)
 
 

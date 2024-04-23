@@ -106,18 +106,13 @@ td {
     <!-- Folder Row: Toggle Visibility for Associated Content -->
     <tr class="folder-row no-select-on-dblclick" onmousedown="enableSelection(this)" tabindex="0" data-bs-target=".folderContent{{ folder.id }}" aria-expanded="false" data-depth="0">
         <td class="lh-lg ps-3 py-2 small-custom">
-            <input type="checkbox" name="folders" value="{{ folder.id }}">
-            <span class="arrow-icon" style="display: inline-block; width: 20px;">
+            <input class="form-check-input custom-checkbox" type="checkbox" name="folders" value="{{ folder.id }}">
+            <span class="arrow-icon" style="display: inline-block;">
                 <svg class="arrow-icon" width="24" height="24" viewBox="0 0 24 26" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <g clip-path="url(#clip0_1426_57)">
                         <path d="M10 17L15 12" stroke="#5379A8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
                         <path d="M15 12L10 7" stroke="#5379A8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
                     </g>
-                    <defs>
-                        <clipPath id="clip0_1426_57">
-                        <rect width="24" height="24" fill="white"/>
-                        </clipPath>
-                    </defs>
                 </svg>
             </span> <!-- Reserve space for the icon -->
             
@@ -138,8 +133,8 @@ td {
             <tr class="folder-content collapse folderContent{{ folder.id }} expanded-level-folder no-select-on-dblclick" onmousedown="enableSelection(this)" tabindex="0">
                 
                 <td class="document-name lh-lg ps-3 py-2 small-custom">
-                    <input type="checkbox" name="documents" value="{{ document.id }}">
-                    <svg width="20" height="20" viewBox="0 0 18 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <input class="form-check-input custom-checkbox" type="checkbox" name="documents" value="{{ document.id }}">
+                    <svg width="20" height="20" viewBox="0 -0.5 19 26" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <g clip-path="url(#clip0_1428_85)">
                             <path d="M7 21C5.89543 21 5 20.1046 5 19V3H14L19 8V19C19 20.1046 18.1046 21 17 21H7Z" stroke="#5379A8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
                             <path d="M13 3V9H19" stroke="#5379A8" stroke-width="2.5" stroke-linejoin="round"/>
@@ -169,8 +164,8 @@ td {
             <!-- Document Row: Initially Hidden, Shown on Folder Expand -->
             <tr class="folder-content no-select-on-dblclick" onmousedown="enableSelection(this)" tabindex="0">
                 <td class="document-name lh-lg ps-3 py-2 small-custom">
-                    <input type="checkbox" name="documents" value="{{ document.id }}">
-                    <svg width="20" height="20" viewBox="0 0 18 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <input class="form-check-input custom-checkbox" type="checkbox" name="documents" value="{{ document.id }}">
+                    <svg width="24" height="20" viewBox="2 -0.5 19 26" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <g clip-path="url(#clip0_1428_85)">
                             <path d="M7 21C5.89543 21 5 20.1046 5 19V3H14L19 8V19C19 20.1046 18.1046 21 17 21H7Z" stroke="#5379A8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
                             <path d="M13 3V9H19" stroke="#5379A8" stroke-width="2.5" stroke-linejoin="round"/>

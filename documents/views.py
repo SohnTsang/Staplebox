@@ -22,6 +22,7 @@ from django.utils.html import escape  # Use escape to prevent XSS attacks
 from .forms import DocumentEditForm  # Assuming you will create this form
 from django.utils import timezone 
 from django.utils.timezone import localtime
+from folder.utils import handle_item_action, clean_bins
 
 
 #For checking file integrity
@@ -251,21 +252,17 @@ def ajax_update_document(request, document_id):
 @require_POST  # Ensures only POST requests are handled
 @login_required
 def delete_document(request, document_id):
+
     if not request.user.is_authenticated:
         # Redirect or show an error if the user is not authenticated
         return redirect('account_login')  # Replace 'account_login' with your login view's name
 
     document = get_object_or_404(Document, id=document_id)
 
-    # Check if the user has the right to delete the document
-    # This is just a placeholder; you should replace it with your actual permission check
     if not document.uploaded_by == request.user:
-        # Show an error or redirect if the user doesn't have permission
-        # Assuming you have some way to show messages to the user
         return redirect('products:product_explorer')
 
     product_id = document.folder.product.id
-    folder_id = document.folder.id
 
     # Delete all versions of the document
     document.versions.all().delete()  # This deletes all related DocumentVersion instances
@@ -274,7 +271,25 @@ def delete_document(request, document_id):
     document.delete()
 
     # Redirect back to the appropriate folder view
-    return redirect(reverse('products:product_explorer_folder', kwargs={'product_id': product_id, 'folder_id': folder_id}))
+    return redirect('products:product_explorer_bin', product_id=product_id)
+
+
+@login_required
+def move_to_bin_document(request, document_id):
+    document = get_object_or_404(Document, id=document_id)
+    parent_id = document.folder.id
+    bin_folder = Folder.objects.get_or_create(name="Bin", product=document.folder.product, is_bin=True)[0]
+    handle_item_action("move_to_bin", document, bin_folder=bin_folder)
+    clean_bins()
+    return redirect('products:product_explorer_folder', product_id=document.folder.product.id, folder_id=parent_id)
+
+
+@login_required
+def restore_document(request, document_id):
+    document = get_object_or_404(Document, id=document_id)
+    handle_item_action("restore", document)
+    return redirect('products:product_explorer_bin', product_id=document.folder.product.id)
+
 
 
 @login_required

@@ -1,8 +1,5 @@
 {% block extra_css %}
 <style>
-.folder-content {
-}
-
 
 </style>
 {% endblock extra_css %}
@@ -11,8 +8,8 @@
 <!-- Subfolder Row: Initially Hidden, Shown on Parent Folder Expand -->
 <tr class="folder-row collapse folderContent{{ folder.parent_id }} no-select-on-dblclick" onmousedown="enableSelection(this)" tabindex="0" data-bs-target=".folderContent{{ folder.id }}" aria-expanded="false">
     <td class="lh-lg ps-3 py-2 small-custom">
-        <input type="checkbox" name="folders" value="{{ folder.id }}">
-        <span class="arrow-icon" style="display: inline-block; width: 20px;">
+        <input class="form-check-input custom-checkbox" type="checkbox" name="folders" value="{{ folder.id }}">
+        <span class="arrow-icon" style="display: inline-block;">
             <svg class="arrow-icon" width="24" height="24" viewBox="0 0 24 26" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <g clip-path="url(#clip0_1426_57)">
                     <path d="M10 17L15 12" stroke="#5379A8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -41,8 +38,8 @@
 {% for document in documents %}
     <tr class="folder-content collapse folderContent{{ folder.id }} no-select-on-dblclick" onmousedown="enableSelection(this)" tabindex="0">
         <td class="document-name lh-lg ps-3 py-2 small-custom">
-            <input type="checkbox" name="documents" value="{{ document.id }}">
-            <svg width="20" height="20" viewBox="0 0 18 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <input class="form-check-input custom-checkbox" type="checkbox" name="documents" value="{{ document.id }}">
+            <svg width="24" height="20" viewBox="2 -0.5 19 26" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <g clip-path="url(#clip0_1428_85)">
                     <path d="M7 21C5.89543 21 5 20.1046 5 19V3H14L19 8V19C19 20.1046 18.1046 21 17 21H7Z" stroke="#5379A8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
                     <path d="M13 3V9H19" stroke="#5379A8" stroke-width="2.5" stroke-linejoin="round"/>

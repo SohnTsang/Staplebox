@@ -12,6 +12,9 @@ class Folder(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     description = models.TextField(blank=True, null=True)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='created_folders')
+    original_parent = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    is_bin = models.BooleanField(default=False)  # Indicates if the folder is a bin
+    bin_expires_at = models.DateTimeField(null=True, blank=True)
 
     def get_ancestors(self, include_self=False):
         ancestors = []

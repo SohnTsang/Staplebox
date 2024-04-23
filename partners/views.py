@@ -167,7 +167,7 @@ def partner_list_view(request):
                 'created_at': partnership.created_at.strftime('%d-%b-%Y'),
                 'company_name': company_profile.name,
                 'company_email': company_profile.email,
-                'company_role': company_profile.role
+                'company_role': company_profile.role,
             })
         except CompanyProfile.DoesNotExist:
             partner_info.append({
@@ -176,7 +176,7 @@ def partner_list_view(request):
                 'created_at': partnership.created_at.strftime('%d-%b-%Y'),
                 'company_name': 'No company profile',
                 'company_email': '',
-                'company_role': ''
+                'company_role': '',
             })
    
     # Now check if there are more than 5 invitations to decide whether to show "See More" buttons
@@ -195,6 +195,7 @@ def partner_list_view(request):
         'has_more_sent_invitations': has_more_sent_invitations,
         'form_errors': form_errors,  # Pass any errors to the template
         'current_page': 'partners',
+        'active_page': 'Partners',
     }
     return render(request, 'partners/partner_list.html', context)
 

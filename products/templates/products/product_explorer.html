@@ -16,17 +16,6 @@ a {
     cursor: pointer;
 }
 
-.dropdown-menu {
-    border-radius: 5px;
-    font-size: 14px;
-    min-width: 200px;
-    max-width: 200px;
-}
-
-.dropdown-menu li {
-    padding-top: 0.1rem;
-    padding-bottom: 0.1rem;
-}
 
 .btn-modern {
     background-color: #295893; /* Primary color */
@@ -97,16 +86,6 @@ a {
     word-wrap: break-word; /* Break the word to prevent overflow */
     overflow-wrap: break-word; /* Standard property for breaking long words to prevent overflow */
     hyphens: auto; /* Allow hyphenation of words in supported browsers */
-}
-
-
-
-.title {
-    min-height: 70px;
-    align-items: center; /* This vertically centers the content */
-    display: flex;
-    flex-shrink: 0; /* Prevents these elements from shrinking, ensuring they maintain their size */
-
 }
 
 
@@ -252,9 +231,7 @@ a {
     font-size: 0.9rem;
 }
 
-.vh-92 {
-    height: 92vh;
-}
+
 
 </style>
 {% endblock extra_css %}
@@ -267,7 +244,7 @@ a {
         <div id="left-explorer" class="col-md-12 col-lg-9 pe-lg-2">
             <div class="bg-white rounded-2 wrapper vh-92">
                 <div class="title">
-                    <h4 class="text-primary-custom fw-bold px-4">{{ product.product_name }}</h4>
+                    <h4 class="fw-bold px-4"><a href="{% url 'products:product_explorer_folder' product_id=product.id folder_id=root_folder.id %}" class="text-primary-custom">{{ product.product_name }}</a></h4>
                 </div>
                 
 
@@ -287,7 +264,7 @@ a {
                     </nav>
                 </div>
                 
-                <div class="d-flex justify-content-start align-items-center pb-3 px-4">
+                <div class="d-flex justify-content-start align-items-center mb-2 pt-1 px-4">
                     <noscript>
                         <form id="create-folder-form" method="post" action="{% url 'products:folder_create' product_id=product.id %}" class="">
                             {% csrf_token %}
@@ -305,16 +282,28 @@ a {
                         </form>
                     </noscript>
                     <!-- Spacer div to push the next element(s) to the right -->
-                    <div class="gap-3 d-flex">
-                        <button type="button" class="btn align-items-center justify-content-center img-wrapper" data-bs-toggle="modal" data-bs-target="#createFolderModal" style="background: none; border: none; padding: 0;">
-                            <img src="{% static 'images/navbar_icon/new_folder.png' %}" alt="Create Folder" style="height: 24px; width: 24px;">
-                        </button>                    
-                        <button type="button" class="btn btn-modern ms-2" data-bs-toggle="modal" data-bs-target="#uploadDocumentModal">Upload File</button>
+                    <div class="gap-4 d-flex">
+                        {% if not bin %}
+                            <button type="button" class="btn align-items-center justify-content-center img-wrapper" data-bs-toggle="modal" data-bs-target="#createFolderModal" style="background: none; border: none; padding: 0;">
+                                <img src="{% static 'images/navbar_icon/new_folder.png' %}" alt="New Folder" style="height: 20px; width: 21px;">
+                            </button>
+                            <button type="button" class="btn align-items-center justify-content-center img-wrapper" data-bs-toggle="modal" data-bs-target="#uploadDocumentModal" style="background: none; border: none; padding: 0;">
+                                <img src="{% static 'images/navbar_icon/upload_file.png' %}" alt="New Folder" style="height: 20px; width: 21px;">
+                            </button>
+                            
+                        {% else %}
+
+                        {% endif %}
                     </div>
                     <div class="ms-auto"></div>
-                    
-                    <!-- This link/button will be aligned to the right -->
-                    <a href="{% url 'access_control:manage_access' product_id=product.id %}" class="btn btn-modern text-white">Manage Access</a>
+                    <div class="gap-4 d-flex">
+                        <a href="{% url 'products:product_explorer_bin' product_id=product.id %}" class="btn align-items-center justify-content-center img-wrapper" style="background: none; border: none; padding: 0;">
+                            <img src="{% static 'images/navbar_icon/bin.png' %}" alt="Bin" style="height: 20px; width: 21px;">  <!-- Ensure you have an icon for the bin -->
+                            <span class="fw-less-bold ms-1">Bin</span>
+                        </a>
+                        <!-- This link/button will be aligned to the right -->
+                        <a href="{% url 'access_control:manage_access' product_id=product.id %}" class="btn btn-modern text-white">Manage Access</a>
+                    </div>
                 </div>
 
                 
@@ -337,14 +326,18 @@ a {
                             <!-- Folders -->
                             {% for folder in subfolders %}
                             <!--<tr class="clickable-row" onclick="window.location='{% url 'products:product_explorer_folder' product_id=product.id folder_id=folder.id %}';">-->
-                                <tr class="clickable-row" draggable="true" data-id="{{ folder.id }}" data-owner="{{ folder.created_by }}" data-name="{{ folder.name }}" data-modified="{{ folder.updated_at|date:"Y-m-d H:i" }}" data-created="{{ folder.created_at|date:"Y-m-d H:i" }}" data-type="folder">
+                                <tr class="clickable-row {% if bin %}in-bin{% endif %}" draggable="true" data-id="{{ folder.id }}" data-owner="{{ folder.created_by }}" data-name="{{ folder.name }}" data-modified="{{ folder.updated_at|date:"Y-m-d H:i" }}" data-created="{{ folder.created_at|date:"Y-m-d H:i" }}" data-type="folder">
                                     <td class="small truncate-name">
                                         <svg class="me-2" width="23" height="20" viewBox="0 0 17 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                                             <path d="M16 6.32099V12.642C16 13.4751 15.3473 14.1576 14.5194 14.2179L14.4 14.2222H1.6C0.75651 14.2222 0.0654679 13.5776 0.00438862 12.7599L0 12.642L0 6.32099L16 6.32099ZM6.0155 0C6.45292 0 6.86907 0.176755 7.16925 0.485378L7.26488 0.593075L8.38448 1.97531L14.4 1.97531C15.2435 1.97531 15.9345 2.61995 15.9956 3.43762L16 3.55556V4.74074L0 4.74074L0 1.58025C0 0.747171 0.652702 0.0646597 1.48059 0.00433444L1.6 0L6.0155 0Z" fill="#CCA92D"/>
                                         </svg>
-                                        <a href="{% url 'products:product_explorer_folder' product_id=product.id folder_id=folder.id %}">
-                                            <span class="fw-less-bold">{{ folder.name }}</span>
-                                        </a>
+                                        {% if bin %}
+                                            <span class="fw-less-bold">{{ folder.name }}</span> <!-- Non-clickable text for bin folders -->
+                                        {% else %}
+                                            <a href="{% url 'products:product_explorer_folder' product_id=product.id folder_id=folder.id %}">
+                                                <span class="fw-less-bold">{{ folder.name }}</span>
+                                            </a>
+                                        {% endif %}
                                     </td>
                                     <td class="text-muted-weight small truncate-original-name"> — </td>
                                     <td class="text-muted-weight small truncate-type"> — </td>
@@ -367,38 +360,58 @@ a {
                                                 </svg>
                                             </button>
                                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionDropdown{{ forloop.counter }}">
-                                                <!-- Access Action -->
-                                                <li>
-                                                    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#accessControlModal" data-folder-id="{{ folder.id }}" data-product-id="{{ product.id }}">
-                                                        <i class="fas fa-user"></i> &nbsp; Access Control
-                                                    </a>
-                                                </li>
+                                                {% if bin %}
+                                                    <li>
+                                                        <form action="{% url 'folder:restore_folder' folder_id=folder.id %}" method="post">
+                                                            {% csrf_token %}
+                                                            <button type="submit" class="dropdown-item">
+                                                                <i class="fas fa-recycle"></i> &nbsp; Restore
+                                                            </button>
+                                                        </form>
+                                                    </li>
+                                                    <li><hr class="dropdown-divider"></li>
+                                                    <!-- Permanently Delete Action -->
+                                                    <li>
+                                                        <form action="{% url 'folder:delete_folder' folder_id=folder.id %}" method="post" onsubmit="return confirm('Are you sure you want to permanently delete this folder?');">
+                                                            {% csrf_token %}
+                                                            <button type="submit" class="dropdown-item text-danger">
+                                                                <i class="fas fa-trash-alt"></i> &nbsp; Delete Permanently
+                                                            </button>
+                                                        </form>
+                                                    </li>
+                                                {% else %}
+                                                    <li>
+                                                        <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#accessControlModal" data-folder-id="{{ folder.id }}" data-product-id="{{ product.id }}">
+                                                            <i class="fas fa-user"></i> &nbsp; Access Control
+                                                        </a>
+                                                    </li>
 
-                                                <li>
-                                                    <a class="dropdown-item edit-folder" href="#" data-bs-toggle="modal" data-bs-target="#editFolderModal" data-folder-id="{{ folder.id }}" data-product-id="{{ product.id }}">
-                                                        <i class="fas fa-edit"></i> &nbsp; Edit
-                                                    </a>
-                                                </li>
+                                                    <li>
+                                                        <a class="dropdown-item edit-folder" href="#" data-bs-toggle="modal" data-bs-target="#editFolderModal" data-folder-id="{{ folder.id }}" data-product-id="{{ product.id }}">
+                                                            <i class="fas fa-edit"></i> &nbsp; Edit
+                                                        </a>
+                                                    </li>
 
-                                                <!-- Update Action -->
-                                                <li>
-                                                    <a href="#" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#moveEntityModal"
-                                                       data-entity-type="folder" data-entity-id="{{ folder.id }}" data-product-id="{{ product.id }}" data-moving-folder-id="{{ folder.id }}"
-                                                       data-current-folder-id="{{ folder.parent.id }}" data-url="{% url 'products:move_entity' product_id=product.id entity_type='folder' entity_id=folder.id current_folder_id=folder.parent.id %}">
-                                                        <i class="fas fa-user"></i> &nbsp; Move Folder
-                                                    </a>
-                                                </li>
+                                                    <!-- Update Action -->
+                                                    <li>
+                                                        <a href="#" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#moveEntityModal"
+                                                        data-entity-type="folder" data-entity-id="{{ folder.id }}" data-product-id="{{ product.id }}" data-moving-folder-id="{{ folder.id }}"
+                                                        data-current-folder-id="{{ folder.parent.id }}" data-url="{% url 'products:move_entity' product_id=product.id entity_type='folder' entity_id=folder.id current_folder_id=folder.parent.id %}">
+                                                            <i class="fas fa-user"></i> &nbsp; Move
+                                                        </a>
+                                                    </li>
 
-                                                <li><hr class="dropdown-divider"></li>
-                                                <!-- Delete Action -->
-                                                <li>
-                                                    <form action="{% url 'folder:delete_folder' folder_id=folder.id %}" method="post" onsubmit="return confirm('Are you sure you want to delete this folder?');">
-                                                        {% csrf_token %}
-                                                        <button type="submit" class="dropdown-item text-danger"">
-                                                            <i class="fas fa-trash"></i> &nbsp; Delete
-                                                        </button>
-                                                    </form>
-                                                </li>
+                                                    <li><hr class="dropdown-divider"></li>
+                                                    <!-- Delete Action -->
+                                                    <li>
+                                                        <form action="{% url 'folder:move_to_bin_folder' folder_id=folder.id %}" method="post">
+                                                            {% csrf_token %}
+                                                            <button type="submit" class="dropdown-item text-danger">
+                                                                <i class="fas fa-trash"></i> &nbsp; Move to Bin
+                                                            </button>
+                                                        </form>
+                                                    </li>
+                                                {% endif %}
                                             </ul>
                                         </div>
                                     </td>
@@ -407,7 +420,7 @@ a {
                             
                             <!-- Documents -->
                             {% for document in documents %}
-                            <tr class="clickable-row" draggable="true" data-id="{{ document.id }}" data-owner="{{ document.uploaded_by }}" data-version="{{ document.version }}" data-filetype="{{ document.file_type }}" data-name="{{ document.display_filename }}" data-modified="{{ document.updated_at|date:"Y-m-d H:i" }}" data-original="{{ document.original_filename }}" data-category="{{ document.document_type.type_name }}" data-created-by="{{ document.latest_uploaded_by }}" data-created="{{ document.created_at|date:"Y-m-d H:i" }}" data-latest-comment="{{ document.latest_comment }}" data-filesize="{{ document.latest_file_size }}" data-type="document">
+                            <tr class="clickable-row {% if bin %}in-bin{% endif %}" draggable="true" data-id="{{ document.id }}" data-owner="{{ document.uploaded_by }}" data-version="{{ document.version }}" data-filetype="{{ document.file_type }}" data-name="{{ document.display_filename }}" data-modified="{{ document.updated_at|date:"Y-m-d H:i" }}" data-original="{{ document.original_filename }}" data-category="{{ document.document_type.type_name }}" data-created-by="{{ document.latest_uploaded_by }}" data-created="{{ document.created_at|date:"Y-m-d H:i" }}" data-latest-comment="{{ document.latest_comment }}" data-filesize="{{ document.latest_file_size }}" data-type="document">
                                 <td class="small truncate-name">
                                     <a href="{% url 'documents:download_document' document.id %}" data-document-id="{{ document.id }}">
                                         {% with document.file_type|upper as doc_type %}
@@ -461,57 +474,77 @@ a {
                                             </svg>
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionDropdown{{ forloop.counter }}">
-                                            <!-- Access Action -->
-                                            <li>
-                                                <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#accessControlModal" data-document-id="{{ document.id }}" data-product-id="{{ product.id }}">
-                                                    <i class="fas fa-user"></i> &nbsp; Access Control
-                                                </a>
-                                            </li>
+                                            {% if bin %}
+                                                <li>
+                                                    <form action="{% url 'documents:restore_document' document_id=document.id %}" method="post">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="dropdown-item">
+                                                            <i class="fas fa-recycle"></i> &nbsp; Restore
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                                <!-- Permanently Delete Action -->
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li>
+                                                    <form action="{% url 'documents:delete_document' document_id=document.id %}" method="post" onsubmit="return confirm('Are you sure you want to permanently delete this folder?');">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="dropdown-item text-danger">
+                                                            <i class="fas fa-trash-alt"></i> &nbsp; Delete Permanently
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                            {% else %}
+                                                <li>
+                                                    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#accessControlModal" data-document-id="{{ document.id }}" data-product-id="{{ product.id }}">
+                                                        <i class="fas fa-user"></i> &nbsp; Access Control
+                                                    </a>
+                                                </li>
 
-                                            <li>
-                                                <a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#editDocumentModal" data-document-id="{{ document.id }}">
-                                                    <i class="fas fa-user"></i> &nbsp; Edit
-                                                </a>
-                                            </li>
+                                                <li>
+                                                    <a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#editDocumentModal" data-document-id="{{ document.id }}">
+                                                        <i class="fas fa-user"></i> &nbsp; Edit
+                                                    </a>
+                                                </li>
 
-                                            <li>
-                                                <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#commentModal" data-document-id="{{ document.id }}">
-                                                    <i class="fas fa-user"></i> &nbsp; Comment
-                                                </a>
-                                            </li>
-                                            
-                                            <li>
-                                                <a href="#" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#moveEntityModal"
-                                                   data-entity-type="document" data-entity-id="{{ document.id }}" data-product-id="{{ product.id }}"
-                                                   data-current-folder-id="{{ document.folder.id }}" data-url="{% url 'products:move_entity' product_id=product.id entity_type='document' entity_id=document.id current_folder_id=document.folder.id %}">
-                                                    <i class="fas fa-user"></i> &nbsp; Move Document
-                                                </a>
-                                            </li>
+                                                <li>
+                                                    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#commentModal" data-document-id="{{ document.id }}">
+                                                        <i class="fas fa-user"></i> &nbsp; Comment
+                                                    </a>
+                                                </li>
+                                                
+                                                <li>
+                                                    <a href="#" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#moveEntityModal"
+                                                    data-entity-type="document" data-entity-id="{{ document.id }}" data-product-id="{{ product.id }}"
+                                                    data-current-folder-id="{{ document.folder.id }}" data-url="{% url 'products:move_entity' product_id=product.id entity_type='document' entity_id=document.id current_folder_id=document.folder.id %}">
+                                                        <i class="fas fa-user"></i> &nbsp; Move
+                                                    </a>
+                                                </li>
 
-                                            <li>
-                                                <a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#updateDocumentModal" data-document-id="{{ document.id }}">
-                                                    <i class="fas fa-edit"></i> &nbsp; Upload New Version
-                                                </a>
-                                            </li>
+                                                <li>
+                                                    <a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#updateDocumentModal" data-document-id="{{ document.id }}">
+                                                        <i class="fas fa-edit"></i> &nbsp; Upload New Version
+                                                    </a>
+                                                </li>
 
-                                            <li>
-                                                <a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#documentVersionsModal" data-document-id="{{ document.id }}">
-                                                    <i class="fas fa-history"></i> &nbsp; Version History
-                                                </a>
-                                            </li>
+                                                <li>
+                                                    <a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#documentVersionsModal" data-document-id="{{ document.id }}">
+                                                        <i class="fas fa-history"></i> &nbsp; Version History
+                                                    </a>
+                                                </li>
 
-                                            <!-- Update Action -->
-                                            
-                                            <li><hr class="dropdown-divider"></li>
-                                            <!-- Delete Action -->
-                                            <li>
-                                                <form action="{% url 'documents:delete_document' document_id=document.id %}" method="post" onsubmit="return confirm('Are you sure you want to delete this folder?');">
-                                                    {% csrf_token %}
-                                                    <button type="submit" class="dropdown-item text-danger"">
-                                                        <i class="fas fa-trash"></i> &nbsp; Delete
-                                                    </button>
-                                                </form>
-                                            </li>
+                                                <!-- Update Action -->
+                                                
+                                                <li><hr class="dropdown-divider"></li>
+                                                <!-- Delete Action -->
+                                                <li>
+                                                    <form action="{% url 'documents:move_to_bin_document' document_id=document.id %}" method="post">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="dropdown-item text-danger"">
+                                                            <i class="fas fa-trash"></i> &nbsp; Move to Bin
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                            {% endif %}
                                         </ul>
                                     </div>
                                 </td>
@@ -673,9 +706,9 @@ a {
             });
 
             row.addEventListener('dblclick', function() {
-                if (this.dataset.type === 'folder') {
-                    const folderId = this.dataset.id; // Assuming `data-id` holds the folder ID
-                    window.location.href = `/products/${productId}/explorer/${folderId}/`; // Adjust URL as needed
+                if (this.dataset.type === 'folder' && !this.classList.contains('in-bin')) {  // Add a class check for 'in-bin'
+                    const folderId = this.dataset.id;
+                    window.location.href = `/products/${productId}/explorer/${folderId}/`;
                 }
             });
 
@@ -1329,162 +1362,6 @@ a {
         });
     });
 </script>
-
-<!-- Highlighting Row and Right Panel information showing and resetting -->
-<!--
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        // Initial product name to revert back when no row is selected
-        const initialProductName = document.querySelector('#right-panel-title').textContent;
-        const productNameElement = document.querySelector('#right-panel-title');
-
-        document.addEventListener('click', function(event) {
-            const modal = document.getElementById('confirmationModal');
-            const isModalOpen = modal.style.display === 'block';
-            
-            // Condition to check if the click is outside clickable rows, outside detail panel, and no modal is currently shown
-            if (!event.target.closest('.clickable-row') && !event.target.closest('#detail') && !isModalOpen) {
-                showLoading();
-                document.querySelectorAll('.clickable-row').forEach(row => row.classList.remove('highlighted-row'));
-                productNameElement.textContent = initialProductName;
-                resetRightPanel();
-                resetLeftPanel();
-                hideLoading();
-            }
-        });
-
-        document.querySelectorAll('.clickable-row').forEach(row => {
-            row.addEventListener('click', function() {
-                const isSelected = this.classList.contains('highlighted-row');
-                if (!isSelected) {
-                    showLoading();
-                    document.querySelectorAll('.clickable-row').forEach(r => r.classList.remove('highlighted-row'));
-                    this.classList.add('highlighted-row');
-                    updatePanelsBasedOnSelection(this);
-                } else {
-                    productNameElement.textContent = initialProductName;
-                    resetRightPanel();
-                    resetLeftPanel();
-                    hideLoading();
-                }
-            });
-        });
-
-        function fetchPartnersWithAccess(itemType, itemId) {
-            const url = `/access_control/get_partners_with_access_json/${itemId}/${itemType}/`;
-            fetch(url)
-                .then(response => response.json())
-                .then(data => {
-                    updateLeftPanel(data, itemType, itemId);
-                    hideLoading(); // Hide loading after async operation is complete
-                })
-                .catch(error => {
-                    console.error('Error loading partners:', error);
-                    hideLoading(); // Ensure loading is hidden on error
-                });
-        }
-
-        function updateLeftPanel(partners, itemType, itemId) {
-            const panel = document.getElementById('access-information');
-            let html = partners.length > 0 ? '' : '<div class="detail-item"><strong>No Partners Granted Access</strong></div>';
-            partners.forEach(partner => {
-                html += `<div class="list-group-item list-group-item-action partner-access-item" data-partner-id="${partner.partner2_id}" tabindex="0">
-                    <div class="d-flex py-1">
-                        <div class="visually-hidden" style="align-self: center;"><input type="radio" name="partners" value="${partner.partner2_id}" id="partner_${partner.partner2_id}"></div>
-                        <div class="flex-grow-1 d-flex flex-column ms-3">
-                            <div class="fw-bold">${partner.company_name}</div>
-                            <div class="text-primary-custom fw-medium small">${partner.company_role}</div>
-                            <div class="small">${partner.access_detail}</div>
-                        </div>
-                        <button type="button" class="btn btn-danger btn-sm remove-access" onclick="removeAccess(this.getAttribute('data-partner-id'), '${itemType}', ${itemId}, ${productId})" data-partner-id="${partner.partner2_id}" style="align-self:center;">Remove</button>
-                    </div>
-                </div>`;
-            });
-            panel.innerHTML = html;
-        }
-
-        function resetLeftPanel() {
-            // Implement according to what needs to be reset or cleared in the right panel
-            // For example:
-            document.getElementById("access-information").innerHTML = `
-                <img src="{% static 'images/empty_state/no_partners.png' %}" alt="Select an item to show information" class="mt-5 text-center" style="align-self:center;" width="210" height="180">
-                <small class="text-center mt-3">Select an item to show information</small>
-                `;
-            document.querySelectorAll('.clickable-row').forEach(r => r.classList.remove('highlighted-row'));
-        }
-
-        // Function to update the right panel with selected item details
-        function updateRightPanel(data) {
-            const { owner, type, version, fileType, name, original, modified, category, createdBy, created, filesize, latestComment } = data;
-            if (type === "document") {
-                document.getElementById("details-information").innerHTML = `
-                    <div class="detail-item"><strong>Original Name</strong><small>${original}</small></div>
-                    <div class="detail-item"><strong>Category</strong><small>${category}</small></div>
-                    <div class="detail-item"><strong>Latest Comment</strong><small>${latestComment}</small></div>
-                    <div class="detail-item"><strong>Owner</strong><small>${owner}</small></div>
-                    <div class="detail-item"><strong>File Size</strong><small>${filesize}</small></div>
-                    <div class="detail-item"><strong>Version</strong><small>${version}</small></div>
-                    <div class="detail-item"><strong>Modified</strong><small>${modified} by ${createdBy}</small></div>
-                    <div class="detail-item"><strong>Created</strong><small>${created}</small></div>
-                    `;
-                    // Switch to the details tab
-                    // new bootstrap.Tab(document.querySelector('#details-tab')).show();
-            }
-            else if (type === "folder") {
-                document.getElementById("details-information").innerHTML = `
-                    <div class="detail-item"><strong>Owner</strong><small>${owner}</small></div>
-                    <div class="detail-item"><strong>Modified</strong><small>${modified}</small></div>
-                    <div class="detail-item"><strong>Created</strong><small>${created}</small></div>
-                    `;
-                    // Switch to the details tab
-                    // new bootstrap.Tab(document.querySelector('#details-tab')).show();
-            }
-        }
-        
-
-        function resetRightPanel() {
-            // Implement according to what needs to be reset or cleared in the right panel
-            // For example:
-            document.getElementById("details-information").innerHTML = `
-                <img src="{% static 'images/empty_state/show_info2.png' %}" alt="Select an item to show information" class="mt-5 text-center" style="align-self:center;" width="210" height="180">
-                <small class="text-center mt-3">Select an item to show information</small>
-                `;
-            document.querySelectorAll('.clickable-row').forEach(r => r.classList.remove('highlighted-row'));
-        }
-
-        function getIconHTML(fileType) {
-            // Define your icons here
-            const icons = {
-                '.PDF': '<svg class="" width="20" height="23" viewBox="0 0 15 18" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6.8 0V5.525C6.8 6.18774 7.30568 6.73238 7.95221 6.79416L8.075 6.8H13.6V15.3C13.6 16.1962 12.9065 16.9304 12.0269 16.9953L11.9 17H1.7C0.803792 17 0.0695594 16.3065 0.0046627 15.4269L0 15.3L0 1.7C0 0.803792 0.693496 0.0695596 1.57313 0.00466291L1.7 0L6.8 0ZM8.5 0.036856C8.77387 0.094843 9.03044 0.219882 9.24584 0.402096L9.35 0.497921L13.1021 4.25C13.3031 4.451 13.4486 4.69715 13.5286 4.96461L13.5631 5.1H8.5V0.036856Z" fill="#295893"/></svg>',
-                '.WORD': '<img src="{% static "icons/word-icon.png" %}" alt="Word" width="16" height="16" class="">',
-                '.PNG': '<svg class="" width="23" height="19" viewBox="0 0 17 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14.4 0C15.2837 0 16 0.696446 16 1.55556V12.4444C16 13.3036 15.2837 14 14.4 14H1.6C0.716344 14 0 13.3036 0 12.4444L0 1.55556C0 0.696446 0.716344 0 1.6 0L14.4 0ZM14.4 1.55556L1.6 1.55556L1.6 9.4115L5.59584 5.52666C5.98637 5.147 6.61952 5.147 7.01008 5.52666L10.2627 8.68902L11.2527 7.7266C11.6432 7.34689 12.2764 7.34689 12.6669 7.7266L14.4 9.4115V1.55556ZM10.8 3.11111C11.4627 3.11111 12 3.63344 12 4.27778C12 4.92211 11.4627 5.44444 10.8 5.44444C10.1373 5.44444 9.6 4.92211 9.6 4.27778C9.6 3.63344 10.1373 3.11111 10.8 3.11111Z" fill="#AC3140"/></svg>',
-                '.JPG': '<svg class="" width="23" height="19" viewBox="0 0 17 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14.4 0C15.2837 0 16 0.696446 16 1.55556V12.4444C16 13.3036 15.2837 14 14.4 14H1.6C0.716344 14 0 13.3036 0 12.4444L0 1.55556C0 0.696446 0.716344 0 1.6 0L14.4 0ZM14.4 1.55556L1.6 1.55556L1.6 9.4115L5.59584 5.52666C5.98637 5.147 6.61952 5.147 7.01008 5.52666L10.2627 8.68902L11.2527 7.7266C11.6432 7.34689 12.2764 7.34689 12.6669 7.7266L14.4 9.4115V1.55556ZM10.8 3.11111C11.4627 3.11111 12 3.63344 12 4.27778C12 4.92211 11.4627 5.44444 10.8 5.44444C10.1373 5.44444 9.6 4.92211 9.6 4.27778C9.6 3.63344 10.1373 3.11111 10.8 3.11111Z" fill="#AC3140"/></svg>',
-                '.SVG': '<svg class="" width="23" height="19" viewBox="0 0 17 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14.4 0C15.2837 0 16 0.696446 16 1.55556V12.4444C16 13.3036 15.2837 14 14.4 14H1.6C0.716344 14 0 13.3036 0 12.4444L0 1.55556C0 0.696446 0.716344 0 1.6 0L14.4 0ZM14.4 1.55556L1.6 1.55556L1.6 9.4115L5.59584 5.52666C5.98637 5.147 6.61952 5.147 7.01008 5.52666L10.2627 8.68902L11.2527 7.7266C11.6432 7.34689 12.2764 7.34689 12.6669 7.7266L14.4 9.4115V1.55556ZM10.8 3.11111C11.4627 3.11111 12 3.63344 12 4.27778C12 4.92211 11.4627 5.44444 10.8 5.44444C10.1373 5.44444 9.6 4.92211 9.6 4.27778C9.6 3.63344 10.1373 3.11111 10.8 3.11111Z" fill="#AC3140"/></svg>',
-                // Add more as needed
-                'DEFAULT': '<svg class="icon-folder" xmlns="http://www.w3.org/2000/svg" width="22" height="20" fill="currentColor" viewBox="0 0 18 16"><path d="M16 6.32099V12.642C16 13.4751 15.3473 14.1576 14.5194 14.2179L14.4 14.2222H1.6C0.75651 14.2222 0.0654679 13.5776 0.00438862 12.7599L0 12.642L0 6.32099L16 6.32099ZM6.0155 0C6.45292 0 6.86907 0.176755 7.16925 0.485378L7.26488 0.593075L8.38448 1.97531L14.4 1.97531C15.2435 1.97531 15.9345 2.61995 15.9956 3.43762L16 3.55556V4.74074L0 4.74074L0 1.58025C0 0.747171 0.652702 0.0646597 1.48059 0.00433444L1.6 0L6.0155 0Z" fill="#CCA92D"/></svg>' // Default icon
-            };
-            if (!fileType) {
-                return icons['DEFAULT']; // Return default icon or an empty string if no icon should be shown
-            }
-
-            return icons[fileType.toUpperCase()] || icons['DEFAULT']; // Return matching icon or default
-        }
-
-        function updatePanelsBasedOnSelection(selectedRow) {
-            const fileType = selectedRow.dataset.filetype;
-            const iconHTML = getIconHTML(fileType);
-            const name = selectedRow.dataset.name;
-            const itemId = selectedRow.dataset.id;
-            const itemType = selectedRow.dataset.type;
-
-            productNameElement.innerHTML = `${iconHTML} <span class="name-container py-3">${name}</span>`;
-            updateRightPanel(selectedRow.dataset);
-            fetchPartnersWithAccess(itemType, itemId);
-        }
-
-    });
-</script>
--->
 {% endblock %}
 
 {% endblock %}

@@ -17,8 +17,7 @@ from django.template.loader import render_to_string
 from django.db import transaction
 from django.views.decorators.http import require_http_methods
 from partners.utils import get_partner_info
-from django.http import HttpResponseNotAllowed
-    
+from folder.utils import clean_bins    
 
 @login_required
 def product_list(request):
@@ -72,7 +71,7 @@ def product_list(request):
                 })
 
         page_number = request.GET.get('page', 1)  # Get the page number from the query parameters
-        paginator = Paginator(products_with_root, 10)  # Show 10 products per page. Adjust as needed.
+        paginator = Paginator(products_with_root, 13)  # Show 10 products per page. Adjust as needed.
 
         try:
             page_obj = paginator.page(page_number)
@@ -90,6 +89,8 @@ def product_list(request):
             'filter_value': filter_value,
             'filter_type': filter_type,
             'page_obj': page_obj,
+            'hide_top_bar': True,
+            'active_page': 'Products',
         }
 
     else:
@@ -100,6 +101,8 @@ def product_list(request):
             'current_direction': current_direction,
             'filter_value': filter_value,
             'filter_type': filter_type,
+            'hide_top_bar': True,
+            'active_page': 'Products',
         }
 
     return render(request, 'products/product_list.html', context)
@@ -183,8 +186,33 @@ def product_explorer(request, product_id, folder_id=None):
         'documents': documents,
         'document_types': document_types,
         'breadcrumbs': breadcrumbs,
+        'active_page': 'Products',
     }
 
+    return render(request, 'products/product_explorer.html', context)
+
+
+@login_required
+def product_explorer_bin(request, product_id):
+    product = get_object_or_404(Product, pk=product_id)
+    root_folder, _ = Folder.objects.get_or_create(product=product, name='Root', defaults={'parent': None})
+    bin_folder = Folder.objects.get_or_create(product=product, name='Bin', is_bin=True)[0]  # Get or create the bin folder
+
+    subfolders = Folder.objects.filter(parent=bin_folder).order_by('name')
+    documents = Document.objects.filter(folder=bin_folder).order_by('original_filename')
+    breadcrumbs = [{'id': bin_folder.id, 'name': 'Bin'}]  # Simplified breadcrumbs just for the bin
+
+    context = {
+        "bin": True,
+        'product': product,
+        'current_folder': bin_folder,
+        'root_folder': root_folder,
+        'subfolders': subfolders,
+        'documents': documents,
+        'breadcrumbs': breadcrumbs,
+        'active_page': 'Bin',  # Additional context to highlight the bin page in navigation if needed
+    }
+    clean_bins()
     return render(request, 'products/product_explorer.html', context)
 
 
