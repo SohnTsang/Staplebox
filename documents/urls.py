@@ -6,6 +6,9 @@ app_name = 'documents'
 
 urlpatterns = [
     path('products/<int:product_id>/folders/<int:folder_id>/upload_document/', views.upload_document, name='upload_document'),
+    path('folders/<int:folder_id>/upload_document_partner/', views.upload_document_partner, name='upload_document_partner'),
+
+
     path('delete/<int:document_id>/', views.delete_document, name='delete_document'),
     path('products/<int:product_id>/folders/<int:folder_id>/documents/', views.get_documents, name='get_documents'),
     path('document/<int:document_id>/versions/', views.document_versions, name='document_versions'),

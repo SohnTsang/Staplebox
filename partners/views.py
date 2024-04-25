@@ -14,6 +14,34 @@ from invitations.forms import InvitationForm
 from django.core.mail import send_mail
 from django.conf import settings
 from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, render
+from .models import Partnership
+from companies.models import CompanyProfile
+from documents.models import Document
+from django.http import Http404, HttpResponse, HttpResponseForbidden
+
+
+@login_required
+def partner_company_profile(request, partner_id):
+    partnership = get_object_or_404(Partnership, pk=partner_id)
+    company_profile = get_object_or_404(CompanyProfile, user_profile=partnership.partner1.userprofile)
+
+    # Check if the current user is one of the partners
+    if request.user not in [partnership.partner1, partnership.partner2]:
+        return HttpResponseForbidden("You are not authorized to view this page.")
+    
+    folder_id = company_profile.partners_contract_folder.id if company_profile.partners_contract_folder else None
+
+    # Determine if the current user's profile is the same as the one being viewed
+
+    documents = Document.objects.filter(folder=company_profile.partners_contract_folder)
+
+    context = {
+        'company_profile': company_profile,
+        'documents': documents,
+        'folder_id': folder_id,
+    }
+    return render(request, 'companies/company_profile.html', context)
 
 
 @login_required

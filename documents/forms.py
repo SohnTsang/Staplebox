@@ -16,7 +16,7 @@ from document_types.models import DocumentType
 
 
 class DocumentUploadForm(forms.ModelForm):
-    document_type = forms.ModelChoiceField(queryset=DocumentType.objects.all(), required=True)
+    document_type = forms.ModelChoiceField(queryset=DocumentType.objects.all(), required=False)  # Make it optional
 
     class Meta:
         model = Document

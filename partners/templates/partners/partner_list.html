@@ -149,23 +149,27 @@
 					{% for partner in partner_info %}
                     <div class="list-group-item flex-column align-items-start px-5">
                         <div class="d-flex justify-content-between align-items-center py-3">
-                            <div class="">
-									<!--<h5 class="mb-1">{{ partnership.importer.username }}</h5>-->
-								<div class="fw-bold">{{ partner.company_name }}</div>
-								<div class="text-primary-custom fw-medium">{{ partner.company_role }}</div>
-								<div>{{ partner.company_email }}</div>
-                                <small class="text-muted">Partnership since: {{ partner.created_at }}</small>
-                            </div>
-                            <div class="dropdown">
-                                <button class="btn btn-primary dropdown-toggle btn-sm" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <span>Actions</span>
-                                </button>
-                                <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                                    <li><a id="delete-partner" class="dropdown-item" href="#" data-partner-id="{{ partner.id }}">Delete</a></li>
+							<a href="{% url 'partners:partner_company_profile' partner.id %}">
+
+								<div class="">
+										<!--<h5 class="mb-1">{{ partnership.importer.username }}</h5>-->
+									<div class="fw-bold">{{ partner.company_name }}</div>
+									<div class="text-primary-custom fw-medium">{{ partner.company_role }}</div>
+									<div>{{ partner.company_email }}</div>
+									<small class="text-muted">Partnership since: {{ partner.created_at }}</small>
+								</div>
+								
+							</a>
+							<div class="dropdown">
+								<button class="btn btn-primary dropdown-toggle btn-sm" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+									<span>Actions</span>
+								</button>
+								<ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+									<li><a id="delete-partner" class="dropdown-item" href="#" data-partner-id="{{ partner.id }}">Delete</a></li>
 									
-                                    <!-- Add more actions here -->
-                                </ul>
-                            </div>
+									<!-- Add more actions here -->
+								</ul>
+							</div>
                         </div>
                     </div>
                     {% empty %}

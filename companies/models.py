@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
 from users.models import UserProfile  # Assuming your UserProfile model is in users/models.py
+from django.apps import apps
+from django.db import transaction
 
 class CompanyProfile(models.Model):
     user_profile = models.OneToOneField(UserProfile, on_delete=models.CASCADE)
@@ -25,6 +27,18 @@ class CompanyProfile(models.Model):
     description = models.TextField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    partners_contract_folder = models.ForeignKey('folder.Folder', on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+
 
     def __str__(self):
         return self.name
+    
+    def save(self, *args, **kwargs):
+        with transaction.atomic():
+            is_new = self._state.adding
+            if is_new:
+                super().save(*args, **kwargs)  # Save first to ensure it has an ID if needed
+                Folder = apps.get_model('folder', 'Folder')
+                folder = Folder.objects.create(name=f"{self.name} Contracts", description="Storage for partners' contracts.")
+                self.partners_contract_folder = folder
+            super().save(*args, **kwargs)  # Save again to record the folder 

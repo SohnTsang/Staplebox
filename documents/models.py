@@ -15,7 +15,7 @@ class Document(models.Model):
     
     folder = models.ForeignKey(Folder, on_delete=models.CASCADE, related_name='documents')
     original_filename = models.CharField(max_length=255)
-    document_type = models.ForeignKey(DocumentType, on_delete=models.CASCADE)
+    document_type = models.ForeignKey(DocumentType, on_delete=models.SET_NULL, null=True, blank=True)
     file = models.FileField(upload_to='documents/%Y/%m/%d/')
     version = models.IntegerField(default=1)
     created_at = models.DateTimeField(default=timezone.now)

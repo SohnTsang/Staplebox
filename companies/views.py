@@ -2,21 +2,24 @@ from django.shortcuts import render, redirect, get_object_or_404
 from .forms import CompanyProfileForm
 from .models import CompanyProfile
 from django.contrib.auth.decorators import login_required
+from partners.models import Partnership  # Assuming your Partnership model is in partnerships/models.py
+
+
 
 @login_required
 def company_profile_view(request):
     user_profile = request.user.userprofile
     try:
         company_profile = CompanyProfile.objects.get(user_profile=user_profile)
+        own_profile = True  # Since the company profile corresponds to the logged-in user
     except CompanyProfile.DoesNotExist:
-        # If no CompanyProfile exists, render a different template or pass a flag to the template
-        # Indicating that the profile does not exist and perhaps a link/button to create one.
         context = {'company_profile': None}
         return render(request, 'companies/company_profile.html', context)
 
     context = {
-        'company_profile': company_profile, 
+        'company_profile': company_profile,
         'active_page': 'Company',
+        'own_profile': own_profile  # Pass this to the template
     }
 
     return render(request, 'companies/company_profile.html', context)

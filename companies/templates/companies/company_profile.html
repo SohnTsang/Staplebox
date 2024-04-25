@@ -9,6 +9,9 @@
 {% block extra_css %}
 <link rel="stylesheet" type="text/css" href="{% static 'companies/css/styles.css' %}">
 <style>
+    .vh-50 {
+        height:50vh;
+    }
 
 </style>
 {% endblock extra_css %}
@@ -36,8 +39,6 @@
                             <!-- If user is logged in, show Edit Profile button -->
                                 <a href="{% url 'companies:edit_company_profile' %}" class="btn btn-primary"><small>Edit Profile</small></a>
                             {% else %}
-                                <!-- If user is not logged in, show Send Invitation button -->
-                                <button class="btn btn-primary"><small>Send Invitation</small></button>
                             {% endif %}
                         </div>
                     </div>
@@ -71,7 +72,39 @@
             </div>
         </div>
     </div>
+    {% if not own_profile %}
+        <div class="bg-white rounded-3 wrapper vh-50 mt-3">
+            <div class="title">
+                <h4 class="text-primary-custom fw-bold px-4">Partner Documents</h4>
+            </div>
+            
+            {% if company_profile.partners_contract_folder %}
+                <div class="gap-4 d-flex">
+                    <button type="button" class="btn align-items-center justify-content-center img-wrapper" data-bs-toggle="modal" data-bs-target="#uploadDocumentPartnerModal" style="background: none; border: none; padding: 0;">
+                        <img src="{% static 'images/navbar_icon/upload_file.png' %}" alt="New Folder" style="height: 20px; width: 21px;">
+                    </button>
+                </div>
+            {% else %}
+                <p>Folder not available.</p>
+            {% endif %}
+            {% for document in documents %}
+                <div>
+                    <a href="{% url 'documents:download_document' document.id %}">{{ document.original_filename }}</a>
+                    <span>{{ document.comments }}</span>
+                    {% if request.user == document.uploaded_by %}
+                        <form method="post" action="{% url 'documents:delete_document' document.id %}" onsubmit="return confirm('Are you sure you want to delete this document?');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger">Delete</button>
+                        </form>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
 </div>
+{% if not own_profile %}
+    {% include "modal/upload_document_partner_modal.html" %}
+{% endif %}
 
 {% block javascript %}
 {% endblock %}

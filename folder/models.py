@@ -6,7 +6,7 @@ from django.conf import settings
 class Folder(models.Model):
     name = models.CharField(max_length=255)
     parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='subfolders')
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='folders')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='folders', null=True, blank=True)
     is_root = models.BooleanField(default=False)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)

@@ -1,0 +1,76 @@
+{% load static %}
+
+{% block extra_css %}
+<style>
+
+</style>
+{% endblock extra_css %}
+
+<div class="modal fade" id="uploadDocumentPartnerModal" tabindex="-1" aria-labelledby="uploadDocumentPartnerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-custom">
+        <div class="modal-content" style="width:90%;">
+            <div class="modal-header border-0">
+                <h5 class="modal-title" id="uploadDocumentPartnerModalLabel">Upload File</h5>
+            </div>
+            <form id="upload-document-form" action="{% url 'companies:upload_document_partner' folder_id=folder_id %}" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="drag-and-drop-area" ondragover="event.preventDefault();" ondrop="handleDrop(event);">
+                        <input type="file" id="documentFile" name="document_files" hidden required multiple>
+                        <label for="documentFile" class="w-100">
+                            <img src="{% static 'images/empty_state/upload.png' %}" alt="Select an item to show information" class="my-4 text-center" style="align-self:center;" width="150" height="130">
+                            <p class="small">Drag & drop files here or click to select files</p>
+                            
+                        </label>
+                    </div>
+                    <div id="file-inputs-container"></div>
+                </div>
+        
+                <div class="modal-footer border-0 p-1">
+                    <button type="button" class="btn small h6 text-primary-custom text-15" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn small h6 fw-less-bold text-primary-custom text-15" form="upload-document-form">Upload</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% block javascript %}
+<script>
+    document.getElementById('documentFile').addEventListener('change', function(event) {
+        updateFileInputFields(event.target.files);
+    });
+    
+    function handleDrop(event) {
+        event.preventDefault();
+        const files = event.dataTransfer.files;
+        document.getElementById('documentFile').files = files;
+        updateFileInputFields(files);
+    }
+    
+    function updateFileInputFields(files) {
+        const container = document.getElementById('file-inputs-container');
+        container.innerHTML = ''; // Clear previous inputs
+        Array.from(files).forEach((file, index) => {
+            const fileInputHTML = `
+            <div class="file-input" data-index="${index}">
+                <div class="input-group">
+                    <input type="text" name="file_names[]" value="${file.name}" readonly class="form-control file-name-input fw-less-bold">
+                    <button class="btn remove-btn" type="button" onclick="removeFileInput(${index})">
+                        Remove
+                    </button>
+                </div>
+                <textarea rows="2" class="form-control comment-textarea" name="comments[]" placeholder="Comments"></textarea>
+            </div>`;
+            container.innerHTML += fileInputHTML;
+        });
+    }
+    
+    function removeFileInput(index) {
+        const toRemove = document.querySelector(`.file-input[data-index="${index}"]`);
+        if (toRemove) {
+            toRemove.remove();
+        }
+    }
+    </script>
+{% endblock %}
