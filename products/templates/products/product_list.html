@@ -69,7 +69,9 @@
     }
 
     
-
+    .clickable-row {
+        cursor: pointer;
+    }
 
     
 
@@ -302,13 +304,13 @@
                                             <a href="?sort=updated_at&direction={{ new_direction }}&filter_value={{ request.GET.filter_value|urlencode }}&filter_type={{ request.GET.filter_type|urlencode }}">Date Modified
                                         </th>
                                     {% endif %}
-                                <th scope="col" class="text-center">Actions</th>
+                                <th scope="col" class="text-center"></th>
                                 {% endwith %}
                             </tr>
                         </thead>
                         <tbody class="small">
                             {% for item in page_obj %}
-                            <tr class="align-middle">
+                            <tr class="align-middle clickable-row" data-href="{% url 'products:product_explorer_folder' product_id=item.product.id folder_id=item.root_folder_id %}">
                                 <td class="">{{ item.product.product_code }}</td>
                                 <td class="truncate1 pe-3">{{ item.product.product_name }}</td>
                                 <td>{{ item.product.product_type }}</td>
@@ -316,9 +318,9 @@
                                 <td>{{ item.product.created_at|date:"d-M-Y" }}</td>
                                 <td>{{ item.product.updated_at|date:"d-M-Y"}}</td>
                                 <td class="text-center">
-                                    <div class="dropdown">
+                                    <div class="dropdown img-wrapper">
                                         <button class="btn btn-secondary dropdown-toggle px-0 py-1" type="button" id="actionDropdown{{ forloop.counter }}" data-bs-toggle="dropdown" aria-expanded="false">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <svg width="20" height="20" viewBox="0 0 24 26" fill="none" xmlns="http://www.w3.org/2000/svg">
                                                 <g clip-path="url(#clip0_1417_12)">
                                                     <rect x="12" y="12" width="0.01" height="0.01" stroke="#292929" stroke-width="3" stroke-linejoin="round"/>
                                                     <rect x="12" y="5" width="0.01" height="0.01" stroke="#292929" stroke-width="3" stroke-linejoin="round"/>
@@ -342,7 +344,6 @@
                                                     Delete
                                                 </button>
                                             </form>
-                                            <a href="{% url 'products:product_explorer' item.product.id %}?folderId={{ item.root_folder_id }}" class="btn btn-sm" style="background-color: #295893; color: #ffffff;">View</a>
                                         </ul>
                                         
                                     </div>
@@ -371,6 +372,20 @@
 </div>
 
 {% block javascript %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const rows = document.querySelectorAll('.clickable-row');
+    rows.forEach(function(row) {
+        row.addEventListener('click', function(event) {
+            // Check if the click was within the dropdown
+            if (!event.target.closest('.dropdown, .dropdown *')) {
+                // Navigate to the URL in the data-href attribute
+                window.location.href = this.getAttribute('data-href');
+            }
+        });
+    });
+});
+</script>
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {

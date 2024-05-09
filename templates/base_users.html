@@ -128,9 +128,9 @@
 
         
         .custom-container-fluid {
-            width: var(--container-width);
-            
-            max-width: none !important;
+            width: 99%;
+            padding-left: 0px;
+            float: left
         }
         
         .select-auto-width > select {
@@ -255,7 +255,6 @@
             align-items: center;
             justify-content: center;
             position: relative;
-
         }
 
         .img-wrapper img{
@@ -270,6 +269,7 @@
             border-radius: 50%;
             background-color: rgba(63, 63, 63, 0.09); /* Example background color */
             z-index: 1;
+            pointer-events: none;
         }
 
         .vh-92 {
@@ -350,10 +350,10 @@
         <div id="main-content" class="row vh-100 overflow-auto">
             <!--{# include 'top_navbar.html' %}-->
                 <!-- Sidebar -->
-            <div class="col-md-3 col-lg-2 d-block d-md-block" >
+            <div class="col-3 col-md-3 col-lg-2 d-block d-md-block" >
                 {% include 'left_navbar.html' %}
             </div>
-            <div id="right-side" class="col-md-9 col-lg-10 d-flex flex-column h-sm-100 ps-3" style="background-color: #29599311;">
+            <div id="right-side" class="col-sm-9 col-md-9 col-lg-10 d-flex flex-column h-sm-100 ps-3" style="background-color: #29599311;">
                 <!-- Your main content goes here -->
                 {% include 'top_bar.html' %}
                 <main id='content' class="overflow-auto" style="">

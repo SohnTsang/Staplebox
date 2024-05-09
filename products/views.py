@@ -225,9 +225,9 @@ def delete_product(request, pk):
         Folder.objects.filter(product=product).delete()  # Adjust as necessary
 
         product.delete()
-        return redirect('home')  # Adjust the redirect as needed
+        return redirect('products:product_list')  # Adjust the redirect as needed
     else:
-        return redirect('product_detail', pk=pk)  # Redirect to a safe page, adjust as needed
+        return redirect('products:product_list')  # Adjust the redirect as needed
 
 @login_required
 def home_view(request):
