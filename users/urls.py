@@ -13,6 +13,5 @@ urlpatterns = [
     path('password/reset/complete/', CustomPasswordResetCompleteView.as_view(), name='password_reset_complete'),
     path('password/reset/', password_reset_request, name='password_reset_request'),
 
-
     # You should also create a view for 'custom_password_reset_done' that shows a success message.
 ]

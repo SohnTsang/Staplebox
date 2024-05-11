@@ -30,6 +30,7 @@ from products.views import home_view  # Adjust the import based on your project 
 
 urlpatterns = [
 
+    path('exports/', include(('exports.urls', 'exports'), namespace='exports')),
     path('users/', include(('users.urls', 'users'), namespace='users')),
     path('companies/', include(('companies.urls'), namespace='companies')),  # Include companies URLs
     path('folder/', include(('folder.urls', 'folder'), namespace='folder')),

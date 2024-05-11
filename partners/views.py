@@ -183,7 +183,12 @@ def partner_list_view(request):
     if sort_by in ['name', 'email', 'role', 'created_at']:
         # You might need a more complex logic for sorting based on attributes in CompanyProfile
         # For simplicity, this example doesn't implement detailed sorting logic
-        filtered_partnerships.sort(key=lambda x: getattr(x.partner2.userprofile.companyprofile if x.partner1 == user else x.partner1.userprofile.companyprofile, sort_by, ''))
+        if sort_by in ['name', 'email', 'role']:
+        # Continue to sort by attributes from CompanyProfile
+            filtered_partnerships.sort(key=lambda x: getattr(x.partner2.userprofile.companyprofile if x.partner1 == user else x.partner1.userprofile.companyprofile, sort_by, ''))
+        elif sort_by == 'created_at':
+            # Sort by the 'created_at' attribute of the Partnership model
+            filtered_partnerships.sort(key=lambda x: x.created_at, reverse=True)
 
     for partnership in filtered_partnerships:
         partner_user = partnership.partner2 if partnership.partner1 == user else partnership.partner1

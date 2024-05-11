@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'companies',
     'invitations',
     'compliance',
+    'exports',
     'folder',
     'documents',
     'document_types',
