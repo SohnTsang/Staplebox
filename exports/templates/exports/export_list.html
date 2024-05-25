@@ -2,322 +2,139 @@
 {% load static %}
 {% load crispy_forms_tags %}
 {% load crispy_forms_filters %}
+{% load custom_filters %}
 
 {% block title %}Export{% endblock %}
 {% block extra_css %}
+
+<style>
+
+    .list-group-item:not(:focus):not(:active):hover {
+        background-color: #1e7bee44; /* Lighter background color on hover */
+    }
+
+    /* Active or focused state */
+    .list-group-item:focus, .list-group-item:active {
+        background-color: #1e7bee44 !important; /* Keep background color when active/focused */
+    }
+
+    .list-group-item.focus {
+        background-color: #1e7bee44 !important; /* Keep background color when active/focused */
+    }
+
+    .selected-partner {
+        background-color: #1e7bee44 !important; /* Light blue background with transparency */
+    }
+    .selected-export-date {
+        background-color: #1e7bee44 !important; /* Light blue background with transparency */
+    }
+</style>
 {% endblock extra_css %}
 
+
+
 {% block content %}
-<h1>Export Management</h1>
 
-<!-- Form to create a new export -->
-<h2>Create New Export</h2>
-<form id="createExportForm">
-    <!-- Dropdown to select partner -->
-    <select id="partnerId" required>
-        {% for partnership in partnerships %}
-        {% if partnership.partner1 == request.user %}
-        <!-- If the logged in user is partner1, show partner2's company name and use partner2's user ID -->
-        <option value="{{ partnership.partner2.id }}">{{ partnership.partner2.userprofile.companyprofile.name }}</option>
-        {% else %}
-        <!-- If the logged in user is partner2, show partner1's company name and use partner1's user ID -->
-        <option value="{{ partnership.partner1.id }}">{{ partnership.partner1.userprofile.companyprofile.name }}</option>
-        {% endif %}
-        {% endfor %}
-    </select>
-    <!-- Input to select date -->
-    <input type="date" id="exportDate" required>
-    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-    <button type="submit">Create Export</button>
-</form>
 
-<!-- Display existing exports -->
-{% if exports %}
-    {% for export in exports %}
-    <div id="export{{ export.id }}">
-        <h3>Export on {{ export.export_date }} for
-            {% if export.partner.partner1 == request.user %}
-            {{ export.partner.partner2.userprofile.companyprofile.name }}
-            {% else %}
-            {{ export.partner.partner1.userprofile.companyprofile.name }}
-            {% endif %}
-        </h3>
-        <button type="button" data-bs-toggle="modal" data-bs-target="#selectProductModal" data-export-id="{{ export.id }}">Add Product</button>
-        <button type="button" data-bs-toggle="modal" data-bs-target="#uploadDocumentModal" data-export-id="{{ export.id }}">Upload Document</button>
+<div class="container-fluid custom-container-fluid mt-1">
+    
+    <div class="row">
+      <!-- Partner List Panel -->
+        <div class="col-md-2">
+            <div class="bg-white rounded-2 wrapper vh-92">
+                <div class="title">
+                    <h4 class="fw-bold px-4 text-primary-custom">Partners</h4>
+                </div>
+                <button type="button" class="btn btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#selectPartnerModal">Add Partner</button>
+                <button id="deleteSelectedPartners" class="btn btn-danger mt-2" disabled>Delete Selected</button>
+                
+                <div id="partnerSkeleton" class="skeleton-list">
+                    {% for i in '0,5'|custom_range %}
+                        <div class="skeleton-list-item">
+                            <div class="skeleton skeleton-text" style="width: {{ i|get_width }};">
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
 
-        <button onclick="deleteExport({{ export.id }})">Delete</button>
-        <div id="exportProductsContainer{{ export.id }}">
-            <ul>
-                {% for export_product in export.export_products.all %}
-                <li id="product{{ export_product.id }}">
-                    {{ export_product.product.product_name }} - {{ export_product.product.product_code }}
-                    <!-- Optionally link partners and upload documents -->
-                </li>
-                {% endfor %}
-            </ul>
+                <div class="list-group" style="display: none;" id="partnerList">
+                    {% for partner in all_partners %}
+                    <div class="partner-list list-group-item flex-column" data-partner-id="{{ partner.partner_id }}">
+                        <div class="d-flex justify-content-between py-1">
+                            <div class="d-flex align-items-center">
+                                <input class="form-check-input custom-checkbox" type="checkbox" name="partners" data-staged-partner-id="{{ partner.staged_partner_id|default:'null' }}"  value="{{ partner.partner_id }}" id="partner_{{ partner.partner_id }}" onclick="toggleDeleteButton()">
+                                <div class="ps-3">
+                                    <div class="fw-sm-bold">{{ partner.partner_name }}</div>
+                                    <div class="text-primary-custom fw-medium small">{{ partner.partner_company_type|title }}</div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-primary btn-sm align-self-center">
+                                <svg width="16" height="18" viewBox="0 0 24 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M21 21L16.6569 16.6569M16.6569 16.6569C18.1046 15.2091 19 13.2091 19 11C19 6.58172 15.4183 3 11 3C6.58172 3 3 6.58172 3 11C3 15.4183 6.58172 19 11 19C13.2091 19 15.2091 18.1046 16.6569 16.6569Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+  
+      <!-- Export Date List Panel -->
+        <div class="col-md-2">
+            <div class="bg-white rounded-2 wrapper vh-92">
+
+                <div class="title">
+                    <h4 class="fw-bold px-4 text-primary-custom">Export Dates</h4>
+                </div>
+                <button id="addExportDateBtn" class="btn btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#setExportDateModal" disabled>Add Export Date</button>
+                <button id="deleteSelectedExports" class="btn btn-danger mt-2" disabled>Delete Selected Exports</button>
+
+                <div id="exportDateSkeleton" class="skeleton-list">
+                    {% for i in '0,1'|custom_range %}
+                        <div class="skeleton-list-item">
+                            <div class="skeleton skeleton-text" style="width: {{ i|get_width }};"></div>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <div id="displayExportDate" class="list-group" style="display: none;">No partners selected</div>
+                
+            </div>
+        </div>
+  
+      <!-- Document List Panel -->
+        <div class="col-md-8">
+            <div class="bg-white rounded-2 wrapper vh-92">
+
+                <div class="title">
+                    <h4 class="fw-bold px-4 text-primary-custom">Documents</h4>
+                </div>
+                <button id="uploadDocumentBtn" class="btn btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#uploadDocumentExportModal" disabled>Upload Document</button>
+                <button id="deleteSelectedDocumentsBtn" class="btn btn-danger mt-2" disabled>Delete Selected Documents</button>
+                
+                <div id="documentSkeleton" class="skeleton-list">
+                    {% for i in '0,1'|custom_range %}
+                        <div class="skeleton-list-item">
+                            <div class="skeleton skeleton-text" style="width: {{ i|get_width }};">
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <div id="displayDocuments" class="list-group" style="display: none;">No documents selected</div>
+            </div>
         </div>
     </div>
-    {% endfor %}
-{% else %}
-    <p>No exports found. Start by adding a new export.</p>
-{% endif %}
+</div>
 
-<div id="exportsContainer"></div>
 
 {% include "modal/product_list_modal.html" %}
 {% include "modal/partner_list_modal.html" %}
+{% include "modal/upload_document_export_modal.html" %}
+{% include "modal/set_export_date_modal.html" %}  <!-- New modal for setting export dates -->
 
 {% block javascript %}
-
-<script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-<script type="text/javascript">
-    // Handle creating a new export
-    const csrftoken = $('[name="csrfmiddlewaretoken"]').val();
-
-    $('#createExportForm').submit(function(event) {
-        event.preventDefault();
-        const exportDate = $('#exportDate').val();
-        const partnerId = $('#partnerId').val(); // Get partner ID from the select input
-        console.log(partnerId);
-        
-          // Get the CSRF token from the hidden input
-
-        $.ajax({
-            type: "POST",
-            url: "/exports/create/",
-            data: {
-                'export_date': exportDate,
-                'partner_id': partnerId, // Include partner ID in the AJAX call
-                'csrfmiddlewaretoken': csrftoken  // Ensure CSRF token is included in the data object
-            },
-            success: function(data) {
-                if (data.success) {
-                    $('#exportsContainer').append(`
-                        <div id="export${data.export_id}">
-                            <h3>Export on ${data.export_date} for ${data.partner_name}</h3>
-                            <button type="button" data-bs-toggle="modal" data-bs-target="#selectProductModal" data-export-id="${data.export_id}">Add Product</button>
-                            <button type="button" data-bs-toggle="modal" data-bs-target="#uploadDocumentModal" data-export-id="${data.export_id}">Upload Document</button>
-                            <button onclick="deleteExport(${data.export_id})">Delete</button>
-                            <div id="exportProductsContainer${data.export_id}"></div>
-                        </div>
-                    `);
-                } else {
-                    alert('Error creating export: ' + data.error);
-                }
-            },
-            error: function(xhr, textStatus, errorThrown) {
-                alert('Error creating export: ' + errorThrown);
-            }
-        });
-    });
-
-    function uploadDocuments(exportPartnerId) {
-        const formData = new FormData(document.getElementById(`uploadDocumentForm${exportPartnerId}`));
-        $.ajax({
-            url: `/exports/${exportPartnerId}/upload_document/`,
-            type: 'POST',
-            data: formData,
-            contentType: false,
-            processData: false,
-            success: function(data) {
-                if (data.success) {
-                    data.documents.forEach(doc => {
-                        $(`#documentsContainer${exportPartnerId}`).append(`<p>Uploaded document: ${doc.file_name}</p>`);
-                    });
-                } else {
-                    alert('Error uploading documents');
-                }
-            },
-            error: function(xhr) {
-                alert('Error uploading documents: ' + xhr.responseText);
-            }
-        });
-    }
-
-    function deleteExport(exportId) {
-        $.ajax({
-            url: `/exports/${exportId}/delete/`,
-            type: 'POST',
-            headers: {'X-CSRFToken': csrftoken},
-            success: function(data) {
-                if (data.success) {
-                    $(`#export${exportId}`).remove(); // Remove the export div
-                    alert('Export deleted successfully.');
-                } else {
-                    alert('Error deleting export.');
-                }
-            },
-            error: function(xhr, status, error) {
-                alert('Failed to delete export: ' + xhr.responseText);
-            }
-        });
-    }
-</script>
-
-<!-- Add Product to Export date modal -->
-<script>
-    $(document).ready(function() {
-        // Function to get CSRF token from cookies
-        function getCSRFToken() {
-            let csrfToken = null;
-            const cookies = document.cookie.split(';');
-            for (let cookie of cookies) {
-                let [key, value] = cookie.split('=');
-                if (key.trim() === 'csrftoken') {
-                    csrfToken = decodeURIComponent(value);
-                    break;
-                }
-            }
-            return csrfToken;
-        }
-    
-        // Setup AJAX to include CSRF token
-        $.ajaxSetup({
-            beforeSend: function(xhr, settings) {
-                if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type) && !this.crossDomain) {
-                    xhr.setRequestHeader("X-CSRFToken", getCSRFToken());
-                }
-            }
-        });
-    
-        // Handling modal show event to fetch and display products
-        $('#selectProductModal').on('show.bs.modal', function (event) {
-            const button = $(event.relatedTarget); // Button that triggered the modal
-            const exportId = button.data('export-id'); // Extracting export ID when modal is shown
-            const modal = $(this);
-
-            $('#ExportId').val(exportId);
-
-            $.ajax({
-                url: '/exports/list_products/',
-                type: 'GET',
-                success: function(response) {
-                    const products = response.products;
-                    const productList = modal.find('#productList');
-                    productList.empty(); // Clear previous entries
-                    if (products.length > 0) {
-                        products.forEach(function(product) {
-                            productList.append(`<li class="list-group-item">
-                                <input type="checkbox" value="${product.id}" name="product"> ${product.code}, ${product.name}
-                            </li>`);
-                        });
-                    } else {
-                        productList.html('<li class="list-group-item">No products available</li>');
-                    }
-                },
-                error: function() {
-                    productList.html('<li class="list-group-item">Failed to load products</li>');
-                }
-            });
-        });
-    
-        // Form submission to add selected products to export
-        $('#productSelectionForm').on('submit', function(e) {
-            e.preventDefault();
-            const modal = $('#selectProductModal');
-            const exportId = $('#ExportId').val(); // Retrieve the exportId from the hidden input
-            const selectedProductIds = $('#productList input:checked').map(function() {
-                return $(this).val();
-            }).get();
-            
-
-            selectedProductIds.forEach(productId => {
-                $.ajax({
-                    url: `/exports/${exportId}/add_product/`,
-                    type: 'POST',
-                    data: {
-                        'product_id': productId,
-                        'csrfmiddlewaretoken': getCSRFToken() // Ensuring CSRF token is sent
-                    },
-                    success: function(data) {
-                        if (data.success) {
-                            const productListItem = `<li onclick="showPartnersModal(${data.export_product_id}, '${data.product_name}')">
-                                ${data.product_name} - ${data.product_code}
-                            </li>`;
-                            let productContainer = $(`#exportProductsContainer${exportId}`);
-                            if (productContainer.find('ul').length === 0) {
-                                productContainer.append('<ul></ul>');
-                            }
-                            productContainer.find('ul').append(productListItem);
-                            modal.modal('hide'); // Optionally hide modal after operation
-                        } else {
-                            alert('Error adding product');
-                        }
-                    },
-                    error: function(xhr) {
-                        alert('Request failed');
-                    }
-                });
-            });
-        });
-
-//Select Partner modal
-
-        $('#selectPartnerModal').on('show.bs.modal', function(event) {
-            const button = $(event.relatedTarget); 
-            const exportProductId = button.data('export-product-id'); 
-            const modal = $(this);
-            $('#ExportProductId').val(exportProductId); // Storing export product ID in hidden input
-
-            $.ajax({
-                url: '/exports/list_partners/', // URL to fetch partners
-                type: 'GET',
-                success: function(response) {
-                    const partners = response.partners;
-                    const partnerList = modal.find('#partnerList');
-                    partnerList.empty();
-                    if (partners.length > 0) {
-                        partners.forEach(function(partner) {
-                            partnerList.append(`<li class="list-group-item">
-                                <input type="checkbox" value="${partner.id}" name="partner"> ${partner.name}
-                            </li>`);
-                        });
-                    } else {
-                        partnerList.html('<li class="list-group-item">No partners available</li>');
-                    }
-                },
-                error: function() {
-                    partnerList.html('<li class="list-group-item">Failed to load partners</li>');
-                }
-            });
-        });
-
-        // Handle form submission to link selected partners to the product
-        $('#partnerSelectionForm').on('submit', function(e) {
-            e.preventDefault();
-            const exportProductId = $('#ExportProductId').val();
-            const selectedPartnerIds = $('#partnerList input:checked').map(function() { return $(this).val(); }).get();
-
-            selectedPartnerIds.forEach(partnerId => {
-                $.ajax({
-                    url: `/exports/${exportProductId}/link_partner/`,
-                    type: 'POST',
-                    data: {
-                        'partner_id': partnerId,
-                        'csrfmiddlewaretoken': getCSRFToken()
-                    },
-                    success: function(data) {
-                        if (data.success) {
-                            $('#exportProductsContainer' + exportProductId).append(`<li>${data.partner_name}</li>`);
-                            $('#selectPartnerModal').modal('hide');
-                        } else {
-                            alert('Error adding partner');
-                        }
-                    },
-                    error: function(xhr) {
-                        alert('Request failed: ' + xhr.responseText);
-                    }
-                });
-            });
-        });
-    });
-</script>
-    
-<script>
-    
-</script>
-
+{% include "js/export_management_scripts.html" %}  <!-- Move all JavaScript code to this file for better organization -->
 {% endblock %}
 {% endblock %}

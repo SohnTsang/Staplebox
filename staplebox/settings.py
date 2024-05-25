@@ -39,6 +39,7 @@ CACHES = {
 # Application definition
 
 INSTALLED_APPS = [
+    'utils',
     'access_control',
     'companies',
     'invitations',

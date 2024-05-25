@@ -19,8 +19,8 @@
                                     {% for partner in partners %}
                                     <div class="list-group-item flex-column">
                                         <div class="d-flex py-1">
-                                            <div class="form-check" style="align-self: center;">
-                                                <input type="checkbox" name="partners" value="{{ partner.partner_id }}" id="partner_{{ partner.partner_id }}" class="form-check-input">
+                                            <div class="form-check align-content-center">
+                                                <input type="checkbox" name="partners" value="{{ partner.partner_id }}" id="partner_{{ partner.partner_id }}" class="form-check-input custom-checkbox">
                                             </div>
                                             <div class="ps-3">
                                                 <div class="fw-less-bold">{{ partner.company_name }}</div>

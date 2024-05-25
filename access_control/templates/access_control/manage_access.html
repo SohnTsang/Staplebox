@@ -226,7 +226,7 @@ span {
         <div id="mypartners" class="col-md-4 col-lg-4 ps-1">
             <div class="bg-white rounded-2 wrapper vh-90">
                 <div class="title">
-                    <h4 class="text-primary-custom fw-bold px-3">Partners</h4>
+                    <h4 class="text-primary-custom fw-bold px-4">Partners</h4>
                 </div>
                 <div class="">
                     <ul class="nav nav-tabs modern-tabs col-12" id="invitationTab" role="tablist">
@@ -253,7 +253,7 @@ span {
                                         <div class="d-flex py-1">
                                             <div class="visually-hidden" style="align-self: center;">
                                                 <!-- Ensure the name is correctly set for collecting multiple partner IDs -->
-                                                <input type="checkbox" name="partners" value="{{ partner.partner_id }}" id="partner_{{ partner.partner_id }}">
+                                                <input class="form-check-input custom-checkbox" type="checkbox" name="partners" value="{{ partner.partner_id }}" id="partner_{{ partner.partner_id }}">
                                             </div>
                                             <div class="ps-3">
                                                 <div class="fw-sm-bold">{{ partner.company_name }}</div>
@@ -336,7 +336,7 @@ span {
         <div class="col-md-8">
             <div class="bg-white rounded-2 wrapper vh-90">
                 <div class="title">
-                    <h4 class="text-primary-custom fw-bold px-3">{{ product.product_name }}</h4>
+                    <h4 class="text-primary-custom fw-bold px-4">{{ product.product_name }}</h4>
                 </div>
                 <div class="toolbar d-flex justify-content-start ps-3 py-2 gap-2 rounded-pill" style="background-color: #1e7bee33; align-items:center;">
                     <input class="form-check-input custom-checkbox" type="checkbox" id="selectAll">

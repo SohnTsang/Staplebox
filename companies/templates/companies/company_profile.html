@@ -88,16 +88,19 @@
                 <p>Folder not available.</p>
             {% endif %}
             {% for document in documents %}
-                <div>
-                    <a href="{% url 'documents:download_document' document.id %}">{{ document.original_filename }}</a>
-                    <span>{{ document.comments }}</span>
-                    {% if request.user == document.uploaded_by %}
-                        <form method="post" action="{% url 'documents:delete_document' document.id %}" onsubmit="return confirm('Are you sure you want to delete this document?');">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-danger">Delete</button>
-                        </form>
-                    {% endif %}
-                </div>
+            <div>
+                <a href="{% url 'documents:download_document' document.id %}">{{ document.original_filename }}</a>
+                <span>{{ document.comments }}</span>
+                <span>{{ document.uploaded_by }}</span>
+                {% if request.user == document.uploaded_by %}
+                    <form method="post" action="{% url 'documents:delete_document' document.id %}" onsubmit="return confirm('Are you sure you want to delete this document?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">Delete</button>
+                    </form>
+                {% endif %}
+            </div>
+            {% empty %}
+                <p>No documents found.</p>
             {% endfor %}
         </div>
     {% endif %}

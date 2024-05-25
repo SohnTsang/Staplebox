@@ -200,7 +200,7 @@
 
         .message-popup .alert {
             margin-bottom: 0;
-            background-color: #5678a8; /* Light red for error */
+            background-color: #5678a8; 
             color: white; /* Dark red text */
         }
 
@@ -212,8 +212,12 @@
 
         .message-popup.error {
             margin-bottom: 0;
-            background-color: #721c24; /* Light red for error */
+            background-color: #963e3e; /* Light red for error */
             color: white; /* Dark red text */
+        }
+
+        .error .alert {
+            background-color: #963e3e; /* Light red for error */
         }
 
 
@@ -339,16 +343,6 @@
                 <div class="alert {{ message.tags }}">{{ message }}</div>
             {% endfor %}
         </div>
-        <script>
-            // Check if the message popup exists
-            window.onload = function() {
-                const messagePopup = document.getElementById('message-popup');
-                if (messagePopup) {
-                    // Trigger slide up animation after 3 seconds
-                    $('#message-popup').slideDown(500).delay(3000).slideUp(500);
-                }
-            };
-        </script>
     {% endif %}
     <div class="container-fluid overflow-hidden">
         <div id="main-content" class="row vh-100 overflow-auto">

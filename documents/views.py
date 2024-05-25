@@ -25,6 +25,9 @@ from django.utils.timezone import localtime
 from folder.utils import handle_item_action, clean_bins
 from partners.models import Partnership
 from companies.models import CompanyProfile
+from django.db.models import Q
+from exports.models import Export, ExportDocument, PartnerExport
+from django.db import transaction
 
 #For checking file integrity
 def file_hash(file):
@@ -70,8 +73,10 @@ def upload_document(request, product_id, folder_id):
 def upload_document_partner(request, folder_id):
     folder = get_object_or_404(Folder, id=folder_id)
     company_profile = CompanyProfile.objects.filter(partners_contract_folder=folder).first()
-    user_profile = company_profile.user_profile
-    partnership = Partnership.objects.filter(partner1=user_profile.user).first() or Partnership.objects.filter(partner2=user_profile.user).first()
+    partnership = Partnership.objects.filter(
+            (Q(partner1=company_profile.user_profile.user) | Q(partner2=company_profile.user_profile.user)) &
+            (Q(partner1=request.user) | Q(partner2=request.user))
+        ).first()    
 
     if not partnership:
         messages.error(request, 'No partnership associated with this company profile.')
@@ -82,6 +87,8 @@ def upload_document_partner(request, folder_id):
         return redirect(reverse('partners:partner_company_profile', kwargs={'partner_id': partner_id}))
     
     partner_id = partnership.pk
+
+    print(partner_id)
 
     if request.method == 'POST':
         try:
@@ -105,6 +112,46 @@ def upload_document_partner(request, folder_id):
             messages.error(request, f'Failed to upload documents. Error: {e}')
 
     return redirect(reverse('partners:partner_company_profile', kwargs={'partner_id': partner_id}))
+
+
+@login_required
+@require_POST
+@transaction.atomic
+def upload_document_to_partner_export(request, partner_export_id):
+    partner_export = get_object_or_404(PartnerExport, id=partner_export_id)
+    print(partner_export)
+    document_files = request.FILES.getlist('document_file')
+    comments_list = request.POST.getlist('comments[]')
+
+    if not partner_export.folder:
+        return JsonResponse({'success': False, 'error': 'Folder not found or not created.'}, status=400)
+    
+    if not document_files:
+        return JsonResponse({'success': False, 'error': 'No document files provided.'}, status=400)
+
+    documents = []
+    for file, comment in zip(document_files, comments_list):
+        hash_digest = file_hash(file)  # Make sure file_hash function is defined
+        document = Document.objects.create(
+            file=file,
+            uploaded_by=request.user,
+            comments=comment,
+            file_hash=hash_digest,
+            folder=partner_export.folder
+        )
+        ExportDocument.objects.create(
+            partner_export=partner_export,
+            document=document,
+            folder=partner_export.folder
+        )
+        documents.append(document.original_filename)
+
+    return JsonResponse({
+        'success': True,
+        'message': 'Documents uploaded successfully.',
+        'documents': documents
+    })
+
 
 
 
@@ -309,8 +356,10 @@ def delete_document(request, document_id):
         # If no product is associated, use a default redirect
         product_id = None
         company_profile = CompanyProfile.objects.filter(partners_contract_folder=document.folder).first()
-        user_profile = company_profile.user_profile
-        partnership = Partnership.objects.filter(partner1=user_profile.user).first() or Partnership.objects.filter(partner2=user_profile.user).first()
+        partnership = Partnership.objects.filter(
+            (Q(partner1=company_profile.user_profile.user) | Q(partner2=company_profile.user_profile.user)) &
+            (Q(partner1=request.user) | Q(partner2=request.user))
+        ).first()
         partner_id = partnership.pk
         redirect_url = 'partners:partner_company_profile'
 
@@ -320,6 +369,7 @@ def delete_document(request, document_id):
     # Delete the document itself
     document.delete()
 
+    print(partner_id)
     # Redirect back to the appropriate folder view
     if product_id:
         return redirect(redirect_url, product_id=product_id)

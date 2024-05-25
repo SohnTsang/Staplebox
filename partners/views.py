@@ -24,24 +24,31 @@ from django.http import Http404, HttpResponse, HttpResponseForbidden
 @login_required
 def partner_company_profile(request, partner_id):
     partnership = get_object_or_404(Partnership, pk=partner_id)
-    company_profile = get_object_or_404(CompanyProfile, user_profile=partnership.partner1.userprofile)
 
-    # Check if the current user is one of the partners
     if request.user not in [partnership.partner1, partnership.partner2]:
         return HttpResponseForbidden("You are not authorized to view this page.")
-    
-    folder_id = company_profile.partners_contract_folder.id if company_profile.partners_contract_folder else None
 
-    # Determine if the current user's profile is the same as the one being viewed
+    # Determine the "other partner" based on the current user
+    if request.user == partnership.partner1:
+        viewing_partner = partnership.partner2
+    else:
+        viewing_partner = partnership.partner1
 
-    documents = Document.objects.filter(folder=company_profile.partners_contract_folder)
+    # Get company profiles for both partners
+    company_profile = get_object_or_404(CompanyProfile, user_profile=viewing_partner.userprofile)
+    user_company_profile = get_object_or_404(CompanyProfile, user_profile=request.user.userprofile)
+
+    # Get folders for both company profiles
+    folders = [company_profile.partners_contract_folder, user_company_profile.partners_contract_folder]
+    documents = Document.objects.filter(folder__in=folders).distinct()
 
     context = {
         'company_profile': company_profile,
         'documents': documents,
-        'folder_id': folder_id,
+        'folder_id': company_profile.partners_contract_folder.id if company_profile.partners_contract_folder else None,
     }
     return render(request, 'companies/company_profile.html', context)
+
 
 
 @login_required
