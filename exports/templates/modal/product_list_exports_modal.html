@@ -1,0 +1,139 @@
+<style>
+
+    .modal-content-product-list {
+        max-width: 600px;
+        height: 60.5vh;
+    }
+    .product-list {
+        border: 1px solid #ddd;
+    }
+    .modal-table {
+        min-width: auto;
+    }
+
+    .modal-tbody {
+        max-height: 43.8vh;
+        overflow-y: auto;
+        scrollbar-width: thin;
+    }
+
+    th:nth-child(1), td:nth-child(1) {
+        width: 3%;
+        text-align: center;
+    }
+
+    th:nth-child(2), td:nth-child(2) {
+        width: 15%;
+    }
+
+    th:nth-child(3), td:nth-child(3) {
+        width: 20%;
+    }
+
+</style>
+
+<div id="productListModal" class="modal">
+    <div class="modal-content modal-content-product-list">
+        <div class="modal-title">Select Products</div>
+        <div class="product-list">
+            <table class="modal-table">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>Product Code</th>
+                        <th style="">Product Name</th>
+                    </tr>
+                </thead>
+                <tbody id="productListTableBody" class="modal-tbody">
+                    <!-- Products will be added here by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+        <div class="modal-footer">
+            <button class="cancel-btn" onclick="closeProductListModal()">Cancel</button>
+            <button class="add-btn" onclick="addSelectedProducts()">Add</button>
+        </div>
+    </div>
+</div>
+
+{% block javascript %}
+
+<script>
+
+    function addSelectedProducts() {
+        const selectedProductIds = Array.from(document.querySelectorAll('.product-checkbox:checked')).map(cb => cb.value);
+        const exportId = document.getElementById('exportId').value; // Make sure you have this value correctly set in your HTML
+
+        if (!selectedProductIds.length) {
+            showMessage('No products selected.', 'error');
+            return;
+        }
+
+        fetch(`/exports/${exportId}/add_products/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')  // Assuming you have a function to get cookies
+            },
+            body: JSON.stringify({ product_ids: selectedProductIds })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showMessage(data.error, 'error');
+            } else {
+                setSessionMessage(data.message, 'success');
+                location.reload();  // Optionally refresh the page or just close the modal and update the UI
+            }
+        })
+        .catch(error => {
+            console.error('Error adding products:', error);
+            showMessage('There was an error processing your request.', 'error');
+        });
+    }
+
+    function closeProductListModal() {
+        document.getElementById('productListModal').style.display = 'none';
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const addProductButton = document.getElementById('addProduct');
+
+        addProductButton.addEventListener('click', function() {
+            openProductListModal();  // This will display the product list modal
+        });
+
+        function openProductListModal() {
+            document.getElementById('productListModal').style.display = 'block';
+            fetchProducts();
+        }
+
+        function fetchProducts() {
+            fetch('/products/api/products/', {
+                method: 'GET',
+                credentials: 'include'  // Needed for session cookies to be sent with the request
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);  // Log the data to see the actual structure
+                populateProductTable(data.products);
+            })
+            .catch(error => console.error('Error fetching products:', error));
+        }
+
+        function populateProductTable(products) {
+            const tableBody = document.getElementById('productListTableBody');
+            tableBody.innerHTML = '';  // Clear existing entries
+            products.forEach(product => {
+                const row = `<tr>
+                                <td><input type="checkbox" value="${product.id}" class="product-checkbox"></td>
+                                <td>${product.product_code}</td>
+                                <td style="">${product.product_name}</td>
+                            </tr>`;
+                tableBody.innerHTML += row;
+            });
+        }
+    });
+</script>
+
+{% endblock %}

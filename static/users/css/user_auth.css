@@ -96,7 +96,7 @@
     }
 
     .signup-link a {
-        color: #295893;
+        color: #295893 !important;
     }
 
     .custom-alert ul {

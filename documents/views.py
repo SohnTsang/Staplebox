@@ -26,8 +26,22 @@ from folder.utils import handle_item_action, clean_bins
 from partners.models import Partnership
 from companies.models import CompanyProfile
 from django.db.models import Q
-from exports.models import Export, ExportDocument, PartnerExport
 from django.db import transaction
+from rest_framework.parsers import JSONParser
+from .serializers import DocumentSerializer, DocumentCommentSerializer, DocumentVersionCommentSerializer, DocumentUpdateSerializer
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework.parsers import MultiPartParser
+from rest_framework.decorators import api_view, parser_classes
+import json
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+import logging
+from django.http import Http404
+from rest_framework.parsers import MultiPartParser, FormParser
+from django.utils.decorators import method_decorator
+
 
 #For checking file integrity
 def file_hash(file):
@@ -38,80 +52,87 @@ def file_hash(file):
 
 
 @login_required
+@api_view(['POST'])
+@parser_classes([MultiPartParser])
 def upload_document(request, product_id, folder_id):
-    if request.method == 'POST':
-        folder = get_object_or_404(Folder, id=folder_id, product_id=product_id)
-        try:
-            files = request.FILES.getlist('document_files')
-            document_types = request.POST.getlist('document_types[]')
-            comments_list = request.POST.getlist('comments[]')
+    product = get_object_or_404(Product, id=product_id)
+    folder = get_object_or_404(Folder, id=folder_id, product_id=product_id)
 
-            for file, doc_type_id, comment in zip(files, document_types, comments_list):
-                hash_digest = file_hash(file)
-                document_type = get_object_or_404(DocumentType, id=doc_type_id)
-
-                Document.objects.create(
-                    folder=folder,
-                    original_filename=file.name,
-                    document_type=document_type,
-                    file=file,
-                    file_hash=hash_digest,
-                    uploaded_by=request.user,
-                    comments=comment,
-                )
-
-            messages.success(request, 'Documents uploaded')
-        except Exception as e:
-            messages.error(request, f'Failed to upload documents. Error: {e}')
-
+    if product.user != request.user:
+        messages.error(request, "You are not authorized to perform this action.")
         return redirect(reverse('products:product_explorer_folder', kwargs={'product_id': product_id, 'folder_id': folder_id}))
 
-    return redirect(reverse('products:product_explorer', kwargs={'product_id': product_id}))
-
-
-@login_required
-def upload_document_partner(request, folder_id):
-    folder = get_object_or_404(Folder, id=folder_id)
-    company_profile = CompanyProfile.objects.filter(partners_contract_folder=folder).first()
-    partnership = Partnership.objects.filter(
-            (Q(partner1=company_profile.user_profile.user) | Q(partner2=company_profile.user_profile.user)) &
-            (Q(partner1=request.user) | Q(partner2=request.user))
-        ).first()    
-
-    if not partnership:
-        messages.error(request, 'No partnership associated with this company profile.')
-        return redirect(reverse('partners:partner_company_profile', kwargs={'partner_id': partner_id}))
-    
-    if not company_profile:
-        messages.error(request, 'No company profile associated with this folder.')
-        return redirect(reverse('partners:partner_company_profile', kwargs={'partner_id': partner_id}))
-    
-    partner_id = partnership.pk
-
-    print(partner_id)
-
     if request.method == 'POST':
         try:
-            files = request.FILES.getlist('document_files')
-            comments_list = request.POST.getlist('comments[]')
+            document_files = request.FILES.getlist('document_files')
+            document_types = json.loads(request.POST.get('document_types'))
+            comments = json.loads(request.POST.get('comments'))
 
-            for file, comment in zip(files, comments_list):
-                hash_digest = file_hash(file)
-                Document.objects.create(
-                    folder=folder,
-                    original_filename=file.name,
-                    file=file,
-                    file_hash=hash_digest,
-                    uploaded_by=request.user,
-                    comments=comment,
-                )
+            for file, doc_type, comment in zip(document_files, document_types, comments):
+                data = {
+                    'folder': folder.id,
+                    'original_filename': file.name,
+                    'document_type': doc_type,
+                    'file': file,
+                    'uploaded_by': request.user.id,
+                    'comments': comment
+                }
+                serializer = DocumentSerializer(data=data)
+                if serializer.is_valid():
+                    serializer.save()
+                else:
+                    return JsonResponse({'success': False, 'errors': serializer.errors}, status=400)
 
-            messages.success(request, 'Documents uploaded successfully.')
-            return redirect(reverse('partners:partner_company_profile', kwargs={'partner_id': partner_id}))
+            return JsonResponse({'success': True, 'message': 'Documents uploaded'}, status=201)
         except Exception as e:
-            messages.error(request, f'Failed to upload documents. Error: {e}')
+            return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
-    return redirect(reverse('partners:partner_company_profile', kwargs={'partner_id': partner_id}))
+
+class UploadDocumentPartnerView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, folder_id):
+        print("UploadDocumentPartnerView")
+        folder = get_object_or_404(Folder, id=folder_id)
+        company_profile = CompanyProfile.objects.filter(partners_contract_folder=folder).first()
+        partnership = Partnership.objects.filter(
+            (Q(partner1=company_profile.user_profile.user) | Q(partner2=company_profile.user_profile.user)) &
+            (Q(partner1=request.user) | Q(partner2=request.user))
+        ).first()
+
+        if not partnership:
+            return Response({'error': 'No partnership associated with this company profile.'}, status=403)
+
+        if not company_profile:
+            return Response({'error': 'No company profile associated with this folder.'}, status=404)
+
+        files = request.FILES.getlist('document_files')
+        comments_list = request.POST.getlist('comments[]')
+
+        try:
+            with transaction.atomic():
+                documents = []
+                for file, comment in zip(files, comments_list):
+                    hasher = hashlib.sha256()
+                    for chunk in file.chunks():
+                        hasher.update(chunk)
+                    file_hash = hasher.hexdigest()
+
+                    document = Document.objects.create(
+                        folder=folder,
+                        original_filename=file.name,
+                        file=file,
+                        file_hash=file_hash,
+                        uploaded_by=request.user,
+                        comments=comment,
+                    )
+                    documents.append(document)
+
+                # Serialize the documents for the response
+                serializer = DocumentSerializer(documents, many=True)
+                return Response({'message': 'Documents uploaded successfully.', 'documents': serializer.data}, status=201)
+        except Exception as e:
+            return Response({'error': f'Failed to upload documents. Error: {str(e)}'}, status=400)
 
 
 @login_required
@@ -119,7 +140,6 @@ def upload_document_partner(request, folder_id):
 @transaction.atomic
 def upload_document_to_partner_export(request, partner_export_id):
     partner_export = get_object_or_404(PartnerExport, id=partner_export_id)
-    print(partner_export)
     document_files = request.FILES.getlist('document_file')
     comments_list = request.POST.getlist('comments[]')
 
@@ -153,8 +173,6 @@ def upload_document_to_partner_export(request, partner_export_id):
     })
 
 
-
-
 def generate_new_filename(folder, original_filename):
     base_name, extension = os.path.splitext(original_filename)
     counter = 1
@@ -169,54 +187,46 @@ def generate_new_filename(folder, original_filename):
 
 
 @login_required
+@api_view(['POST'])
 def edit_document(request, document_id):
     document = get_object_or_404(Document, id=document_id)
-    # Determine the target for editing - the document itself or the latest version
-    versions = document.versions.all()
-    if versions.exists():
-        latest_version = versions.latest('created_at')
-        target_instance = latest_version
-    else:
-        target_instance = document
 
     if request.method == 'POST':
-        form = DocumentEditForm(request.POST, request.FILES, instance=target_instance)
-        if form.is_valid():
-            edited_instance = form.save(commit=False)
-            # Handling file updates
-            if 'file' in request.FILES:
-                uploaded_file = request.FILES['file']
-                # Update the original_filename to reflect the uploaded file's name
-                edited_instance.original_filename = uploaded_file.name
-            edited_instance.save()
-            document.updated_at = timezone.now()  # Ensure to import timezone from django.utilsdocument.original_filename
-            document.save(update_fields=['updated_at'])
-            form.save_m2m()  # Required for saving ManyToMany fields if any
-            
-            messages.success(request, 'Document updated')
-            return redirect(reverse('products:product_explorer_folder', kwargs={
-                'product_id': document.folder.product_id, 
-                'folder_id': document.folder_id
-            }))
-    else:
-        form = DocumentEditForm(instance=target_instance)
+        serializer = DocumentSerializer(data=request.data, instance=document)
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse({'success': True, 'message': 'Document updated'})
+        else:
+            print(serializer.errors)
+            return JsonResponse({'success': False, 'errors': serializer.errors}, status=400)
 
-    return render(request, 'documents/edit_document.html', {
-        'form': form,
-        'document': document
-    })
+    return JsonResponse({'success': False, 'message': 'Invalid request method'}, status=400)
 
 
 @login_required
 def ajax_get_document_details(request, document_id):
     document = get_object_or_404(Document, id=document_id)
     document_types = DocumentType.objects.all().values('id', 'type_name')
-    data = {
-        'document_type_id': document.document_type_id,
-        'document_types': list(document_types),
-        'original_filename': document.original_filename,
-        'comments': document.comments,
-    }
+
+    # Check if the document has any versions
+    if document.versions.exists():
+        # If it does, get the latest version
+        latest_version = document.versions.latest('created_at')
+        data = {
+            'document_type_id': latest_version.document.document_type_id,
+            'document_types': list(document_types),
+            'original_filename': latest_version.original_filename,
+            'comments': latest_version.comments,
+        }
+    else:
+        # If it doesn't, use the original document data
+        data = {
+            'document_type_id': document.document_type_id,
+            'document_types': list(document_types),
+            'original_filename': document.original_filename,
+            'comments': document.comments,
+        }
+
     return JsonResponse(data)
 
 
@@ -277,38 +287,26 @@ def ajax_document_versions(request, document_id):
     return JsonResponse(data)
 
 
+class UpdateDocument(APIView):
+    permission_classes = [IsAuthenticated]
 
-@login_required
-def update_document(request, document_id):
-    document = get_object_or_404(Document, id=document_id)
-    user = request.user
+    def post(self, request, document_id):
+        document = get_object_or_404(Document, id=document_id)
+        user = request.user
 
-    # Check if the user is the owner or has been granted access
-    is_owner = document.uploaded_by == user
-    has_access = AccessPermission.objects.filter(partner2=user, document=document).exists()
+        # Check if the user is the owner or has access
+        is_owner = document.uploaded_by == user
+        has_access = AccessPermission.objects.filter(partner2=user, document=document).exists()
 
-    if not (is_owner or has_access):
-        return HttpResponseForbidden("You do not have permission to update this document.")
+        if not (is_owner or has_access):
+            return Response({"detail": "You do not have permission to update this document."}, status=status.HTTP_403_FORBIDDEN)
 
-    if request.method == 'POST':
-        uploaded_file = request.FILES.get('file')
-        comments = request.POST.get('comments')
-        product_id = document.folder.product.id
-        folder_id = document.folder.id
-
-        if uploaded_file:
-            # Assuming you have a function to compute file hash
-            new_hash = file_hash(uploaded_file)
-            document.update_version(uploaded_file, new_hash, comments, user)
-
-            messages.success(request, 'Document updated')
-            return redirect(reverse('products:product_explorer_folder', kwargs={'product_id': product_id, 'folder_id': folder_id}))
-
-    return render(request, 'documents/update_document_form.html', {
-        'document': document,
-        'product_id': document.folder.product_id,
-        'folder_id': document.folder_id
-    })
+        serializer = DocumentUpdateSerializer(document, data=request.data, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'message': 'Document updated successfully'}, status=200)
+        else:
+            return Response(serializer.errors, status=400)
 
 
 @login_required
@@ -369,7 +367,6 @@ def delete_document(request, document_id):
     # Delete the document itself
     document.delete()
 
-    print(partner_id)
     # Redirect back to the appropriate folder view
     if product_id:
         return redirect(redirect_url, product_id=product_id)
@@ -401,7 +398,6 @@ def download_document(request, document_id, version_id=None):
         version = get_object_or_404(DocumentVersion, id=version_id)
         file_path = version.file.path
         document = version.document
-        version_suffix = f"_version_{version.version}"
         download_filename = f"{version.original_filename.split('.')[0]}.{version.original_filename.split('.')[-1]}"
     else:
         document = get_object_or_404(Document, pk=document_id)
@@ -442,8 +438,6 @@ def comment_versions(request, document_id):
         'original_document': original_document,
         'versions': versions
     })
-
-
 
 
 @login_required
@@ -490,41 +484,39 @@ def ajax_comments_versions(request, document_id):
 
 
 
-@login_required
-def edit_comment(request, document_id, version_number=None):
-    document = get_object_or_404(Document, id=document_id)
-    
-    if version_number is not None and int(version_number) > 1:
-        version = get_object_or_404(DocumentVersion, document=document, version=version_number)
-    else:
-        version = None
-    
-    if request.method == 'POST':
-        comment = request.POST.get('comment', '').strip()
-        if comment:
-            if version:
-                version.comments = comment
-                version.save()
-                return JsonResponse({
-                    'success': True, 
-                    'message': 'Comment updated',
-                    'modified': version.formatted_modified_date  # Return the new modified time
-                })
+logger = logging.getLogger(__name__)
+
+class EditComment(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, document_id, version_number=None):
+        logger.debug(f"Received request for document_id: {document_id} with version_number: {version_number}")
+        if version_number is not None:
+            if version_number == 1:
+                # Try to fetch the document as version 1
+                instance = get_object_or_404(Document, id=document_id)
+                serializer_class = DocumentCommentSerializer
             else:
-                document.comments = comment
-                document.save()
-                return JsonResponse({
-                    'success': True, 
-                    'message': 'Comment updated',
-                    'modified': document.formatted_modified_date  # Return the new modified time for the document
-                })
+                # Fetch other versions normally
+                instance = get_object_or_404(DocumentVersion, document_id=document_id, version=version_number)
+                serializer_class = DocumentVersionCommentSerializer
+            logger.debug(f"Editing version instance: {instance}")
         else:
-            return JsonResponse({'success': False, 'error': 'No comment provided'}, status=400)
+            instance = get_object_or_404(Document, id=document_id)
+            logger.debug(f"Editing document instance: {instance}")
+            serializer_class = DocumentCommentSerializer
 
-    return JsonResponse({'success': False, 'error': 'Invalid request'}, status=405)
-
-
-
+        serializer = serializer_class(instance, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                'success': True,
+                'message': 'Comment updated',
+                'modified': instance.formatted_modified_date
+            })
+        else:
+            logger.error(f"Serializer errors: {serializer.errors}")
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 def user_has_access(user, document):

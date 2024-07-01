@@ -5,371 +5,189 @@
 
 {% block title %}Product List{% endblock %}
 
-{% block extra_css %}
+
+{% block css %}
+<link rel="stylesheet" type="text/css" href="{% static 'exports/css/style.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'exports/css/modal.css' %}">
 <style>
-    .truncate {
-        max-width: 150px !important; /* Adjust based on your layout */
-        white-space: nowrap !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-    }
+.clickable-row {
+    cursor: pointer;
+}
 
+th:nth-child(1), td:nth-child(1) {
+    width: 1%;
+}
+th:nth-child(2), td:nth-child(2) {
+    width: 15%;
+}
 
-    
+th:nth-child(3), td:nth-child(3) {
+    width: 10%;
+}
 
-    .truncate1 {
-        max-width: 100px !important; /* Adjust based on your layout */
-        white-space: nowrap !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-    }
+th:nth-child(4), td:nth-child(4) {
+    width: 10%;
+}
 
-    #reset-button:disabled {
-        color: grey !important;
-        background-color: #ffffff !important;
-    }
-    #reset-button:not(:disabled) {
-        color: #295893 !important;
-        background-color: #ffffff !important;
-    }
+th:nth-child(5), td:nth-child(5) {
+    width: 5%;
+}
 
-    .page-link.active, .active > .page-link {
-        background-color: transparent !important;
-        border: none !important;
-        color: #295893 !important;
-        font-weight: bold !important;
-    }
+th:nth-child(6), td:nth-child(6) {
+    width: 5%;
+    text-align: center;
+}
 
-    .page-link {    
-        border: none!important;
-    }
+.page-link.active, .active > .page-link {
+    background-color: transparent !important;
+    border: none !important;
+    color: #295893 !important;
+    font-weight: bold !important;
+}
 
-    .sortable-header {
-        min-width: 150px;
-    }
+.page-link {    
+    border: none!important;
+}
 
-    th a {
-        color: #000 !important;
-    }
+.table-container-2 {
+    display: flex;
+    flex-direction: column;
+}
 
-    th {
-        padding: 0.5rem 0.5rem;
-        color: var(--bs-table-color-state, var(--bs-table-color-type, var(--bs-table-color)));
-        background-color: var(--bs-table-bg);
-        border-bottom-width: var(--bs-border-width);
-        box-shadow: inset 0 0 0 9999px var(--bs-table-bg-state, var(--bs-table-bg-type, var(--bs-table-accent-bg)));
-    }
+.table-wrapper {
+    flex-grow: 1;
+    overflow-x: auto;
+}
 
-    td {
-        padding: 0.3rem 0.5rem;
-        color: var(--bs-table-color-state, var(--bs-table-color-type, var(--bs-table-color)));
-        background-color: var(--bs-table-bg);
-        border-bottom-width: var(--bs-border-width);
-        box-shadow: inset 0 0 0 9999px var(--bs-table-bg-state, var(--bs-table-bg-type, var(--bs-table-accent-bg)));
-    }
+.pagination-container {
+    position: absolute;
+    bottom: 20px;
+    right: 10px;
+}
 
-    
-    .clickable-row {
-        cursor: pointer;
-    }
+.pagination {
+    display: flex;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    justify-content: end;
+}
 
-    
+.page-item {
+    margin: 0 5px;
+}
+
+.page-link {
+    color: #007bff;
+    text-decoration: none;
+    border: 1px solid #ddd;
+    padding: 5px 10px;
+    border-radius: 4px;
+}
+
+.page-link:hover {
+    background-color: #f1f1f1;
+}
+
+.page-item.active .page-link {
+    background-color: #007bff;
+    color: white;
+    border: 1px solid #007bff;
+}
+
+.active {
+    cursor: default;
+}
 
 </style>
-{% endblock extra_css %}
+{% endblock %}
 
 {% block content %}
-<div id="product-list" class="container-fluid custom-container-fluid mt-1">
-    <div class="row">
-        <div class="col-12">
-            <div class="bg-white rounded-3 wrapper vh-92">
-                <div class="title">
-                    <h4 class="text-primary-custom fw-bold px-4">My Products</h4>
+<main>
+    <div class="background-overlay"></div>
+    <div class="content-section-2">
+        <div class="content-header-product">
+            <div class="header-top">
+                <div class="header-title-product">
+                    <h3>Product List</h3>
+                    <small class="subheading">Total Products: {{ product_count }}</small>
                 </div>
-                <div class="d-flex justify-content-start align-items-center pb-2 px-4">
-                    <div class="gap-3 ms-2 d-flex">
-                        <button type="button" class="btn align-items-center justify-content-center img-wrapper" data-bs-toggle="modal" data-bs-target="#createFolderModal" style="background: none; border: none; padding: 0;">
-                            <img src="{% static 'images/navbar_icon/new_product.png' %}" alt="Create Folder" style="height: 22px; width: 24px;">
-                        </button>
-                        <a href="{% url 'products:create_product' %}" class="btn btn-primary mb-0 "><small>New Product</small></a>
-                    </div>
-                </div>
-                
-                
-                <div class="d-flex justify-content-start mb-3 pt-4 px-4">
-                    <form method="get" class="row g-2 align-items-center">
-                        <!-- Input field for filter value -->
-                        <div class="col-sm w-auto">
-                            <input type="text" id="filter_value" class="form-control form-control-sm" name="filter_value" value="{{ request.GET.filter_value }}" placeholder="Filter products">
-                        </div>
-                        <!-- Dropdown for choosing filter header -->
-                        <div class="col-auto">
-                            <select class="form-select form-select-sm" name="filter_type" aria-label="Filter type">
-                                <option value="product_code" {% if request.GET.filter_type == 'product_code' %}selected{% endif %}>Code</option>
-                                <option value="product_name" {% if request.GET.filter_type == 'product_name' %}selected{% endif %}>Name</option>
-                            </select>
-                        </div>
-                        <!-- Filter button -->
-                        <div class="col-auto">
-                            <button type="submit" class="btn btn-primary btn-sm" style="height:31px;">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: text-top;">
-                                    <path d="M21 21L16.6569 16.6569M16.6569 16.6569C18.1046 15.2091 19 13.2091 19 11C19 6.58172 15.4183 3 11 3C6.58172 3 3 6.58172 3 11C3 15.4183 6.58172 19 11 19C13.2091 19 15.2091 18.1046 16.6569 16.6569Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                </svg>
-                            </button>
-                        </div>
-                        <!-- Reset button -->
-                        <div class="col-auto">
-                            <button type="button" id="reset-button" class="btn btn-sm pt-0" disabled>
-                                Reset
-                            </button>
-                        </div>
-                    </form>
-                </div>
-                
-            
-                <div class="table-responsive px-4" style="overflow-y:hidden">
-                    <table class="table table-hover align-middle">
-                        <thead>
-                            <tr class="small border-bottom">
-                                {% with current_sort=request.GET.sort|default:"updated_at" current_direction=request.GET.direction|default:"asc" %}
-                                    {% if current_sort == 'product_code' %}
-                                        {% if current_direction == 'asc' %}
-                                            {% with new_direction="desc" %}
-                                                <th scope="col" class="sortable-header">
-                                                    <a href="?sort=product_code&direction={{ new_direction }}&filter_value={{ request.GET.filter_value }}&filter_type={{ request.GET.filter_type }}">Code
-                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="align-baseline">
-                                                            <path d="M17 14L12 9L7 14" stroke="#292929" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                        </svg>                                                        
-                                                    </a>
-                                                </th>
-                                            {% endwith %}
-                                        {% else %}
-                                            {% with new_direction="asc" %}
-                                                <th scope="col" class="sortable-header">
-                                                    <a href="?sort=product_code&direction={{ new_direction }}&filter_value={{ request.GET.filter_value }}&filter_type={{ request.GET.filter_type }}">Code
-                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="align-baseline">
-                                                            <path d="M7 10L12 15" stroke="#292929" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                            <path d="M12 15L17 10" stroke="#292929" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                        </svg>
-                                                        
-                                                    </a>
-                                                </th>
-                                            {% endwith %}
-                                        {% endif %}
-                                    {% else %}
-                                        <th scope="col" class="sortable-header">
-                                            <a href="?sort=product_code&direction={{ new_direction }}&filter_value={{ request.GET.filter_value }}&filter_type={{ request.GET.filter_type }}">Code</a>
-                                            </th>
-                                    {% endif %}
-                                
-                                    {% if current_sort == 'product_name' %}
-                                        {% if current_direction == 'asc' %}
-                                            {% with new_direction="desc" %}
-                                                <th scope="col" class="sortable-header">
-                                                    <a href="?sort=product_name&direction={{ new_direction }}&filter_value={{ request.GET.filter_value|urlencode }}&filter_type={{ request.GET.filter_type|urlencode }}">Name
-                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="align-baseline ">
-                                                            <path d="M17 14L12 9L7 14" stroke="#292929" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                        </svg>  
-                                                    </a>
-                                                </th>
-                                            {% endwith %}
-                                        {% else %}
-                                            {% with new_direction="asc" %}
-                                                <th scope="col" class="sortable-header">
-                                                    <a href="?sort=product_name&direction={{ new_direction }}&filter_value={{ request.GET.filter_value|urlencode }}&filter_type={{ request.GET.filter_type|urlencode }}">Name
-                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="align-baseline ">
-                                                            <path d="M7 10L12 15" stroke="#292929" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                            <path d="M12 15L17 10" stroke="#292929" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                        </svg>
-                                                    </a>
-                                                </th>
-                                            {% endwith %}
-                                        {% endif %}
-                                    {% else %}
-                                        <th scope="col" class="sortable-header">
-                                            <a href="?sort=product_name&direction={{ new_direction }}&filter_value={{ request.GET.filter_value|urlencode }}&filter_type={{ request.GET.filter_type|urlencode }}">Name
-                                            </th>
-                                    {% endif %}
-                                    {% if current_sort == 'product_type' %}
-                                        {% if current_direction == 'asc' %}
-                                            {% with new_direction="desc" %}
-                                                <th scope="col" class="sortable-header">
-                                                    <a href="?sort=product_type&direction={{ new_direction }}&filter_value={{ request.GET.filter_value|urlencode }}&filter_type={{ request.GET.filter_type|urlencode }}">Type
-                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="align-baseline ">
-                                                            <path d="M17 14L12 9L7 14" stroke="#292929" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                        </svg>
-                                                    </a>
-                                                </th>
-                                            {% endwith %}
-                                        {% else %}
-                                            {% with new_direction="asc" %}
-                                                <th scope="col" class="sortable-header">
-                                                    <a href="?sort=product_type&direction={{ new_direction }}&filter_value={{ request.GET.filter_value|urlencode }}&filter_type={{ request.GET.filter_type|urlencode }}">Type
-                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="align-baseline ">
-                                                            <path d="M7 10L12 15" stroke="#292929" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                            <path d="M12 15L17 10" stroke="#292929" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                        </svg>
-                                                    </a>
-                                                </th>
-                                            {% endwith %}
-                                        {% endif %}
-                                    {% else %}
-                                        <th scope="col" class="sortable-header">
-                                            <a href="?sort=product_type&direction={{ new_direction }}&filter_value={{ request.GET.filter_value|urlencode }}&filter_type={{ request.GET.filter_type|urlencode }}">Type
-                                        </th>
-                                    {% endif %}
-                                    <!--
-                                    {% if current_sort == 'product_description' %}
-                                        {% if current_direction == 'asc' %}
-                                            {% with new_direction="desc" %}
-                                                <th scope="col" class="sortable-header">
-                                                    <a href="?sort=product_description&direction={{ new_direction }}&filter_value={{ request.GET.filter_value|urlencode }}&filter_type={{ request.GET.filter_type|urlencode }}">Description
-                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="align-baseline ">
-                                                            <path d="M17 14L12 9L7 14" stroke="#292929" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                        </svg>
-                                                    </a>
-                                                </th>
-                                            {% endwith %}
-                                        {% else %}
-                                            {% with new_direction="asc" %}
-                                                <th scope="col" class="sortable-header">
-                                                    <a href="?sort=product_description&direction={{ new_direction }}&filter_value={{ request.GET.filter_value|urlencode }}&filter_type={{ request.GET.filter_type|urlencode }}">Description
-                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="align-baseline ">
-                                                            <path d="M7 10L12 15" stroke="#292929" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                            <path d="M12 15L17 10" stroke="#292929" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                        </svg>
-                                                    </a>
-                                                </th>
-                                            {% endwith %}
-                                        {% endif %}
-                                    {% else %}
-                                        <th scope="col" class="sortable-header">
-                                            <a href="?sort=product_description&direction={{ new_direction }}&filter_value={{ request.GET.filter_value|urlencode }}&filter_type={{ request.GET.filter_type|urlencode }}">Description
-                                        </th>
-                                    {% endif %}
-                                    -->
-                                    {% if current_sort == 'created_at' %}
-                                        {% if current_direction == 'asc' %}
-                                            {% with new_direction="desc" %}
-                                                <th scope="col" class="sortable-header">
-                                                    <a href="?sort=created_at&direction={{ new_direction }}&filter_value={{ request.GET.filter_value|urlencode }}&filter_type={{ request.GET.filter_type|urlencode }}">Date Created
-                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="align-baseline ">
-                                                            <path d="M17 14L12 9L7 14" stroke="#292929" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                        </svg>
-                                                    </a>
-                                                </th>
-                                            {% endwith %}
-                                        {% else %}
-                                            {% with new_direction="asc" %}
-                                                <th scope="col" class="sortable-header">
-                                                    <a href="?sort=created_at&direction={{ new_direction }}&filter_value={{ request.GET.filter_value|urlencode }}&filter_type={{ request.GET.filter_type|urlencode }}">Date Created
-                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="align-baseline ">
-                                                            <path d="M7 10L12 15" stroke="#292929" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                            <path d="M12 15L17 10" stroke="#292929" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                        </svg>
-                                                    </a>
-                                                </th>
-                                            {% endwith %}
-                                        {% endif %}
-                                    {% else %}
-                                        <th scope="col" class="sortable-header">
-                                            <a href="?sort=created_at&direction={{ new_direction }}&filter_value={{ request.GET.filter_value|urlencode }}&filter_type={{ request.GET.filter_type|urlencode }}">Date Created
-                                        </th>
-                                    {% endif %}
-                                    {% if current_sort == 'updated_at' %}
-                                        {% if current_direction == 'asc' %}
-                                            {% with new_direction="desc" %}
-                                                <th scope="col" class="sortable-header">
-                                                    <a href="?sort=updated_at&direction={{ new_direction }}&filter_value={{ request.GET.filter_value|urlencode }}&filter_type={{ request.GET.filter_type|urlencode }}">Date Modified
-                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="align-baseline ">
-                                                            <path d="M17 14L12 9L7 14" stroke="#292929" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                        </svg>
-                                                    </a>
-                                                </th>
-                                            {% endwith %}
-                                        {% else %}
-                                            {% with new_direction="asc" %}
-                                                <th scope="col" class="sortable-header">
-                                                    <a href="?sort=updated_at&direction={{ new_direction }}&filter_value={{ request.GET.filter_value|urlencode }}&filter_type={{ request.GET.filter_type|urlencode }}">Date Modified
-                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="align-baseline ">
-                                                            <path d="M7 10L12 15" stroke="#292929" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                            <path d="M12 15L17 10" stroke="#292929" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                                        </svg>
-                                                    </a>
-                                                </th>
-                                            {% endwith %}
-                                        {% endif %}
-                                    {% else %}
-                                        <th scope="col" class="sortable-header">
-                                            <a href="?sort=updated_at&direction={{ new_direction }}&filter_value={{ request.GET.filter_value|urlencode }}&filter_type={{ request.GET.filter_type|urlencode }}">Date Modified
-                                        </th>
-                                    {% endif %}
-                                <th scope="col" class="text-center"></th>
-                                {% endwith %}
-                            </tr>
-                        </thead>
-                        <tbody class="small">
-                            {% for item in page_obj %}
-                            <tr class="align-middle clickable-row" data-href="{% url 'products:product_explorer_folder' product_id=item.product.id folder_id=item.root_folder_id %}">
-                                <td class="">{{ item.product.product_code }}</td>
-                                <td class="truncate1 pe-3">{{ item.product.product_name }}</td>
-                                <td>{{ item.product.product_type }}</td>
-                                <!--<td class="truncate pe-3">{{ item.product.product_description|default:"" }}</td>-->
-                                <td>{{ item.product.created_at|date:"d-M-Y" }}</td>
-                                <td>{{ item.product.updated_at|date:"d-M-Y"}}</td>
-                                <td class="text-center">
-                                    <div class="dropdown img-wrapper">
-                                        <button class="btn btn-secondary dropdown-toggle px-0 py-1" type="button" id="actionDropdown{{ forloop.counter }}" data-bs-toggle="dropdown" aria-expanded="false">
-                                            <svg width="20" height="20" viewBox="0 0 24 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                <g clip-path="url(#clip0_1417_12)">
-                                                    <rect x="12" y="12" width="0.01" height="0.01" stroke="#292929" stroke-width="3" stroke-linejoin="round"/>
-                                                    <rect x="12" y="5" width="0.01" height="0.01" stroke="#292929" stroke-width="3" stroke-linejoin="round"/>
-                                                    <rect x="12" y="19" width="0.01" height="0.01" stroke="#292929" stroke-width="3" stroke-linejoin="round"/>
-                                                </g>
-                                                <defs>
-                                                    <clipPath id="clip0_1417_12">
-                                                        <rect width="40" height="40" fill="white" transform="translate(0 0.000915527)"/>
-                                                    </clipPath>
-                                                </defs>
-                                            </svg>
-                                        </button>
-                                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionDropdown{{ forloop.counter }}">
-                                            <li>
-                                                <a href="{% url 'products:edit_product' pk=item.product.id %}" class="dropdown-item">Edit</a>
-                                            </li>
-                                            <li><hr class="dropdown-divider"></li>
-                                            <form action="{% url 'products:delete_product' pk=item.product.id %}" method="post" class="d-inline">
-                                                {% csrf_token %}
-                                                <button type="submit" class="dropdown-item text-danger">
-                                                    Delete
-                                                </button>
-                                            </form>
-                                        </ul>
-                                        
-                                    </div>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                <div class="mt-auto">
-                    <ul class="pagination justify-content-end px-4">
-                        {% for num in page_obj.paginator.page_range %}
-                            <li class="page-item {% if page_obj.number == num %}active{% endif %}">
-                                <a class="page-link" href="?page={{ num }}&filter_value={{ request.GET.filter_value|urlencode }}&filter_type={{ request.GET.filter_type|urlencode }}&sort={{ current_sort|urlencode }}&direction={{ current_direction|urlencode }}">{{ num }}</a>
-                            </li>
-                        {% endfor %}
-                    </ul>
+                <div class="button-group">
+                    <a href="{% url 'products:create_product' %}" class="button-8">New</a>
                 </div>
             </div>
-            
+            <div class="filter-sort">
+                <form method="get" action="" id="filterSortForm">
+                    <button type="reset" class="btn-reset" id="resetButton">Reset</button>
+                    <input type="text" class="form-control" id="filter_value" name="filter_value" value="{{ request.GET.filter_value }}" placeholder="Filter products">
+                    <select class="form-select" name="filter_type" aria-label="Filter type">
+                        <option value="product_code" {% if request.GET.filter_type == 'product_code' %}selected{% endif %}>Code</option>
+                        <option value="product_name" {% if request.GET.filter_type == 'product_name' %}selected{% endif %}>Name</option>
+                    </select>
+                    <button type="submit" class="btn-submit">Apply</button>
+                </form>
+            </div>
+        </div>
+        <div class="table-container-3">
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th id="productNameHeader">Product Name <span class="sort-icon desc inactive"></span></th>
+                            <th id="productCodeHeader">Product Code <span class="sort-icon desc inactive"></span></th>
+                            <th id="productTypeHeader">Product Type <span class="sort-icon desc inactive"></span></th>
+                            <th id="updatedAtHeader">Date Modified <span class="sort-icon desc active"></span></th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productTableBody">
+                        {% for item in page_obj %}
+                        <tr class="clickable-row" data-href="{% if item.root_folder_id %}{% url 'products:product_explorer_folder' product_id=item.product.id folder_id=item.root_folder_id %}{% endif %}">
+                            <td></td>
+                            <td class="">{{ item.product.product_name }}</td>
+                            <td>{{ item.product.product_code }}</td>
+                            <td>{{ item.product.product_type }}</td>
+                            <td>{{ item.product.updated_at|date:"Y-m-d"}}</td>
+                            <td class="actions">
+                                <div class="action-button-container">
+                                    <button class="action-button">
+                                        <img src="{% static 'images/table_icon/more_vert_24dp_FILL0_wght400_GRAD0_opsz24_333333.png' %}" alt="Actions">
+                                    </button>
+                                    <div class="action-button-dropdown">
+                                        <a href="{% url 'products:edit_product' pk=item.product.id %}" class="dropdown-item">Edit</a>
+                                        <form action="{% url 'products:delete_product' pk=item.product.id %}" method="post" class="d-inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="dropdown-item text-danger">Delete</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6">No Products Added</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="pagination-container">
+                <ul class="pagination">
+                    {% for num in page_obj.paginator.page_range %}
+                    <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                        <a class="page-link {% if page_obj.number == num %}active disabled{% endif %}" 
+                           {% if page_obj.number != num %}href="?page={{ num }}&filter_value={{ request.GET.filter_value|urlencode }}&filter_type={{ request.GET.filter_type|urlencode }}&sort={{ current_sort|urlencode }}&direction={{ current_direction|urlencode }}"{% endif %} 
+                           data-page="{{ num }}">
+                           {{ num }}
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
         </div>
     </div>
-</div>
+</main>
 
 {% block javascript %}
 <script>
@@ -388,37 +206,105 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const filterValueInput = document.getElementById('filter_value');
-        const resetButton = document.getElementById('reset-button');
-        const filterTypeSelect = document.querySelector('[name="filter_type"]');
+    document.addEventListener('DOMContentLoaded', function() {
+		const resetButton = document.getElementById('resetButton');
+		const filterSortForm = document.getElementById('filterSortForm');
 
-        // Function to check if filters are applied
-        function areFiltersApplied() {
-            const queryParams = new URLSearchParams(window.location.search);
-            return queryParams.has('filter_value') || queryParams.has('filter_type');
-        }
+		resetButton.addEventListener('click', function() {
+			// Clear the form fields
+			filterSortForm.reset();
 
-        function updateResetButtonState() {
-            if (areFiltersApplied()) {
-                resetButton.disabled = false;
-                resetButton.classList.remove('btn-secondary');
-                resetButton.classList.add('btn-primary');
-                resetButton.style.color = "#ffffff"; // Ensure text color is white when enabled
-            } else {
-                resetButton.disabled = true;
-                resetButton.classList.add('btn-secondary');
-                resetButton.classList.remove('btn-primary');
-                resetButton.style.color = "#6c757d"; // Change text color to grey
+			// Remove the URL query parameters by submitting the form without search parameters
+			window.location.href = window.location.pathname;
+		});
+	});
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const tableBody = document.getElementById('productTableBody');
+        const productNameHeader = document.getElementById('productNameHeader');
+        const productCodeHeader = document.getElementById('productCodeHeader');
+        const productTypeHeader = document.getElementById('productTypeHeader');
+        const updatedAtHeader = document.getElementById('updatedAtHeader');
+    
+        let sortDirection = {
+            productName: null,
+            productCode: null,
+            productType: null,
+            updatedAt: 'asc'
+        };
+    
+        function sortTable(column, type, header) {
+            // Reset sort directions for all headers except the current one
+            Object.keys(sortDirection).forEach(key => {
+                if (key !== header.id) {
+                    sortDirection[key] = null; // Reset other headers
+                }
+            });
+    
+            // If the current header has no sort direction set, initialize it
+            if (!sortDirection[header.id]) {
+                sortDirection[header.id] = type === 'string' ? 'asc' : 'desc';
             }
+    
+            const rows = Array.from(tableBody.querySelectorAll('tr'));
+            let compareFunction;
+    
+            if (type === 'string') {
+                compareFunction = (a, b) => {
+                    const aText = a.querySelector(`td:nth-child(${column})`).textContent.trim();
+                    const bText = b.querySelector(`td:nth-child(${column})`).textContent.trim();
+                    return sortDirection[header.id] === 'asc' ? aText.localeCompare(bText) : bText.localeCompare(aText);
+                };
+            } else if (type === 'date') {
+                compareFunction = (a, b) => {
+                    const aDate = new Date(a.querySelector(`td:nth-child(${column})`).textContent.trim());
+                    const bDate = new Date(b.querySelector(`td:nth-child(${column})`).textContent.trim());
+                    return sortDirection[header.id] === 'desc' ? aDate - bDate : bDate - aDate;
+                };
+            }
+    
+            rows.sort(compareFunction);
+            rows.forEach(row => tableBody.appendChild(row));
+    
+            // Toggle the current header's sort direction
+            sortDirection[header.id] = sortDirection[header.id] === 'asc' ? 'desc' : 'asc';
+            updateSortIcons(header.id);
         }
-
-        updateResetButtonState();
-
-        // Reset button event listener
-        resetButton.addEventListener('click', function() {
-            window.location.href = window.location.pathname; // Redirect to the page without query parameters
+    
+        function updateSortIcons(activeHeaderId) {
+            // Only manage active/inactive states when a sort action is triggered
+            document.querySelectorAll('.sort-icon').forEach(icon => {
+                icon.classList.add('inactive');
+                icon.classList.remove('active');
+            });
+    
+            const activeIcon = document.querySelector(`#${activeHeaderId} .sort-icon`);
+            activeIcon.classList.remove('inactive');
+            activeIcon.classList.add('active');
+            activeIcon.classList.toggle('asc', sortDirection[activeHeaderId] === 'asc');
+            activeIcon.classList.toggle('desc', sortDirection[activeHeaderId] === 'desc');
+        }
+    
+        productNameHeader.addEventListener('click', () => {
+            sortTable(2, 'string', productNameHeader);
         });
+    
+        productCodeHeader.addEventListener('click', () => {
+            sortTable(3, 'string', productCodeHeader);
+        });
+    
+        productTypeHeader.addEventListener('click', () => {
+            sortTable(4, 'string', productTypeHeader);
+        });
+    
+        updatedAtHeader.addEventListener('click', () => {
+            sortTable(5, 'date', updatedAtHeader);
+        });
+    
+        // Ensure the correct initial visibility and state of the sort icon
+        updateSortIcons('updatedAtHeader');
     });
 </script>
 

@@ -12,7 +12,7 @@
                 <div class="form-check">
                     <input class="form-check-input" type="checkbox" name="documents" value="{{ document.id }}" id="document{{ document.id }}">
                     <label class="form-check-label" for="document-{{ document.id }}">
-                        {{ document.display_filename }}
+                        {{ document.original_filename }}
                     </label>
                 </div>
             {% endfor %}

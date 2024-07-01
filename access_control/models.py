@@ -75,3 +75,4 @@ class AccessPermission(models.Model):
         if document:
             cache_key = f"doc_access_{partner2.id}_{document.id}"
             cache.delete(cache_key)
+

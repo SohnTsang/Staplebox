@@ -1,9 +1,15 @@
 /* Fixed Sidebar CSS */
 #sidebar {
-    max-width: 250px; /* Fixed width for the sidebar */
+    min-width: 240px !important; /* Fixed minimum width for the sidebar */
+    width: 240px !important;
+    max-width: 240px !important;
     height: 100vh;
-    overflow-y: auto; /* Scrollable content */
+    overflow-y: auto; /* Allows scrolling within the sidebar */
+    position: fixed; /* Makes the sidebar fixed relative to the viewport */
+    z-index: 1000; /* Ensures the sidebar is above other content */
+    background-color: #ffffff; /* Adjust based on your color scheme */
 }
+
 
 .sidebar-collapsed {
     width: 0 !important;
@@ -36,7 +42,7 @@ ul, li.nav-bar-item {
     /* Add other styles for active navigation item */
     a {
         color: #295893 !important;
-        font-weight: 700;
+        font-weight: 700 !important;
     }
     path {
         stroke: #295893 !important;

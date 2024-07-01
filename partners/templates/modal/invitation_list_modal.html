@@ -1,0 +1,160 @@
+{% load custom_tags %}
+<style>
+    .partners-list-invitation li {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        margin-bottom: 5px;
+    }
+
+    .partners-list-invitation li div:first-child {
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1; /* Ensures it takes available space, pushing the button to the far right */
+    }
+
+    .partners-list-invitation li div:last-child {
+        flex-shrink: 0; /* Prevents shrinking */
+    }
+
+    #Received, #Sent {
+        max-height: 40vh;
+        overflow-y: auto;
+    }
+
+    ul {
+        padding-left: 0;
+    }
+</style>
+
+<!-- Invitation List Modal -->
+<div class="modal" id="invitationListModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div class="modal-title">Invitations</div>
+        </div>
+        <div class="tabs">
+            <div class="tab active" onclick="openTab(event, 'Received')">Received</div>
+            <div class="tab" onclick="openTab(event, 'Sent')">Sent</div>
+        </div>
+        <div class="tab-content active" id="Received">
+            <ul class="partners-list-invitation">
+                {% for invitation in received_invitations %}
+                <li class="{% if not invitation.accepted %}selected{% endif %}" style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong>{{ invitation.sender.email }}</strong>
+                        <small>{{ invitation.created_at }}</small>
+                    </div>
+                    <div>
+                        {% if not invitation.accepted %}
+                        <button class="btn btn-success" onclick="acceptInvitation('{{ invitation.token }}')">Accept</button>
+                        {% else %}
+                        <span class="badge badge-success">Accepted</span>
+                        {% endif %}
+                    </div>
+                </li>
+                {% empty %}
+                <li>No pending invitations.</li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="tab-content" id="Sent">
+            <ul class="partners-list-invitation">
+                {% for invitation in sent_invitations %}
+                <li class="{% if not invitation.accepted %}selected{% endif %}" style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong>{{ invitation.email }}</strong>
+                        <small>{{ invitation.created_at }}</small>
+                    </div>
+                    {% if not invitation.accepted %}
+                    <button class="remove-btn" onclick="deleteInvitation('{{ invitation.id }}')">Delete</button>
+                    {% else %}
+                    <span class="badge badge-success">Accepted</span>
+                    {% endif %}
+                </li>
+                {% empty %}
+                <li>No invitations sent.</li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="modal-footer">
+            <button class="cancel-btn" onclick="document.getElementById('invitationListModal').style.display='none'">Close</button>
+        </div>
+    </div>
+</div>
+
+{% block javascript %}
+<script>
+    function openTab(evt, tabName) {
+        var i, tabcontent, tablinks;
+        tabcontent = document.getElementsByClassName("tab-content");
+        for (i = 0; i < tabcontent.length; i++) {
+            tabcontent[i].style.display = "none";
+        }
+        tablinks = document.getElementsByClassName("tab");
+        for (i = 0; i < tablinks.length; i++) {
+            tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+        document.getElementById(tabName).style.display = "block";
+        evt.currentTarget.className += " active";
+    }
+
+    function acceptInvitation(token) {
+        fetch(`/invitations/accept/${token}/`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json'
+            },
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Network response was not ok: ${response.statusText}`);
+            }
+            return response.json(); // Parse as JSON
+        })
+        .then(data => {
+            if (data.error) {
+                showMessage(data.error, 'error');
+            } else {
+                setSessionMessage(data.message, 'success');
+                location.reload(); // Reload the page to reflect changes
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showMessage('There was an error processing your request.', 'error');
+        });
+    }
+
+    function deleteInvitation(invitationId) {
+        fetch(`/invitations/delete/${invitationId}/`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            },
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Network response was not ok: ${response.statusText}`);
+            }
+            return response.json(); // Always parse as JSON because the backend is set to always return JSON
+        })
+        .then(data => {
+            if (data.error) {
+                showMessage(data.error, 'error');
+            } else {
+                setSessionMessage(data.message, 'success');
+                location.reload(); // Reload the page to reflect changes
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showMessage('There was an error processing your request.', 'error');
+        });
+    }
+</script>
+{% endblock %}

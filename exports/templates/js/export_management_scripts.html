@@ -3,26 +3,30 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Hide skeleton loaders and ensure content areas are visible
-        hideSkeletonAndShowContent('partnerSkeleton', 'partnerList');
-        hideSkeletonAndShowContent('exportDateSkeleton', 'displayExportDate');
-        hideSkeletonAndShowContent('documentSkeleton', 'displayDocuments');
-    });
-    
-    document.addEventListener('DOMContentLoaded', function() {
-        const message = sessionStorage.getItem('message');
-        const messageType = sessionStorage.getItem('messageType');
-    
-        if (message && messageType) {
-            showMessage(message, messageType); // Use your existing showMessage function
-            sessionStorage.removeItem('message'); // Clear the message
-            sessionStorage.removeItem('messageType'); // Clear the message type
+        populateSkeletons('exportDateSkeleton', 1, true, true);  // 2 texts and 1 image initially
+        populateSkeletons('documentSkeleton', 1, true, true);  // 2 texts and 1 image initially
+
+        const selectedPartnerId = sessionStorage.getItem('selectedPartnerId');
+        const selectedStagedPartnerId = sessionStorage.getItem('selectedStagedPartnerId');
+
+        if (selectedPartnerId && selectedStagedPartnerId) {
+            const partnerElement = document.querySelector(`[data-partner-id="${selectedPartnerId}"]`);
+            if (partnerElement) {
+                selectPartner(partnerElement, selectedPartnerId, selectedStagedPartnerId);
+            }
         }
+
+        // Clear the sessionStorage after use if you don't need to persist the state further
+        sessionStorage.removeItem('selectedPartnerId');
+        sessionStorage.removeItem('selectedStagedPartnerId');
+        
+        // Hide skeleton loaders and ensure content areas are visible
+        toggleSkeletonVisibility('partnerSkeleton', 'partnerList');
+        toggleSkeletonVisibility('exportDateSkeleton', 'displayExportDate');
+        toggleSkeletonVisibility('documentSkeleton', 'displayDocuments');
+        
     });
 
-    $(document).ready(function() {
-        handleSessionMessage();
-    });
 </script>
 
 
@@ -60,24 +64,72 @@
                     },
                     success: function(response) {
                         if (response.success) {
+                            // Close the modal window
+                            $('#setExportDateModal').modal('hide');
+                            // Update the session message and handle it
                             setSessionMessage('Export created with reference number: ' + response.reference_number, 'success');
+                            updateExportList(partnerId, response.export_id, response.partner_export_id, exportDate); // Dynamically add the new export date
+                            handleSessionMessage(); // Call to handle session messages after operation
                         } else {
                             setSessionMessage('Error creating export: ' + response.error, 'error');
+                            handleSessionMessage(); // Handle session messages in case of error
                         }
                     },
                     error: function(xhr) {
                         setSessionMessage('An export for this partner on this date already exists: ' + xhr.statusText, 'error');
+                        handleSessionMessage(); // Handle session messages in case of network error
                     },
                     complete: function() {
-                        location.reload();  // Reload to show message after navigation
+                        // Optionally reload or further UI update
                     }
                 });
             } else {
                 setSessionMessage('Please select a date.', 'error');
-                location.reload();  // Consider if you need to reload in this case or just display a message
+                handleSessionMessage(); // Handle session messages when no date is selected
             }
         });
     }
+
+    function updateExportList(partnerId, export_id, partner_export_id, exportDate) {
+        const displayExportDate = document.getElementById('displayExportDate');
+        
+        const existingMessages = displayExportDate.querySelector('.empty-message');
+        if (existingMessages) {
+            existingMessages.remove();
+        }
+
+        // Create new export date element
+        const dateItem = document.createElement('div');
+        dateItem.className = 'list-group-item flex-column export-item';
+        dateItem.id = `export_date_${partner_export_id}`;
+        
+        dateItem.innerHTML = `
+            <div class="d-flex justify-content-between py-1">
+                <div class="d-flex align-items-center">
+                    <input class="form-check-input custom-checkbox export-checkbox" type="checkbox" name="exports" value="${export_id}" id="export_${export_id}" onclick="toggleExportDeleteButton()">
+                    <div class="ps-3">
+                        <div class="fw-sm-bold">${exportDate}</div>
+                    </div>
+                </div>
+                <button type="button" class="show-export-document btn btn-primary btn-sm align-self-center">
+                    <svg width="16" height="18" viewBox="0 0 24 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M21 21L16.6569 16.6569M16.6569 16.6569C18.1046 15.2091 19 13.2091 19 11C19 6.58172 15.4183 3 11 3C6.58172 3 3 6.58172 3 11C3 15.4183 6.58172 19 11 19C13.2091 19 15.2091 18.1046 16.6569 16.6569Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+            </div>
+        `;
+        
+        // Append the newly created div to the display container
+        displayExportDate.appendChild(dateItem);
+        
+        // Attach event listener to button
+        const button = dateItem.querySelector('.show-export-document');
+        button.addEventListener('click', function() {
+            selectExportDate(dateItem, partner_export_id);
+        });
+    }
+
+    
 
     function deletePartner(stagedPartnerId, partnerId) {
         $.ajax({
@@ -138,7 +190,9 @@
     }
     
     function selectExportDate(dateElement, partnerExportId) {
-        toggleSkeletonVisibility('documentSkeleton', 'displayDocuments', true);
+        toggleSkeletonVisibility('documentSkeleton', 'displayDocuments', true, false);
+
+        populateSkeletons('documentSkeleton', 3, false);  // 3 texts without image when selecting a partner
 
         // Clear previous selections
         const previouslySelected = document.querySelector('.selected-export-date');
@@ -171,7 +225,11 @@
                     displayDocuments.appendChild(docItem);
                 });
             } else if (data.message) {
-                displayDocuments.textContent = data.message;
+                displayDocuments.innerHTML = `
+                    <div class="text-center mt-3">
+                        <small>${data.message}</small>
+                    </div>
+                `;
             } else {
                 console.error('Error:', data.error);
             }
@@ -401,8 +459,14 @@
         });
     });
 
+
     function selectPartner(divElement, partnerId, stagedPartnerId) {
-        toggleSkeletonVisibility('exportDateSkeleton', 'displayExportDate', true);
+        toggleSkeletonVisibility('exportDateSkeleton', 'displayExportDate', true, false);
+        populateSkeletons('exportDateSkeleton', 3, false);  // 3 texts without image when selecting a partner
+
+        sessionStorage.setItem('selectedPartnerId', partnerId);  // Save the selected partner ID
+        sessionStorage.setItem('selectedStagedPartnerId', stagedPartnerId);  // Save the staged partner ID if needed
+
 
         // Clear previous selections
         const previouslySelected = document.querySelector('.selected-partner');
@@ -425,7 +489,15 @@
         toggleSkeletonVisibility('exportDateSkeleton', 'displayExportDate');
 
         const displayDocuments = document.getElementById('displayDocuments');
-        displayDocuments.innerHTML = 'No documents selected'; // Update or clear the document list
+        const imagePath = displayDocuments.dataset.imagePath; // Access the path from data attribute
+
+        const initialDocumentsHTML = `
+            <div class="list-group text-center">
+                <img src="${imagePath}" alt="No Items Selected" class="mt-3" style="align-self:center; margin-bottom:18px;" width="210" height="180">
+                <small>Select a partner and export date to show documents</small>
+            </div>
+        `;
+        displayDocuments.innerHTML = initialDocumentsHTML; // Update or clear the document list
 
     }
 
@@ -441,7 +513,7 @@
                 data.exports.forEach(exportItem => {
                     // Create the div for each export item
                     const dateItem = document.createElement('div');
-                    dateItem.className = 'list-group-item flex-column';
+                    dateItem.className = 'list-group-item flex-column export-item';
                     dateItem.id = `export_date_${exportItem.id}`;
                     dateItem.dataset.partnerExportId = exportItem.id;
                     dateItem.innerHTML = generateExportDateItemHTML(exportItem);
@@ -459,7 +531,11 @@
                     }
                 });
             } else if (data.message) {
-                displayExportDate.textContent = data.message;
+                displayExportDate.innerHTML = `
+                    <div class="text-center mt-3 empty-message">
+                        <small>${data.message}</small>
+                    </div>
+                `;
             } else {
                 console.error('Error:', data.error);
             }
@@ -480,7 +556,7 @@
                     </div>
                 </div>
                 <button type="button" class="show-export-document btn btn-primary btn-sm align-self-center">
-                    <svg width="16" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <svg width="16" height="18" viewBox="0 0 24 28" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M21 21L16.6569 16.6569M16.6569 16.6569C18.1046 15.2091 19 13.2091 19 11C19 6.58172 15.4183 3 11 3C6.58172 3 3 6.58172 3 11C3 15.4183 6.58172 19 11 19C13.2091 19 15.2091 18.1046 16.6569 16.6569Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                 </button>
@@ -499,17 +575,15 @@
     document.getElementById('deleteSelectedExports').addEventListener('click', function() {
         const selectedCheckboxes = document.querySelectorAll('.export-checkbox:checked');
         const exportIds = Array.from(selectedCheckboxes).map(cb => cb.value);
-        deleteSelectedExports(exportIds);
-        
-    });
-
-    function deleteSelectedExports(exportIds) {
-        if (!exportIds.length) {
+        if (exportIds.length > 0) {
+            deleteSelectedExports(exportIds, selectedCheckboxes);
+        } else {
             setSessionMessage('No exports selected for deletion.', 'info');
             location.reload();  // Reload to show message without attempting deletion
-            return;
         }
-        
+    });
+
+    function deleteSelectedExports(exportIds, selectedCheckboxes) {
         $.ajax({
             url: '/exports/delete_exports/',
             type: 'POST',
@@ -519,15 +593,29 @@
             },
             success: function(response) {
                 if (response.success) {
+                    // Set success message using your session message system
                     setSessionMessage('Selected exports deleted', 'success');
+                    selectedCheckboxes.forEach(checkbox => {
+                        const exportItem = checkbox.closest('.export-item');
+                        if (exportItem) {
+                            exportItem.remove(); // Remove the export item from the UI
+                        } else {
+                            console.error('Could not find export item for checkbox:', checkbox);
+                        }
+                    });
                 } else {
+                    // Set error message from server response
                     setSessionMessage('Error deleting exports: ' + (response.error || 'Unknown error'), 'error');
                 }
-                location.reload(); // Reload to show message after navigation
+                handleSessionMessage(); // Call to handle session messages after operation
             },
             error: function(xhr) {
+                // Set error message from network error
                 setSessionMessage('Failed to delete exports: ' + xhr.statusText, 'error');
-                location.reload(); // Reload to show message after navigation
+                handleSessionMessage(); // Call to handle session messages after network error
+            },
+            complete: function() {
+                // Optionally reload or further UI update
             }
         });
     }

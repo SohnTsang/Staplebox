@@ -10,23 +10,27 @@
     <link rel="icon" href="{% static 'images/favicon.ico' %}" type="image/x-icon">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    {% block css %}
     <link rel="stylesheet" type="text/css" href="{% static 'css/base.css' %}">
-    <link rel="stylesheet" type="text/css" href="{% static 'css/styles.css' %}">
+    {% endblock %}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet">
+
     <link rel="stylesheet" type="text/css" href="{% static 'css/modal.css' %}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.3.12/themes/default/style.min.css" />
     <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
     <link rel="stylesheet" type="text/css" href="{% static 'css/loading.css' %}">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet">
 
     <script src="{% static 'js/loading.js' %}"></script>
 
     <style>
         * {
-            font-family: 'Inter', sans-serif;
+            font-family: 'DM Sans', sans-serif;
             
         }
-        body {
-        }
+        
         .checkbox-column {
             width: 40px !important; /* Adjust based on your design needs */
             max-width: 40px !important;
@@ -47,7 +51,7 @@
             padding: 0;
         }
         .text-primary-custom {
-            color: var(--bs-primary) !important;
+            color: #295893 !important;
         }
         .text-primary-custom:hover {
             background-color: transparent !important;
@@ -56,14 +60,11 @@
             background-color: var(--bs-primary);
         }
         
-        .wrapper {
-            display: flex;
-            width: 100%;
-            flex-direction: column; /* Stack children vertically */
-            overflow: hidden;
-        }
+        
 
         .wrapper-left {
+            box-shadow: rgba(0, 0, 0, 0.05) 0px 6px 24px 0px, rgba(0, 0, 0, 0.08) 0px 0px 0px 1px;
+
             display: flex;
             flex-direction: column; /* Stack children vertically */
             box-shadow: 1px 2px 5px rgba(0,0,0,.08);
@@ -120,11 +121,6 @@
             color:white;
         }
 
-        @media (max-width: 300px) {
-            main {
-                min-width: 300px; /* Set minimum width for content */
-            }
-        }
 
         
         .custom-container-fluid {
@@ -184,42 +180,6 @@
         }
 
         /* Styles for the message popup */
-        .message-popup {
-            display: inline-block;
-            margin: auto; /* Center the alert in the middle of the page */
-            position: fixed;
-            top: -200px; /* Start hidden above the viewport */
-            left: 0;
-            right: 0;
-            z-index: 1050; /* Ensure it's above most elements */
-            padding: 6px 3px 6px 3px;
-            text-align: center;
-            animation: slideDown 0.5s forwards !important; /* Animation to slide down */
-            background-color: #5678a8;
-        }
-
-        .message-popup .alert {
-            margin-bottom: 0;
-            background-color: #5678a8; 
-            color: white; /* Dark red text */
-        }
-
-        .message-popup.success {
-            margin-bottom: 0;
-            background-color: #5678a8; /* Light green for success */
-            color: white; /* Dark green text */
-        }
-
-        .message-popup.error {
-            margin-bottom: 0;
-            background-color: #963e3e; /* Light red for error */
-            color: white; /* Dark red text */
-        }
-
-        .error .alert {
-            background-color: #963e3e; /* Light red for error */
-        }
-
 
         /* Keyframes for slide-down animation */
         @keyframes slideDown {
@@ -275,18 +235,7 @@
             z-index: 1;
             pointer-events: none;
         }
-
-        .vh-92 {
-            height: 92vh;
-        }
-
         
-        .title {
-            min-height: 70px;
-            align-items: center; /* This vertically centers the content */
-            display: flex;
-            flex-shrink: 0; /* Prevents these elements from shrinking, ensuring they maintain their size */
-        }
 
         .dropdown-menu {
             border-radius: 5px;
@@ -303,23 +252,38 @@
         .custom-checkbox {
             appearance: none;
             background-color: #ffffff;
-            border: 1px solid #295893;
-            width: 0.875rem;
-            height: 0.875rem;
+            border: 1px solid #39739d;
+            width: 0.8rem;
+            height: 0.8rem;
             vertical-align: middle;
-            margin-top: 0;
-            transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
             cursor: pointer;
+            border-radius: 2.5px;
+            cursor: pointer;
+            position: relative; /* Required for pseudo-element positioning */
+
         }
 
         .custom-checkbox:checked {
-            background-color: #295893;
+            background-color: #39739d;
             box-shadow: inset 0 0 0 0.25em #fff;
+            border-radius: 2.5px;
+        }
+
+        .custom-checkbox:checked::after {
+            content: '';
+            position: absolute;
+            top: 0.1rem; /* Adjusted to be centered */
+            left: 0.2rem; /* Adjusted to be centered */
+            width: 0.2rem; /* Adjusted to be centered */
+            height: 0.3rem; /* Adjusted to be centered */
+            border: solid white;
+            border-width: 0 0.1rem 0.1rem 0;
+            transform: rotate(45deg);
         }
 
         .custom-checkbox:focus {
             outline: none;
-            border-color: #295893;
+            border-color: #39739d;
         }
 
         .form-check-label {
@@ -331,37 +295,92 @@
             max-width: 1280px; /* Maximum width */
         }
         
+        @media (min-width: 768px) {
+            #right-side {
+                margin-left: 248px; /* Adjusted sidebar width */
+            }
+        }
+
+        /* Container for the message popup */
+        .message-popup-container {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            text-align: center;
+        }
+
+        .message-popup {
+            display: none; /* Start hidden */
+            padding: 15px 25px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+            margin: 0 auto;
+            max-width: 90%; /* Limit maximum width */
+            color: #ffffff;
+            background: rgba(0, 0, 0, 0.8); /* More subtle background */
+            white-space: nowrap; /* Prevent text wrapping */
+        }
+
+        /* Success message styling */
+        .message-popup.success {
+            background: linear-gradient(135deg, #4a8865, #348f58); /* Muted green gradient */
+        }
+
+        /* Error message styling */
+        .message-popup.error {
+            background: linear-gradient(135deg, #a75e55, #b8493d); /* Muted red gradient */
+        }
+
+    /* Animation */
+    @keyframes slideDown {
+        0% {
+            top: -100px;
+            opacity: 0;
+        }
+        100% {
+            top: 20px;
+            opacity: 1;
+        }
+    }
+
+    @keyframes slideUp {
+        0% {
+            top: 20px;
+            opacity: 1;
+        }
+        100% {
+            top: -100px;
+            opacity: 0;
+        }
+    }
+
+    .message-popup {
+        animation: slideDown 0.5s forwards, slideUp 0.5s 3.5s forwards; /* Slide up after 3 seconds */
+    }
 
     </style>
     {% block extra_css %}
     {% endblock extra_css %}
+
 </head>
+
 <body>
-    {% if messages %}
-        <div class="message-popup rounded shadow-sm" id="message-popup">
-            {% for message in messages %}
-                <div class="alert {{ message.tags }}">{{ message }}</div>
-            {% endfor %}
-        </div>
-    {% endif %}
+    <div id="message-popup-container" class="message-popup-container"></div>
+
+    {% include 'top_bar.html' %}
+
     <div class="container-fluid overflow-hidden">
-        <div id="main-content" class="row vh-100 overflow-auto">
-            <!--{# include 'top_navbar.html' %}-->
-                <!-- Sidebar -->
-            <div class="col-3 col-md-3 col-lg-2 d-block d-md-block" >
-                {% include 'left_navbar.html' %}
-            </div>
-            <div id="right-side" class="col-sm-9 col-md-9 col-lg-10 d-flex flex-column h-sm-100 ps-3" style="background-color: #29599311;">
-                <!-- Your main content goes here -->
-                {% include 'top_bar.html' %}
-                <main id='content' class="overflow-auto" style="">
-                    {% block content %}{% endblock %}
-                    <footer class="row bg-light py-4 px-5 overflow-hidden mx-0" style="background-color: #29599311;">
-                        <div class="col"> Footer content here.ccccccccccccccccccccccccccccccccccccccc.. </div>
-                    </footer>
-                </main>
+        <div id="main-content" class="row overflow-auto">
+            <!-- Your main content goes here -->
+            {% block content %}{% endblock %}
+            <!--<footer class="row bg-light py-4 px-5 overflow-hidden mx-0" style="background-color: #29599322;">
+                <div class="col"> Footer content here.ccccccccccccccccccccccccccccccccccccccc.. </div>
+            </footer>-->
                 
-            </div>
         </div>
     </div>
 
@@ -383,32 +402,99 @@
 
 {% block extra_js %}
 <script>
-    function showMessage(message, type) {
-        const messagePopup = document.createElement('div');
-        messagePopup.className = `message-popup ${type} rounded shadow-sm`;
-        messagePopup.innerHTML = `<div class="alert">${message}</div>`;
-        document.body.appendChild(messagePopup);
-        messagePopup.style.top = "20px";
-        $(messagePopup).hide().slideDown(500).delay(3000).slideUp(500, function() {
-            this.remove();
-        });
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
     }
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+    });
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        handleSessionMessage();
+    });
+</script>
+
+
+<script>
+    function showMessage(message, type) {
+        const messagePopupContainer = document.getElementById('message-popup-container');
+        const messagePopup = document.createElement('div');
+        messagePopup.className = `message-popup ${type}`;
+        messagePopup.innerText = message;
+        messagePopupContainer.appendChild(messagePopup);
+
+        messagePopup.style.display = 'block'; // Show the popup
+
+        setTimeout(() => {
+            messagePopupContainer.removeChild(messagePopup); // Remove the popup after animation ends
+        }, 4000); // Total duration of slideDown and slideUp animations
+    }
+
     function handleSessionMessage() {
         const message = sessionStorage.getItem('message');
         const messageType = sessionStorage.getItem('messageType');
         
         if (message && messageType) {
-            showMessage(message, messageType);  // Use your existing showMessage function
-            sessionStorage.removeItem('message');  // Clear the message
-            sessionStorage.removeItem('messageType');  // Clear the message type
+            showMessage(message, messageType);
+            sessionStorage.removeItem('message');
+            sessionStorage.removeItem('messageType');
         }
     }
+
     function setSessionMessage(message, type) {
         sessionStorage.setItem('message', message);
         sessionStorage.setItem('messageType', type);
     }
-</script>
-<script>
+
+    function formatFileSize(size) {
+        if (size < 1024) {
+            return "1 KB";
+        }
+        let sizeInKB = size / 1024;
+        const units = ['KB', 'MB', 'GB', 'TB', 'PB'];
+        for (let unit of units) {
+            if (sizeInKB < 1024) {
+                return `${sizeInKB.toFixed(1)} ${unit}`;
+            }
+            sizeInKB /= 1024;
+        }
+        return `${sizeInKB.toFixed(1)} PB`;
+    }
+
+    function getFileTypeIcon(fileName) {
+        const extension = fileName.split('.').pop().toLowerCase();
+        switch (extension) {
+            case 'png': return '{% static "images/table_icon/png.png" %}';
+            case 'csv': return '{% static "images/table_icon/csv.png" %}';
+            case 'zip': return '{% static "images/table_icon/zip.png" %}';
+            case 'jpg': return '{% static "images/table_icon/jpg.png" %}';
+            case 'pdf': return '{% static "images/table_icon/pdf.png" %}';
+            case 'doc': return '{% static "images/table_icon/doc.png" %}';
+            case 'xls': return '{% static "images/table_icon/xls.png" %}';
+            case 'ppt': return '{% static "images/table_icon/ppt.png" %}';
+            case 'txt': return '{% static "images/table_icon/txt.png" %}';
+            default: return '{% static "images/table_icon/file.png" %}';
+        }
+    }
 </script>
 
 

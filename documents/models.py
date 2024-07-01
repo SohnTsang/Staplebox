@@ -7,8 +7,16 @@ import os
 from django.utils.timezone import localtime
 from django.conf import settings
 from django.core.files.storage import default_storage
-from django.core.files.base import ContentFile
+import logging
+from django.core.exceptions import ValidationError
 
+logger = logging.getLogger(__name__)
+
+
+def validate_file_size(file):
+    max_file_size = 10 * 1024 * 1024  # 10 MB
+    if file.size > max_file_size:
+        raise ValidationError(f"The file size exceeds the limit of {max_file_size / (1024 * 1024)} MB.")
 
 
 class Document(models.Model):
@@ -26,7 +34,10 @@ class Document(models.Model):
     original_folder = models.ForeignKey(Folder, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
     bin_expires_at = models.DateTimeField(null=True, blank=True)
 
-
+    def save(self, *args, **kwargs):
+        validate_file_size(self.file)
+        super().save(*args, **kwargs)
+        
     @property
     def display_filename(self):
         if self.versions.exists():

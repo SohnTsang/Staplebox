@@ -5,294 +5,307 @@
 
 {% block title %}Partner List{% endblock %}
 
-{% block extra_css %}
+{% block css %}
+<link rel="stylesheet" type="text/css" href="{% static 'exports/css/style.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'exports/css/modal.css' %}">
 <style>
-	@media (min-width: 462px) and (max-width: 576px) {
-		.custom-flex-sm-row {
-			flex-direction: row !important;
-		}
-		.custom-me-2 {
-			margin-right: 0.5rem !important;
-		}
-	}
 
-	@media (max-width: 992px) {
-		#mypartners {
-			margin-bottom: 2rem;
-		}
-	}
-
-	.custom-input-height {
-		height: 40px;
-		width:200px;
-	}
-	.custom-button-height {
-		height: 40px;
-		min-width: fit-content;
-	}
-
-	#alert-message {
-		font-size: 0.95rem;
-		color: #490000;
-	}
-	#success-message {
-		font-size: 0.95rem;
-		color: #012a49;
-	}
-
-	
-
-	@media (max-width: 536px) {
-        .responsive-wrap {
-            flex-wrap: wrap;
-        }
-        .responsive-wrap > * {
-            flex-basis: 100%;
-        }
-        /* Specific style for #sort div to add margin-top when wrapped */
-        
+    .button-group {
+        gap: 10px;
     }
-	@media (max-width: 902px) {
-		#sort {
-			margin-top: 10px;
-		}
+	th:nth-child(1), td:nth-child(1) {
+		width: 1%;
+	}
+	th:nth-child(2), td:nth-child(2) {
+		width: 15%;
 	}
 
-	@media (min-width: 992px) and (max-width: 1316px) {
-        #sort {
-            margin-top: 10px;
-        }
-    }
+	th:nth-child(3), td:nth-child(3) {
+		width: 10%;
+	}
 
-	@media (min-width: 576px) and (max-width: 582px) {
-		#mypartners {
-			max-width: 450px;
-		}
+	th:nth-child(4), td:nth-child(4) {
+		width: 10%;
+	}
+
+	th:nth-child(6), td:nth-child(6) {
+		width: 5%;
+		text-align: center;
 	}
 
 
 </style>
-{% endblock extra_css %}
+{% endblock %}
 
 {% block content %}
-<div class="container mt-1">
-	<div class="row">
-		<!-- Main Content -->
-		<div id="mypartners" class="col-12 col-lg-8">
-            <div class="bg-white rounded-3 wrapper">
-                <h4 class="text-primary-custom mb-3 fw-bold px-5 py-3 border-bottom">My Partners</h4>
-				{% if form.errors %}
-					{% for field in form %}
-						{% if field.errors %}
-						<div id="alert-message" class="ps-5 alert alert-danger fw-bold" role="alert"> <!-- Added margin-top for spacing -->
-							{{ field.errors|first }}
-						</div>
-						{% endif %}
-					{% endfor %}
-				{% endif %}
-				<!--
-				{% if messages %}
-					{% for message in messages %}
-						{% if 'invitation_action' in message.extra_tags %}
-						<div id="success-message" class="alert alert-primary ps-5 fw-bold" role="alert">
-							{{ message }}
-						</div>
-						{% elif 'error' in message.tags %}
-						<div id="alert-message" class="ps-5 alert alert-danger fw-bold" role="alert">
-							{{ message }}
-						</div>
-						{% endif %}
-					{% endfor %}
-				{% endif %}
-				-->
-                <button type="button" class="btn btn-primary mb-0 me-3 ms-5" data-bs-toggle="modal" data-bs-target="#sendInvitationModal">
-					<small>
-					Send Invitation
-					</small>
-				</button>
-				<div class="px-5 pt-4">
-					<form method="get" action="" class="">
-						<div class="col-12 d-flex flex-wrap align-items-center justify-content-between">
-
-							<div class="d-flex gap-2 align-items-center responsive-wrap">
-								<input type="text" class="form-control form-control-sm" id="filter_value" name="filter_value" value="{{ request.GET.filter_value }}" placeholder="Search Partners" aria-label="Filter...">
-			
-								<div class="select-auto-width d-flex gap-2">
-									<select class="form-select form-select-sm" name="filter_type" aria-label="Filter type">
-										<option value="company_name" {% if request.GET.filter_type == 'company_name' %}selected{% endif %}>Name</option>
-										<option value="email" {% if request.GET.filter_type == 'email' %}selected{% endif %}>Email</option>
-										<option value="role" {% if request.GET.filter_type == 'role' %}selected{% endif %}>Role</option>
-									</select>
-								
-			
-									<button type="submit" class="btn btn-primary btn-sm" id="button-addon2">
-										<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: text-top;">
-											<path d="M21 21L16.6569 16.6569M16.6569 16.6569C18.1046 15.2091 19 13.2091 19 11C19 6.58172 15.4183 3 11 3C6.58172 3 3 6.58172 3 11C3 15.4183 6.58172 19 11 19C13.2091 19 15.2091 18.1046 16.6569 16.6569Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-										</svg>
-									</button>
-								</div>
-							</div>
-			
-							<div id="sort" class="d-flex align-items-center select-auto-width">
-								<small class="me-2">Sort by</small>
-								<select class="form-select form-select-sm" name="sort" aria-label="Sort by">
-									<option value="created_at" {% if request.GET.sort == 'created_at' %}selected{% endif %}>Created at</option>
-									<option value="name" {% if request.GET.sort == 'name' %}selected{% endif %}>Name</option>
-									<option value="email" {% if request.GET.sort == 'email' %}selected{% endif %}>Email</option>
-									<option value="role" {% if request.GET.sort == 'role' %}selected{% endif %}>Role</option>
-								</select>
-								<button type="submit" id="sort-button" class="btn btn-sm ms-2" style="color:#295893">Apply</button>
-							</div>
-						</div>
-					</form>
-				</div>
-				
-                <div class="list-group">
-					{% for partner in partner_info %}
-                    <div class="list-group-item flex-column align-items-start px-5">
-                        <div class="d-flex justify-content-between align-items-center py-3">
-							<a href="{% url 'partners:partner_company_profile' partner.id %}">
-
-								<div class="">
-										<!--<h5 class="mb-1">{{ partnership.importer.username }}</h5>-->
-									<div class="fw-bold">{{ partner.company_name }}</div>
-									<div class="text-primary-custom fw-medium">{{ partner.company_role }}</div>
-									<div>{{ partner.company_email }}</div>
-									<small class="text-muted">Partnership since: {{ partner.created_at }}</small>
-								</div>
-								
-							</a>
-							<div class="dropdown">
-								<button class="btn btn-primary dropdown-toggle btn-sm" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
-									<span>Actions</span>
-								</button>
-								<ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-									<li><a id="delete-partner" class="dropdown-item" href="#" data-partner-id="{{ partner.id }}">Delete</a></li>
-									
-									<!-- Add more actions here -->
-								</ul>
-							</div>
-                        </div>
-                    </div>
-                    {% empty %}
-					<div class="list-group-item flex-column align-items-start px-5">
-                        <div class="d-flex justify-content-between align-items-center py-3">
-                            <p>No Partners Added</p>
-                        </div>
-                    </div>
-                    
-                    {% endfor %}
+<main>
+    <div class="background-overlay"></div>
+    <div class="content-section-2">
+        <div class="content-header-partner">
+			<div class="header-top">
+                <div class="header-title-partner">
+                    <h3>My Partners</h3>
+                    <small class="subheading">Number of Partners: {{ partner_count }}</small>
+                </div>
+                <div class="button-group">
+                    <button type="button" class="button-8" onclick="showModal()">
+                        View
+                        {% if unaccepted_invitations_count > 0 %}
+                        <span class="button-8-badge"></span>
+                        {% endif %}
+                    </button>
+                    <button type="button" class="button-8" onclick="openModal('sendInvitationModal')">Invite</button>
                 </div>
             </div>
-        </div>
-
-		<!-- Right Sidebar for Invitations -->
-		<div class="col-12 col-lg-4 invitation-list">
-            <div class="bg-white rounded-2 wrapper">
-				<h4 class="text-primary-custom fw-bold px-5 py-3 border-bottom mb-0">Pending Invitation</h4>
-				<div class="">
-					<ul class="nav nav-tabs modern-tabs col-12" id="invitationTab" role="tablist">
-						<li class="nav-item col-6" role="presentation">
-							<button class="nav-link active tab-link" id="received-tab" data-bs-toggle="tab" data-bs-target="#received" type="button" role="tab" aria-controls="received" aria-selected="true">
-								<div class="button-text">Received</div>
-							</button>
-						</li>
-						<li class="nav-item col-6" role="presentation">
-							<button class="nav-link tab-link" id="sent-tab" data-bs-toggle="tab" data-bs-target="#sent" type="button" role="tab" aria-controls="sent" aria-selected="false">
-								<div class="button-text">Sent</div>
-							</button>
-						</li>
-					</ul>
-				</div>
-				<div class="tab-content" id="invitationTabContent">
-					<div class="tab-pane fade show active" id="received" role="tabpanel" aria-labelledby="received-tab">
-						<div class="list-group" id="receivedInvitations">
-							{% if not has_received_pending_invitations %}
-								<div class="list-group-item list-group-item-action px-5 py-3">
-									<div class="d-flex justify-content-between align-items-center flex-wrap">
-										<div class="mb-2 mb-sm-0">
-											<p class="mb-0">No Pending Invitations</p>
-										</div>
-									</div>
-								</div>
-							{% else %}
-								{% for invitation in received_invitations %}
-									{% if not invitation.accepted %}
-										<div class="list-group-item list-group-item-action px-5 py-3">
-											<div class="d-flex justify-content-between align-items-center flex-wrap">
-												<div class="mb-2 mb-sm-0">
-													<h6 class="mb-0">{{ invitation.sender.email }}</h6>
-													<small class="text-muted">{{ invitation.created_at|date:"Y-M-d" }}</small>
-												</div>
-												{% if not invitation.accepted %}
-												<a href="{% url 'invitations:accept_invitation' token=invitation.token %}" class="btn btn-success btn-sm">Accept Invitation</a>
-												{% endif %}
-											</div>
-										</div>
-									{% endif %}
-								{% empty %}
-									<div class="list-group-item list-group-item-action px-5 py-3">
-										<div class="d-flex justify-content-between align-items-center flex-wrap">
-											<div class="mb-2 mb-sm-0">
-												<p class="mb-0">No invitations received</p>
-											</div>
-										</div>
-									</div>
-								{% endfor %}
-							{% endif %}
-							{% if has_more_received_pending_invitations %}
-								<button class="btn see-more-invitations fw-bold py-3 text-black" data-type="received" id="seeMoreReceived">See More</button>
-							{% endif %}
+            <div class="filter-sort">
+                <form method="get" action="" id="filterSortForm">
+                    <button type="reset" class="btn-reset" id="resetButton">Reset</button>
+                    <input type="text" class="form-control" id="filter_value" name="filter_value" value="{{ request.GET.filter_value }}" placeholder="Search Partners" aria-label="Filter...">
+                    <select class="form-select" name="filter_type" aria-label="Filter type">
+                        <option value="company_name" {% if request.GET.filter_type == 'company_name' %}selected{% endif %}>Name</option>
+                        <option value="email" {% if request.GET.filter_type == 'email' %}selected{% endif %}>Email</option>
+                        <option value="role" {% if request.GET.filter_type == 'role' %}selected{% endif %}>Role</option>
+                    </select>
+                    <button type="submit" class="btn-submit">Apply</button>
+                </form>
+            </div>
+			{% if form.errors %}
+				{% for field in form %}
+					{% if field.errors %}
+						<div id="alert-message" class="alert alert-danger fw-bold" role="alert">
+							{{ field.errors|first }}
 						</div>
-					</div>
-					<div class="tab-pane fade" id="sent" role="tabpanel" aria-labelledby="sent-tab">
-						<div class="list-group" id="sentInvitations">
-							{% for invitation in sent_invitations %}
-								{% if not invitation.accepted %}
-									<div class="list-group-item list-group-item-action px-5 py-3" id="invitation-{{ invitation.id }}">
-										<div class="d-flex justify-content-between align-items-center flex-wrap">
-											<div class="mb-2 mb-sm-0">
-												<h6 class="mb-0">{{ invitation.email }}</h6>
-												<small class="text-muted">{{ invitation.created_at|date:"Y-M-d" }}</small>
-											</div>
-											{% if not invitation.accepted %}
-											<button id="delete-invitation" class="btn btn-danger btn-sm" data-invitation-id="{{ invitation.id }}">Delete</button>
-											{% endif %}
-										</div>
-									</div>
-								{% endif %}
-							{% empty %}
-								<div class="list-group-item list-group-item-action px-5 py-3">
-									<div class="d-flex justify-content-between align-items-center flex-wrap">
-										<div class="mb-2 mb-sm-0">
-											<p class="mb-0">No invitations sent</p>
-										</div>
-									</div>
-								</div>
-							{% endfor %}
-							{% if has_more_sent_invitations %}
-							<button class="btn see-more-invitations fw-bold" data-type="sent" id="seeMoreSent">See More</button>
-							{% endif %}
-						</div>
-					</div>
-				</div>
-			</div>
+					{% endif %}
+				{% endfor %}
+			{% endif %}
 		</div>
-	</div>
-</div>
+        <div class="table-container-2">
+            <table>
+                <thead>
+                    <tr>
+						<th></th>
+						<th id="companyNameHeader">Partner Name <span class="sort-icon desc inactive"></span></th>
+						<th id="roleHeader">Partner Role <span class="sort-icon desc inactive"></span></th>
+						<th id="emailHeader">Company Email <span class="sort-icon desc inactive"></span></th>
+						<th id="createdAtHeader">Partnership Since <span class="sort-icon desc active"></span></th>
+						<th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="partnerTableBody">
+                    {% for partner in partner_info %}
+                    <tr>
+						<td></td>
+                        <td>{{ partner.company_name }}</td>
+                        <td>{{ partner.company_role }}</td>
+                        <!--<td>{{ partner.company_email }}</td>-->
+                        <td>{{ partner.email }}</td>
+                        <td>{{ partner.created_at }}</td>
+                        <td class="actions">
+                            <div class="action-button-container">
+                                <button class="action-button">
+                                    <img src="{% static 'images/table_icon/more_vert_24dp_FILL0_wght400_GRAD0_opsz24_333333.png' %}" alt="Actions">
+                                </button>
+                                <div class="action-button-dropdown">
+                                    <a href="#" id="delete-partner" data-partner-id="{{ partner.id }}">Delete</a>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6">No Partners Added</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
 
 {% include "modal/send_invitation_modal.html" %}
+{% include "modal/invitation_list_modal.html" %}
 
 {% block javascript %}
 
 <script>
-	document.addEventListener("DOMContentLoaded", function() {
-		document.getElementById('sort-button').style.display = 'none';
-		var sortSelect = document.querySelector('select[name="sort"]');
-		sortSelect.addEventListener('change', function() {
-			this.form.submit();
+    // Function to toggle dropdown visibility
+    document.querySelectorAll('.action-button').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.stopPropagation(); // Prevents the click from propagating to other elements
+            const dropdown = this.parentNode.querySelector('.action-button-dropdown');
+
+            // Close other dropdowns first
+            document.querySelectorAll('.action-button-dropdown').forEach(d => {
+                if (d !== dropdown) {
+                    d.style.display = 'none'; // Hide other dropdowns
+                }
+            });
+
+            // Toggle current dropdown
+            const isOpen = dropdown.style.display === 'block';
+            dropdown.style.display = isOpen ? 'none' : 'block'; // Toggle visibility
+        });
+    });
+
+    // Add this to handle clicks outside of dropdowns to close them
+    document.addEventListener('click', function(e) {
+        if (!e.target.matches('.action-button, .action-button *')) {
+            document.querySelectorAll('.action-button-dropdown').forEach(dropdown => {
+                dropdown.style.display = 'none';
+            });
+        }
+    });
+    // Function to delete a partner
+    document.addEventListener('DOMContentLoaded', () => {
+        const deleteLinks = document.querySelectorAll('#delete-partner');
+
+        deleteLinks.forEach(link => {
+            link.addEventListener('click', function(event) {
+                event.preventDefault();
+                const partnerId = this.getAttribute('data-partner-id');
+
+                if (confirm('Are you sure you want to delete this partner?')) {
+                    fetch(`/partners/delete/${partnerId}/`, {
+                        method: 'POST',  // Using POST for simplicity
+                        headers: {
+                            'X-CSRFToken': getCookie('csrftoken'),
+                            'Content-Type': 'application/json'
+                        }
+                    }).then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();  // Only try to parse JSON if response was OK
+                    }).then(data => {
+                        if (data.error) {
+                            showMessage(data.error, 'error');
+                        } else {
+                            setSessionMessage(data.message, 'success');
+                            location.reload();  // Reload the page to update the list
+                        }
+                    }).catch(error => {
+                        console.error('Error:', error);
+                        showMessage('There was an error processing your request.', 'error');
+                    });
+                }
+            });
+        });
+    });
+</script>
+<script>
+
+    function openModal(modalId) {
+        document.getElementById(modalId).style.display = 'block';
+    }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).style.display = 'none';
+    }
+
+    function showModal() {
+        document.getElementById('invitationListModal').style.display = 'block';
+    }
+
+	//Function to reset search filters
+	document.addEventListener('DOMContentLoaded', function() {
+		const resetButton = document.getElementById('resetButton');
+		const filterSortForm = document.getElementById('filterSortForm');
+
+		resetButton.addEventListener('click', function() {
+			// Clear the form fields
+			filterSortForm.reset();
+
+			// Remove the URL query parameters by submitting the form without search parameters
+			window.location.href = window.location.pathname;
 		});
 	});
+
+	//Function to sort the table
+    document.addEventListener('DOMContentLoaded', function() {
+        const tableBody = document.getElementById('partnerTableBody');
+        const companyNameHeader = document.getElementById('companyNameHeader');
+        const roleHeader = document.getElementById('roleHeader');
+        const emailHeader = document.getElementById('emailHeader');
+        const createdAtHeader = document.getElementById('createdAtHeader');
+
+        let sortDirection = {
+            companyName: null,
+            role: null,
+            email: null,
+            createdAt: 'asc'
+        };
+
+        function sortTable(column, type, header) {
+            // Reset sort directions for all headers except the current one
+            Object.keys(sortDirection).forEach(key => {
+                if (key !== header.id) {
+                    sortDirection[key] = null; // Reset other headers
+                }
+            });
+
+            // If the current header has no sort direction set, initialize it
+            if (!sortDirection[header.id]) {
+                sortDirection[header.id] = type === 'string' ? 'asc' : 'desc';
+            }
+
+            const rows = Array.from(tableBody.querySelectorAll('tr'));
+            let compareFunction;
+
+            if (type === 'string') {
+                compareFunction = (a, b) => {
+                    const aText = a.querySelector(`td:nth-child(${column})`).textContent.trim();
+                    const bText = b.querySelector(`td:nth-child(${column})`).textContent.trim();
+                    return sortDirection[header.id] === 'asc' ? aText.localeCompare(bText) : bText.localeCompare(aText);
+                };
+            } else if (type === 'date') {
+                compareFunction = (a, b) => {
+                    const aDate = new Date(a.querySelector(`td:nth-child(${column})`).textContent.trim());
+                    const bDate = new Date(b.querySelector(`td:nth-child(${column})`).textContent.trim());
+                    return sortDirection[header.id] === 'desc' ? aDate - bDate : bDate - aDate;
+                };
+            }
+
+            rows.sort(compareFunction);
+            rows.forEach(row => tableBody.appendChild(row));
+
+            // Toggle the current header's sort direction
+            sortDirection[header.id] = sortDirection[header.id] === 'asc' ? 'desc' : 'asc';
+            updateSortIcons(header.id);
+        }
+
+        function updateSortIcons(activeHeaderId) {
+            // Only manage active/inactive states when a sort action is triggered
+            document.querySelectorAll('.sort-icon').forEach(icon => {
+                icon.classList.add('inactive');
+                icon.classList.remove('active');
+            });
+
+            const activeIcon = document.querySelector(`#${activeHeaderId} .sort-icon`);
+            activeIcon.classList.remove('inactive');
+            activeIcon.classList.add('active');
+            activeIcon.classList.toggle('asc', sortDirection[activeHeaderId] === 'asc');
+            activeIcon.classList.toggle('desc', sortDirection[activeHeaderId] === 'desc');
+        }
+
+        companyNameHeader.addEventListener('click', () => {
+            sortTable(2, 'string', companyNameHeader);
+        });
+
+        roleHeader.addEventListener('click', () => {
+            sortTable(3, 'string', roleHeader);
+        });
+
+        emailHeader.addEventListener('click', () => {
+            sortTable(4, 'string', emailHeader);
+        });
+
+        createdAtHeader.addEventListener('click', () => {
+            sortTable(5, 'date', createdAtHeader);
+        });
+
+        // Ensure the correct initial visibility and state of the sort icon
+        updateSortIcons('createdAtHeader');
+    });
 </script>
 
 

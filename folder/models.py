@@ -2,6 +2,7 @@ from django.db import models
 from products.models import Product
 from django.utils import timezone
 from django.conf import settings
+from rest_framework import serializers
 
 class Folder(models.Model):
     name = models.CharField(max_length=255)
@@ -32,3 +33,9 @@ class Folder(models.Model):
     
     def __str__(self):
         return self.name
+    
+    def delete(self, *args, **kwargs):
+        # Delete all documents in the folder
+        self.documents.all().delete()
+        super().delete(*args, **kwargs)
+    

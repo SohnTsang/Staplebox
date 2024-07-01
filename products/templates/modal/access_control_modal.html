@@ -7,7 +7,7 @@
             <div class="modal-header border-0">
                 <h5 class="modal-title" id="accessControlModalLabel">Access Control</h5>
             </div>
-            <form method="post" action="{% url 'access_control:grant_access' product_id=product.id %}" id="accessControlForm">
+            <form method="post" id="accessControlForm">
                 {% csrf_token %}
                 <div class="modal-body">
                     <div class="row">
@@ -73,5 +73,33 @@
 </div>
 
 <script>
-    
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('accessControlForm');
+        form.addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent the default form submission
+
+            const formData = new FormData(form);
+            const productId = "{{ product.id }}"; // Dynamically set the productId using Django's template language
+
+            fetch(`/access_control/grant_access/${productId}/`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    setSessionMessage('Access granted', 'success');
+                    location.reload(); // Reload the page to reflect changes
+                } else {
+                    setSessionMessage('Error updating document: ' + Object.values(data.errors).join(', '), 'error');
+                    location.reload(); // Reload the page to reflect changes
+                }
+            })
+            .catch(error => setSessionMessage('Failed to update document due to a network error.', 'error'));
+            location.reload(); // Reload the page to reflect changes
+        });
+    });
 </script>

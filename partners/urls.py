@@ -1,10 +1,9 @@
 from django.urls import path
-from .views import partner_list_view, delete_partner, partner_company_profile
+from .views import delete_partner, PartnerListView, PartnerCompanyProfileView
 app_name = 'partners'  # Namespace for this urls.py
 
 urlpatterns = [
-    path('partners/', partner_list_view, name='partner_list'),
+    path('', PartnerListView.as_view(), name='partner_list'),
     path('delete/<int:partner_id>/', delete_partner, name='delete_partnercd'),
-    path('partner/<int:partner_id>/profile/', partner_company_profile, name='partner_company_profile'),
-
+    path('<int:partner_id>/profile/', PartnerCompanyProfileView.as_view(), name='partner_company_profile'),
 ]

@@ -37,6 +37,28 @@
 
 {% block javascript %}
 <script>
+
+    document.getElementById('upload-document-form').addEventListener('submit', function(event) {
+        event.preventDefault();
+        const formData = new FormData(this);
+        
+        $.ajax({
+            url: this.action,
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                console.log('Upload successful');
+                // Handle redirection here; adjust the URL as needed
+                location.reload();
+            },
+            error: function(response) {
+                console.error('Upload failed:', response);
+                alert('Failed to upload document.');
+            }
+        });
+    });
     document.getElementById('documentFile').addEventListener('change', function(event) {
         updateFileInputFields(event.target.files);
     });

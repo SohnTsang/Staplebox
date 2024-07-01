@@ -39,6 +39,7 @@ CACHES = {
 # Application definition
 
 INSTALLED_APPS = [
+    'rest_framework',
     'utils',
     'access_control',
     'companies',
@@ -66,6 +67,7 @@ INSTALLED_APPS = [
     'allauth.account',
     'allauth.socialaccount',
 ]
+
 
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
@@ -252,6 +254,22 @@ LOGGING = {
             'handlers': ['file', 'console'],
             'level': 'DEBUG',
             'propagate': True,
+        },
+        'documents': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
+        'access_control': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
+        'exports': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
+        'invitation': {  
+            'handlers': ['console'],
+            'level': 'DEBUG',
         },
     },
     'django.contrib.auth': {

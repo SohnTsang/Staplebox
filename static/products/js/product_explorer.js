@@ -1,3 +1,4 @@
+
 document.addEventListener('DOMContentLoaded', function() {
 
     const explorerElement = document.getElementById('product-explorer');
@@ -8,7 +9,57 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
     const createFolderModal = new bootstrap.Modal(document.getElementById('createFolderModal'));
+    const createFolderForm = document.getElementById('create-folder-form-modal');
+
     const uploadDocumentModal = new bootstrap.Modal(document.getElementById('uploadDocumentModal'));
+
+    createFolderForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const folderName = document.getElementById('folderName').value; // Assuming 'folderName' is the ID of your input field for the folder name
+        const productId = document.getElementById('product-explorer').dataset.productId;
+
+        formData.append('product', productId);
+        if (currentFolderId) {
+            formData.append('parent_id', currentFolderId);
+        }
+
+        const jsonSubmit = document.getElementById('jsonSubmit').checked;
+
+        console.log(jsonSubmit, 123);
+
+        if (jsonSubmit) {
+            const jsonData = {};
+            formData.forEach((value, key) => {
+                jsonData[key] = value;
+            });
+    
+            fetch(`/products/${productId}/explorer/create_folder/`, {
+                method: 'POST',
+                body: JSON.stringify(jsonData),
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                },
+                credentials: 'include',
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    $('#createFolderModal').modal('hide').on('hidden.bs.modal', function () {
+                        $(".modal-backdrop").remove();
+                    });
+                    createFolderModal.hide();
+                    fetchFolderContents(parentFolderId); // Optionally, refresh the folder list
+                } else {
+                    console.error('Error creating folder:', data.errors);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        } else {
+            this.submit();
+        }
+    });
 
     
     function navigateToFolder(folderId) {
@@ -171,51 +222,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
     fetchFolderContents(currentFolderId);
-
-    document.getElementById('create-folder-form').addEventListener('submit', function(e) {
-
-        e.preventDefault();
-        const formData = new FormData(this);
-        const folderName = document.getElementById('folderName').value; // Assuming 'folderName' is the ID of your input field for the folder name
-        const productId = document.getElementById('product-explorer').dataset.productId;
-
-        formData.append('product', productId);
-        if (currentFolderId) {
-            formData.append('parent_id', currentFolderId);
-        }
-
-        fetch(`/products/${productId}/explorer/create_folder/`, { // Make sure the URL matches your routing pattern
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-            },
-            credentials: 'include', // Necessary for cookies to be sent with the request
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-            if(data.success) {
-                $('#createFolderModal').modal('hide').on('hidden.bs.modal', function () {
-                    // Check if a backdrop remains and remove it
-                    $(".modal-backdrop").remove(); // For Bootstrap 5
-                });
-                createFolderModal.hide();
-                
-                
-                fetchFolderContents(currentFolderId); // Optionally, refresh the folder list
-
-            } else {
-                console.error('Error creating folder:', data.errors);
-            }
-        })
-        .catch(error => console.error('Error:', error));
-    });
 
 
     //Delete folder button

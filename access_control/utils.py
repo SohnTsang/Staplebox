@@ -5,6 +5,8 @@ from users.models import User
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
+from django.db.models import F
+from django.db.models import Exists, OuterRef
 
 
 def get_partners_with_access(product):
@@ -166,3 +168,58 @@ def grant_folder_or_document_access(user, partner, product, folder=None, documen
         return created
 
     return False
+
+
+def user_has_access_to(user, obj):
+    """
+    Enhanced access check function to ensure users can navigate to accessible documents
+    through their parent folders without gaining access to other items in those folders.
+    Owners of the product have full access to everything under that product.
+    """
+    if user.is_superuser:
+        return True
+
+    # Access check for Product
+    if isinstance(obj, Product):
+        # Product owners have full access
+        if obj.user == user:
+            return True
+        return AccessPermission.objects.filter(partner2=user, product=obj).exists()
+
+    # Access check for Folder
+    if isinstance(obj, Folder):
+        # Owners of the product have full access
+        if obj.product.user == user:
+            return True
+        # Check for direct folder access
+        if AccessPermission.objects.filter(partner2=user, folder=obj).exists():
+            return True
+        # Check if any child document of this folder has access
+        return Document.objects.filter(folder=obj).exists() and any(
+            user_has_access_to(user, doc) for doc in Document.objects.filter(folder=obj))
+
+    # Access check for Document
+    if isinstance(obj, Document):
+        # Owners of the product have full access
+        if obj.folder.product.user == user:
+            return True
+        # Check for direct document access
+        if AccessPermission.objects.filter(partner2=user, document=obj).exists():
+            # Grant access to all parent folders for navigation purposes
+            current_folder = obj.folder
+            while current_folder:
+                AccessPermission.objects.get_or_create(
+                    partner1=user,  # Assuming the system or admin user here
+                    partner2=user,
+                    product=current_folder.product,
+                    folder=current_folder,
+                    defaults={'access_type': 'navigate'}  # Custom access type for navigation
+                )
+                current_folder = current_folder.parent
+            return True
+
+    return False
+
+
+
+

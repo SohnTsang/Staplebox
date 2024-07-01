@@ -1,31 +1,72 @@
-<div class="modal fade" id="sendInvitationModal" tabindex="-1" aria-labelledby="sendInvitationModalLabel" aria-hidden="true">
-    <div class="modal-dialog p-3" role="document">
-        <div class="modal-content px-3">
-            <div class="modal-header">
-                <h5 class="modal-title fw-bold text-primary-custom" id="sendInvitationModalLabel">Send Invitation</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form id="send-invitation-form" method="post" action="{% url 'partners:partner_list' %}">
-                    {% csrf_token %}
-                    {{ form.non_field_errors }}
-                    <div class="mb-3"> <!-- Updated class from form-group to mb-3 for spacing -->
-                        <label for="email" class="form-label">Email address</label> <!-- Added form-label class -->
-                        <input type="email" class="form-control" id="email" name="email" placeholder="Enter Partner's Email">
-                        <!--{% if form.email.errors %}
-                            <div class="invalid-feedback" style="display: block;">
-                                {% for error in form.email.errors %}
-                                    {{ error }}
-                                {% endfor %}
-                            </div>
-                        {% endif %}-->
-                    </div>
-                </div> <!-- Moved modal-footer out of the form for proper Bootstrap 5 structure -->
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary">Send</button>
-                </div>
-            </form>
+<style>
+    #send-invitation-form {
+        padding: 10px 0 5px 0;
+    }
+
+    .modal-body {
+        padding: 1rem 1rem 1rem 0;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        padding: 0 10px 10px 10px;
+        background-color: #ffffff;
+    }
+</style>
+
+<!-- Send Invitation Modal -->
+<div class="modal" id="sendInvitationModal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div class="modal-title">Send Invitation</div>
         </div>
+        <form id="send-invitation-form" method="post" action="{% url 'invitations:send_invitation' %}">
+            {% csrf_token %}
+            <div class="modal-body">
+                <label for="email" class="form-label">Email Address:</label>
+                <input type="email" class="" id="email" name="email" placeholder="Enter Partner's Email">
+            </div>            
+            <div class="modal-footer">
+                <button type="button" onclick="closeModal('sendInvitationModal')" class="cancel-btn">Close</button>
+                <button type="submit" class="add-btn">Send</button>
+            </div>
+        </form>
     </div>
 </div>
 
+{% block javascript %}
+
+<script>
+    document.getElementById('send-invitation-form').addEventListener('submit', function(event) {
+        event.preventDefault();
+        const formData = new FormData(this);
+
+        fetch(this.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        }).then(response => {
+            return response.json(); // Always expecting JSON format
+        }).then(data => {
+            if (data.error) {
+                // Handle and display errors from the backend
+                const errors = data.error;
+                for (const key in errors) {
+                    if (errors.hasOwnProperty(key)) {
+                        showMessage(errors[key][0], 'error'); // Display the first error of each field
+                    }
+                }
+            } else if (data.message) {
+                // Handle success message
+                setSessionMessage(data.message, 'success');
+                location.reload();
+            }
+        }).catch(error => {
+            console.error('Fetch error:', error);
+            showMessage('There was an error processing your request.', 'error');
+        });
+    });
+</script>
+
+{% endblock %}

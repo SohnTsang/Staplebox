@@ -33,9 +33,9 @@
                                 <h5 class="fw-bold py-2 m-0">Company Name</h5>
                             {% endif %}
                         </div>
-                        <p class="text-muted fw-medium text-custom">{{ company_profile.get_role_display }}</p>
+                        <p class="text-muted fw-medium text-custom">{{ company_profile.role }}</p>
                         <div class="d-flex justify-content-center align-items-center mt-2">
-                            {% if request.user == company_profile.user_profile.user %}
+                            {% if own_profile %}
                             <!-- If user is logged in, show Edit Profile button -->
                                 <a href="{% url 'companies:edit_company_profile' %}" class="btn btn-primary"><small>Edit Profile</small></a>
                             {% else %}

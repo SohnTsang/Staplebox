@@ -1,22 +1,46 @@
 from django.urls import path
 from . import views
-from documents import views as document_views
+from .views import (
+    ExportListView,
+    ExportDetailView,
+    CreateExportView,
+    EditExportView,
+    AddProductsToExportView,
+    UploadDocumentView,
+    DeleteExport,
+    DownloadDocumentView,
+    DeleteDocumentsView,
+    RemoveProductsFromExportView,
+    ExportDetailAPIView,
+    CompleteExportView,  # Add this import
+    CompletedExportListView  # Add this import
+)
 
 app_name = 'exports'
 
 urlpatterns = [
-    path('', views.export_list, name='export_list'),
+    #export
+    path('', ExportListView.as_view(), name='export_list'),
+    path('<int:export_id>/', ExportDetailView.as_view(), name='export_detail'),
+    path('<int:pk>/api/', ExportDetailAPIView.as_view(), name='export_api_detail'),
+
+    path('create/', CreateExportView.as_view(), name='create_export'),
+    path('<int:pk>/edit/', EditExportView.as_view(), name='edit_export'),
+
+    path('<int:export_id>/complete/', CompleteExportView.as_view(), name='complete_export'),
+    path('completed/', CompletedExportListView.as_view(), name='completed_export_list'),
+
     path('list_partners/', views.list_partners, name='list_partners'),
-    path('list_products/', views.list_products, name='list_products'),
 
-    path('get_export_dates/<int:partner_id>/', views.get_export_dates, name='get_export_dates'),
-    path('get_export_documents/<int:partner_export_id>/', views.get_export_documents, name='get_export_documents'),
+    path('<int:export_id>/add_products/', AddProductsToExportView.as_view(), name='add_products_to_export'),
+    path('<int:export_id>/upload/', UploadDocumentView.as_view(), name='upload_document'),
 
-    path('create_with_date/', views.create_export_with_date, name='create_export_with_date'),
-    path('add_partner_to_staging/', views.add_partner_to_staging, name='add_partner_to_staging'),
-    path('<int:export_id>/add_product/', views.add_product_to_export, name='add_product_to_export'),
-    path('upload_document/<int:partner_export_id>/', document_views.upload_document_to_partner_export, name='upload_document_to_partner_export'),
-    path('delete_exports/', views.delete_exports, name='delete_exports'),
-    path('delete_documents/', views.delete_documents, name='delete_documents'),
-    path('delete_partners/', views.delete_partners, name='delete_partners'),
+    #download
+    path('download/', DownloadDocumentView.as_view(), name='download_document'),
+    path('download/<int:document_id>/', DownloadDocumentView.as_view(), name='download_document'),
+
+    #delete
+    path('delete/', DeleteExport.as_view(), name='delete_exports'),  # Modified to handle deletes generally
+    path('<int:export_id>/delete-documents/', DeleteDocumentsView.as_view(), name='delete_documents'),
+    path('<int:export_id>/remove_products/', RemoveProductsFromExportView.as_view(), name='remove_products_from_export'),
 ]

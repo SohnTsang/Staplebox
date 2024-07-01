@@ -26,6 +26,7 @@ class Product(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     deleted_at = models.DateTimeField(null=True, blank=True)
 
+
     class Meta:
         unique_together = ('user', 'product_code')
         

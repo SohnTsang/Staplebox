@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from django.utils.translation import gettext_lazy as _
 from .models import UserProfile
 from allauth.account.models import EmailAddress
-
+from companies.models import CompanyProfile
 
 
 class UserProfileInline(admin.StackedInline):
@@ -15,8 +15,15 @@ class UserProfileInline(admin.StackedInline):
 
 class UserAdmin(BaseUserAdmin):
     inlines = (UserProfileInline, )
-    list_display = ('username', 'email', 'is_staff', 'is_active', 'date_joined', 'last_login', 'get_verified')
+    list_display = ('username', 'email', 'company_name', 'is_staff', 'is_active', 'date_joined', 'last_login', 'get_verified')
     list_select_related = ('userprofile', )
+
+    def company_name(self, obj):
+        """Retrieve company name from the CompanyProfile model."""
+        profile = CompanyProfile.objects.filter(user_profile__user=obj).first()
+        return profile.name if profile else None
+
+    company_name.short_description = "Company Name"  # Optional: Sets column name
 
     def get_verified(self, instance):
         # Check if there is a verified email for the user

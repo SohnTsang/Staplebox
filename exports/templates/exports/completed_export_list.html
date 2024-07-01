@@ -1,0 +1,79 @@
+<!-- completed_export_list.html -->
+
+{% extends "base_users.html" %}
+{% load static %}
+{% block title %}Completed Export List{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" type="text/css" href="{% static 'exports/css/style.css' %}">
+{% endblock %}
+
+{% block content %}
+<main>
+    <div class="background-overlay"></div>
+    <div class="content-section">
+        <div class="content-header">
+            <div class="header-title">
+                <h3>Completed Exports</h3>
+                <small class="subheading">Number of Completed Exports: {{ all_partners|length }}</small>
+                <a href="{% url 'exports:export_list' %}" class="completed-exports-link">View Current Exports</a>
+            </div>
+            <div class="button-group">
+                <div class="bulk-action-wrapper">
+                    <button class="button-bulk-action" id="bulkActionButton" disabled>
+                        Bulk Action
+                        <img src="{% static 'images/table_icon/arrow_drop_down_24dp_FILL0_wght400_GRAD0_opsz24_333333.png' %}" alt="Visibility" class="icon-bulk-action" id="bulkActionIcon"> 
+                    </button>
+                    <div class="bulk-action-dropdown" id="bulkActionDropdown">
+                        <a href="#" id="deleteSelectedExports" class="bulk-action-delete">Delete</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th><input type="checkbox" id="selectAllExports"></th>
+                        <th>Export Number</th>
+                        <th>Partner Name</th>
+                        <th>Export Date</th>
+                        <th>Document</th>
+                        <th>View</th>
+                        <th>Delete</th>
+                    </tr>
+                </thead>
+                <tbody id="exportTableBody">
+                    {% for partner in all_partners %}
+                    <tr data-export-id="{{ partner.export_id }}"> <!-- Add the export ID here -->
+                        <td><input type="checkbox"></td>
+                        <td>{{ partner.reference_number }}</td>
+                        <td>{{ partner.partner_name }}</td>
+                        <td class="monospace-date">{{ partner.export_date }}</td> <!-- Display the export date with monospace font -->
+                        <td>
+                            <div class="doc-count {% if partner.document_count > 0 %}green{% else %}red{% endif %}">
+                                {{ partner.document_count }}
+                            </div>
+                        </td> <!-- Display the document count -->
+                        <td>
+                            <a href="{% url 'exports:export_detail' export_id=partner.export_id %}">
+                                <img src="{% static 'images/table_icon/visibility_24dp_FILL0_wght400_GRAD0_opsz24.png' %}" alt="View" class="icon-view">
+                            </a>
+                        </td>
+                        <td><img src="{% static 'images/table_icon/delete_24dp_FILL0_wght400_GRAD0_opsz24.png' %}" alt="Delete" class="icon-delete"></td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8">No completed exports found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+
+{% block javascript %}
+<script src="{% static 'exports/js/javascript.js' %}"></script>
+{% endblock %}
+{% endblock %}

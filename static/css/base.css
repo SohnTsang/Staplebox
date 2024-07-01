@@ -44,30 +44,245 @@ input, textarea{
 }
 
 .skeleton-list-item:first-child {
-    border-top-left-radius: 0.25rem;
-    border-top-right-radius: 0.25rem;
+  border-top-left-radius: 0.25rem;
+  border-top-right-radius: 0.25rem;
 }
 
 .skeleton-list-item:last-child {
-    margin-bottom: 0;
-    border-bottom-right-radius: 0.25rem;
-    border-bottom-left-radius: 0.25rem;
+  margin-bottom: 0;
+  border-bottom-right-radius: 0.25rem;
+  border-bottom-left-radius: 0.25rem;
 }
 
-  .skeleton {
-    display: inline-block;
-    height: 100%;
-    width: 100%;
-    background-image: linear-gradient(to right, #f0f0f0 0%, #e0e0e0 50%, #f0f0f0 100%);
-    background-repeat: no-repeat;
-    background-size: 1000px 100%; /* Large width to ensure the gradient is spread out */
-    animation: shimmer 1s linear infinite;
-    border-radius: 4px;
-  }
-  
-  .skeleton-text {
-    margin-top: 5px;
-    height: 0.725rem;
-    width: 90%;
-    border-radius: 0.25rem;
+.skeleton {
+  display: inline-block;
+  height: 100%;
+  width: 100%;
+  background-image: linear-gradient(to right, #f0f0f0 0%, #e0e0e0 50%, #f0f0f0 100%);
+  background-repeat: no-repeat;
+  background-size: 1000px 100%; /* Large width to ensure the gradient is spread out */
+  animation: shimmer 1s linear infinite;
+  border-radius: 4px;
 }
+  
+.skeleton-text {
+  margin-top: 5px;
+  height: 0.725rem;
+  width: 90%;
+  border-radius: 0.25rem;
+}
+
+.skeleton-image {
+  margin-top: 5px;
+  margin-bottom: 20px;
+  width: 210px; /* Match the image width */
+  height: 180px; /* Match the image height */
+  background-color: #f0f0f0;
+  animation: shimmer 2s infinite linear;
+}
+
+
+.skeleton-list-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Centers children horizontally in the container */
+  width: 100%; /* Adjust this as necessary */
+}
+
+.skeleton-list-item-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Centers children horizontally */
+  justify-content: center; /* Centers children vertically */
+  width: 100%; /* Ensure it takes full width of its container */
+  text-align: center; /* Ensures text elements are centered */
+}
+
+
+.btn-modern {
+  background-color: #295893 !important; /* Primary color */
+  border: none;
+  padding: 7px 15px;
+  text-align: center;
+  text-decoration: none;
+  font-size: 15px;
+  border-radius: 5px; /* Rounded corners */
+  color: white !important;
+  transition: none !important;  /* Disable transitions */
+
+}
+
+.btn-modern:hover {
+  background-color: #2f82c0 !important; /* Darker shade for hover/focus */
+  color: white;
+  text-decoration: none; /* Prevents underlining text */
+}
+.btn-modern:active, .btn-modern:focus-visible {
+  background-color: #2f82c0 !important; /* Darker shade for active state */
+  color: white;
+  text-decoration: none; /* Prevents underlining text */
+}
+
+th {
+  padding: 0.5rem 0.5rem !important;
+  color: var(--bs-table-color-state, var(--bs-table-color-type, var(--bs-table-color)));
+  border-bottom-width: var(--bs-border-width);
+  border-color:#d6d6d6;
+  box-shadow: inset 0 0 0 9999px var(--bs-table-bg-state, var(--bs-table-bg-type, var(--bs-table-accent-bg)));
+}
+
+.table > :not(caption) > * > * {
+  padding: 0.2rem 0.5rem;
+  color: var(--bs-table-color-state, var(--bs-table-color-type, var(--bs-table-color)));
+  border-bottom-width: var(--bs-border-width);
+  border-color:#d6d6d6;
+  box-shadow: inset 0 0 0 9999px var(--bs-table-bg-state, var(--bs-table-bg-type, var(--bs-table-accent-bg)));
+}
+
+td {
+  padding: 0.2rem 0.5rem;
+  color: var(--bs-table-color-state, var(--bs-table-color-type, var(--bs-table-color)));
+  border-bottom-width: var(--bs-border-width);
+  border-color:#d6d6d6;
+
+  box-shadow: inset 0 0 0 9999px var(--bs-table-bg-state, var(--bs-table-bg-type, var(--bs-table-accent-bg)));
+}
+
+thead {
+}
+
+
+.text-muted-weight {
+  font-weight: 400;
+  color:#181818;
+  font-size: small;
+}
+
+.name-header, .name-cell {
+  padding-left: 20px !important;  /* Adjust the padding as needed */
+  overflow: hidden;               /* Prevents overflow of content */
+  white-space: nowrap;            /* Keeps the content in a single line */
+  text-overflow: ellipsis;        /* Adds ellipsis when content overflows */
+  max-width: 150px;               /* Adjust according to your needs */
+}
+
+.name-cell span {
+  text-overflow: ellipsis;        /* Ensures ellipsis is applied */
+  overflow: hidden;               /* Hides overflow */
+  white-space: nowrap;            /* Prevents text wrapping */
+}
+
+
+@media (max-width: 1366px) {
+  .table thead th:nth-child(4), .table tbody td:nth-child(4) {
+      display: none;
+  }
+}
+
+/* Hide the 3rd column when the screen width is less than or equal to 1024px */
+@media (max-width: 1024px) {
+  .table thead th:nth-child(3), .table tbody td:nth-child(3) {
+      display: none;
+  }
+}
+
+.title {
+  min-height: 70px;
+  align-items: center; /* This vertically centers the content */
+  display: flex;
+  flex-shrink: 0; /* Prevents these elements from shrinking, ensuring they maintain their size */
+}
+
+.main-title {
+  min-height: 40px;
+  display: flex;           /* Ensures flexbox layout */
+  align-items: center;     /* Vertically centers the content */
+  padding: 0 10px;         /* Horizontal padding */
+  overflow: hidden;        /* Hides overflow */
+  white-space: nowrap;     /* Prevents text wrapping */
+  text-overflow: ellipsis !important; /* Shows ellipsis for overflow */
+  min-width: 0;            /* Prevents flex items from not shrinking */
+  flex-shrink: 1;          /* Allow shrinking beyond content size */
+}
+
+.product-info {
+  display: flex;              /* Flex container to hold both boxes side by side */
+  padding: 0 17px;           /* Padding around the container */
+}
+
+.info-box {
+  display: flex;              /* Enables Flexbox within each box */
+  flex-direction: column;     /* Stacks the title and content vertically */
+  padding-left: 8px;               /* Padding inside each box */
+  margin-right: 5rem;         /* Right margin for gap, except for the last box */
+}
+
+.info-box:last-child {
+  margin-right: 0;            /* Removes margin from the last box to maintain alignment */
+}
+
+.info-title {
+  font-weight: 400;         /* Bold font for titles */
+  margin-bottom: 4px;        /* Space between title and content */
+  font-size: 0.83rem;       /* Smaller font size similar to Bootstrap's `small` */
+  color: #6c757d;            /* Muted text color similar to Bootstrap's `text-muted` */
+
+}
+
+.info-content {
+  line-height: 1;           /* Improved line height for readability */
+  font-size: 0.85rem;         /* Smaller font size for content */
+  overflow: hidden;           /* Ensures content that overflows is hidden */
+  white-space: nowrap;        /* Keeps the text on a single line without wrapping */
+  text-overflow: ellipsis;    /* Adds ellipsis when content overflows */
+  width: 100%;                /* Ensures the div takes up all available horizontal space */
+}
+
+.upper-wrapper {
+  background-color: #fefefe;
+  box-shadow: rgba(0, 0, 0, 0.10) 0px 1px 1px, rgba(0, 0, 0, 0.10) 0px 1px 1px;
+  display: flex;
+  width: 100%;             /* Ensures it doesn't grow beyond viewport */
+  padding: 0;              /* Adjust padding if necessary */
+  overflow: hidden;        /* Adds overflow handling at this level too */
+}
+
+.wrapper {
+  background-color: #fefefe;
+  box-shadow: rgba(0, 0, 0, 0.10) 0px 1px 1px, rgba(0, 0, 0, 0.10) 0px 1px 1px;
+  display: flex;
+  width: 100%;
+  flex-direction: column; /* Stack children vertically */
+  overflow: hidden;
+}
+
+
+.vh-13 {
+  height: 13vh !important;
+}
+
+.vh-79 {
+  height: 78vh;
+}
+
+
+.my-3-custom {
+  margin-top: 0.66rem !important;
+  margin-bottom: 0.66rem !important;
+}
+
+.vh-92 {
+  height: 92.2vh;
+}
+
+.document-table thead th:nth-child(1) { width: 45%; }  /* Example for "Code" column */
+.document-table thead th:nth-child(2) { width: 20%; }  /* Example for "Name" column */
+.document-table thead th:nth-child(3) { width: 20%; }  /* Example for "Type" column */
+.document-table thead th:nth-child(4) { width: 10%; }  /* Example for "Date Modified" column */
+.document-table thead th:nth-child(5) { width: 5% !important; }  /* Example for the action buttons column */
+
+.product-table thead th:nth-child(1) { width: 30%; }  /* Example for "Code" column */
+.product-table thead th:nth-child(2) { width: 20%; }  /* Example for "Name" column */
+.product-table thead th:nth-child(3) { width: 20%; }  /* Example for "Type" column */
+.product-table thead th:nth-child(4) { width: 15%; }  /* Example for "Date Modified" column */
+.product-table thead th:nth-child(5) { width: 5%; }  /* Example for the action buttons column */

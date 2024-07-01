@@ -1,140 +1,92 @@
 {% extends "base_users.html" %}
 {% load static %}
-{% load crispy_forms_tags %}
-{% load crispy_forms_filters %}
-{% load custom_filters %}
+{% block title %}Export List{% endblock %}
 
-{% block title %}Export{% endblock %}
-{% block extra_css %}
+{% block css %}
 
+
+<link rel="stylesheet" type="text/css" href="{% static 'exports/css/style.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'exports/css/modal.css' %}">
 <style>
-
-    .list-group-item:not(:focus):not(:active):hover {
-        background-color: #1e7bee44; /* Lighter background color on hover */
-    }
-
-    /* Active or focused state */
-    .list-group-item:focus, .list-group-item:active {
-        background-color: #1e7bee44 !important; /* Keep background color when active/focused */
-    }
-
-    .list-group-item.focus {
-        background-color: #1e7bee44 !important; /* Keep background color when active/focused */
-    }
-
-    .selected-partner {
-        background-color: #1e7bee44 !important; /* Light blue background with transparency */
-    }
-    .selected-export-date {
-        background-color: #1e7bee44 !important; /* Light blue background with transparency */
-    }
+    
 </style>
-{% endblock extra_css %}
 
-
+{% endblock %}
 
 {% block content %}
 
-
-<div class="container-fluid custom-container-fluid mt-1">
-    
-    <div class="row">
-      <!-- Partner List Panel -->
-        <div class="col-md-2">
-            <div class="bg-white rounded-2 wrapper vh-92">
-                <div class="title">
-                    <h4 class="fw-bold px-4 text-primary-custom">Partners</h4>
-                </div>
-                <button type="button" class="btn btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#selectPartnerModal">Add Partner</button>
-                <button id="deleteSelectedPartners" class="btn btn-danger mt-2" disabled>Delete Selected</button>
-                
-                <div id="partnerSkeleton" class="skeleton-list">
-                    {% for i in '0,5'|custom_range %}
-                        <div class="skeleton-list-item">
-                            <div class="skeleton skeleton-text" style="width: {{ i|get_width }};">
-                            </div>
-                        </div>
-                    {% endfor %}
-                </div>
-
-                <div class="list-group" style="display: none;" id="partnerList">
-                    {% for partner in all_partners %}
-                    <div class="partner-list list-group-item flex-column" data-partner-id="{{ partner.partner_id }}">
-                        <div class="d-flex justify-content-between py-1">
-                            <div class="d-flex align-items-center">
-                                <input class="form-check-input custom-checkbox" type="checkbox" name="partners" data-staged-partner-id="{{ partner.staged_partner_id|default:'null' }}"  value="{{ partner.partner_id }}" id="partner_{{ partner.partner_id }}" onclick="toggleDeleteButton()">
-                                <div class="ps-3">
-                                    <div class="fw-sm-bold">{{ partner.partner_name }}</div>
-                                    <div class="text-primary-custom fw-medium small">{{ partner.partner_company_type|title }}</div>
-                                </div>
-                            </div>
-                            <button type="button" class="btn btn-primary btn-sm align-self-center">
-                                <svg width="16" height="18" viewBox="0 0 24 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M21 21L16.6569 16.6569M16.6569 16.6569C18.1046 15.2091 19 13.2091 19 11C19 6.58172 15.4183 3 11 3C6.58172 3 3 6.58172 3 11C3 15.4183 6.58172 19 11 19C13.2091 19 15.2091 18.1046 16.6569 16.6569Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                </svg>
-                            </button>
-                        </div>
+<main>
+    <div class="background-overlay"></div>
+    <div class="content-section">
+        <div class="content-header">
+            <div class="header-title">
+                <h3>Export List</h3>
+                <small class="subheading">Number of Exports: {{ all_partners|length }}</small>
+                <a href="{% url 'exports:completed_export_list' %}" class="completed-exports-link">View Past Exports</a>
+            </div>
+            <div class="button-group">
+                <div class="bulk-action-wrapper">
+                    <button class="button-bulk-action" id="bulkActionButton" disabled>
+                        Bulk Action
+                        <img src="{% static 'images/table_icon/arrow_drop_down_24dp_FILL0_wght400_GRAD0_opsz24_333333.png' %}" alt="Visibility" class="icon-bulk-action" id="bulkActionIcon"> 
+                    </button>
+                    <div class="bulk-action-dropdown" id="bulkActionDropdown">
+                        <a href="#" id="deleteSelectedExports" class="bulk-action-delete">Delete</a>
                     </div>
-                    {% endfor %}
+                    
                 </div>
+                <button class="button-8" role="button" id="create_export_modal">New</button>
             </div>
         </div>
-  
-      <!-- Export Date List Panel -->
-        <div class="col-md-2">
-            <div class="bg-white rounded-2 wrapper vh-92">
-
-                <div class="title">
-                    <h4 class="fw-bold px-4 text-primary-custom">Export Dates</h4>
-                </div>
-                <button id="addExportDateBtn" class="btn btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#setExportDateModal" disabled>Add Export Date</button>
-                <button id="deleteSelectedExports" class="btn btn-danger mt-2" disabled>Delete Selected Exports</button>
-
-                <div id="exportDateSkeleton" class="skeleton-list">
-                    {% for i in '0,1'|custom_range %}
-                        <div class="skeleton-list-item">
-                            <div class="skeleton skeleton-text" style="width: {{ i|get_width }};"></div>
-                        </div>
-                    {% endfor %}
-                </div>
-
-                <div id="displayExportDate" class="list-group" style="display: none;">No partners selected</div>
-                
-            </div>
-        </div>
-  
-      <!-- Document List Panel -->
-        <div class="col-md-8">
-            <div class="bg-white rounded-2 wrapper vh-92">
-
-                <div class="title">
-                    <h4 class="fw-bold px-4 text-primary-custom">Documents</h4>
-                </div>
-                <button id="uploadDocumentBtn" class="btn btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#uploadDocumentExportModal" disabled>Upload Document</button>
-                <button id="deleteSelectedDocumentsBtn" class="btn btn-danger mt-2" disabled>Delete Selected Documents</button>
-                
-                <div id="documentSkeleton" class="skeleton-list">
-                    {% for i in '0,1'|custom_range %}
-                        <div class="skeleton-list-item">
-                            <div class="skeleton skeleton-text" style="width: {{ i|get_width }};">
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th><input type="checkbox" id="selectAllExports"></th>
+                        <th id="partnerNameHeader">Export Number <span class="sort-icon desc inactive"></span></th>
+                        <th id="businessHeader">Partner Name <span class="sort-icon desc inactive"></span></th>
+                        <th id="exportDateHeader">Export Date <span class="sort-icon desc active"></span></th>
+                        <th>Document</th>
+                        <th>View</th>
+                        <th>Delete</th>
+                    </tr>
+                </thead>
+                <tbody id="exportTableBody">
+                    {% for partner in all_partners %}
+                    <tr data-export-id="{{ partner.export_id }}"> <!-- Add the export ID here -->
+                        <td><input type="checkbox"></td>
+                        <td>{{ partner.reference_number }}</td>
+                        <td>{{ partner.partner_name }}</td>
+                        <td class="monospace-date">{{ partner.export_date }}</td> <!-- Display the export date with monospace font -->
+                        <td>
+                            <div class="doc-count {% if partner.document_count > 0 %}green{% else %}red{% endif %}">
+                                {{ partner.document_count }}
                             </div>
-                        </div>
+                        </td> <!-- Display the document count -->
+                        <td>
+                            <a href="{% url 'exports:export_detail' export_id=partner.export_id %}">
+                                <img src="{% static 'images/table_icon/visibility_24dp_FILL0_wght400_GRAD0_opsz24.png' %}" alt="View" class="icon-view">
+                            </a>
+                        </td>
+                        <td><img src="{% static 'images/table_icon/delete_24dp_FILL0_wght400_GRAD0_opsz24.png' %}" alt="Delete" class="icon-delete"></td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8">No exports found.</td>
+                    </tr>
                     {% endfor %}
-                </div>
-
-                <div id="displayDocuments" class="list-group" style="display: none;">No documents selected</div>
-            </div>
+                </tbody>
+            </table>
         </div>
     </div>
-</div>
-
-
-{% include "modal/product_list_modal.html" %}
-{% include "modal/partner_list_modal.html" %}
-{% include "modal/upload_document_export_modal.html" %}
-{% include "modal/set_export_date_modal.html" %}  <!-- New modal for setting export dates -->
+</main>
+{% include 'modal/create_export_modal.html' %}
 
 {% block javascript %}
-{% include "js/export_management_scripts.html" %}  <!-- Move all JavaScript code to this file for better organization -->
+
+<script src="{% static 'exports/js/javascript.js' %}"></script>
+
+
+
 {% endblock %}
 {% endblock %}

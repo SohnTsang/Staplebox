@@ -1,0 +1,45 @@
+<style>
+    
+</style>
+
+<div id="exportModal" class="modal">
+    <div class="modal-content create-export">
+        
+        <div class="modal-title">Add New Export</div>
+        <div class="tabs">
+            <div class="tab active" data-tab="partner">Partner</div>
+            <div class="tab" data-tab="export-date">Export Date</div>
+            <div class="tab" data-tab="document">Document</div>
+        </div>
+        <div class="tab-content active" id="partner">
+            <ul class="partners-list" id="partnersList">
+                <!-- Partner list will be loaded here dynamically -->
+            </ul>
+        </div>
+        <div class="tab-content" id="export-date">
+            <div class="date-picker" id="datePicker">
+                <input type="date" name="export_dates[]">
+                <button id="addDateBtn" class="add-date-btn">Add Date</button> <!-- Add Date button added here -->
+            </div>
+            <ul id="exportDatesList" class="export-dates-list"></ul>
+        </div>
+        <div class="tab-content" id="document">
+            <div class="upload-zone" id="uploadZone">
+                Drag & Drop files here or click to browse
+            </div>
+            <div class="messages">Files over 10MB can not be uploaded</div>
+            <div class="uploaded-files-container">
+                <ul class="uploaded-files" id="uploadedFiles"></ul>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="cancel-btn" id="cancelBtn">Cancel</button>
+            <button class="add-btn" id="addBtn">Add</button>
+        </div>
+    </div>
+</div>
+
+{% block javascript %}
+
+    
+{% endblock %}
