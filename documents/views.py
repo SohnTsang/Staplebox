@@ -41,7 +41,7 @@ import logging
 from django.http import Http404
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.utils.decorators import method_decorator
-
+logger = logging.getLogger(__name__)
 
 #For checking file integrity
 def file_hash(file):
@@ -51,41 +51,71 @@ def file_hash(file):
     return hash_sha256.hexdigest()
 
 
-@login_required
-@api_view(['POST'])
-@parser_classes([MultiPartParser])
-def upload_document(request, product_id, folder_id):
-    product = get_object_or_404(Product, id=product_id)
-    folder = get_object_or_404(Folder, id=folder_id, product_id=product_id)
+class DocumentUploadView(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser]
 
-    if product.user != request.user:
-        messages.error(request, "You are not authorized to perform this action.")
-        return redirect(reverse('products:product_explorer_folder', kwargs={'product_id': product_id, 'folder_id': folder_id}))
+    def post(self, request, product_id, folder_id):
+        logger.debug("Received upload request for product_id: %s, folder_id: %s", product_id, folder_id)
 
-    if request.method == 'POST':
-        try:
-            document_files = request.FILES.getlist('document_files')
-            document_types = json.loads(request.POST.get('document_types'))
-            comments = json.loads(request.POST.get('comments'))
+        product = get_object_or_404(Product, id=product_id)
+        folder = get_object_or_404(Folder, id=folder_id, product_id=product_id)
 
-            for file, doc_type, comment in zip(document_files, document_types, comments):
-                data = {
-                    'folder': folder.id,
-                    'original_filename': file.name,
-                    'document_type': doc_type,
-                    'file': file,
-                    'uploaded_by': request.user.id,
-                    'comments': comment
-                }
-                serializer = DocumentSerializer(data=data)
-                if serializer.is_valid():
-                    serializer.save()
-                else:
-                    return JsonResponse({'success': False, 'errors': serializer.errors}, status=400)
+        if product.user != request.user:
+            logger.warning("Unauthorized access attempt by user: %s", request.user)
+            return Response({"detail": "You are not authorized to perform this action."}, status=status.HTTP_403_FORBIDDEN)
 
-            return JsonResponse({'success': True, 'message': 'Documents uploaded'}, status=201)
-        except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)}, status=500)
+        document_files = request.FILES.getlist('document_files')
+        document_types = request.POST.getlist('document_types', [])
+        comments = request.POST.getlist('comments', [])
+
+        if not document_files:
+            logger.error("No document files provided.")
+            return Response({'detail': 'No document files provided.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        errors = []
+        for i, file in enumerate(document_files):
+            doc_type = document_types[i] if i < len(document_types) else None
+            comment = comments[i] if i < len(comments) else ''
+            data = {
+                'folder': folder.id,
+                'original_filename': file.name,
+                'document_type': doc_type,
+                'file': file,
+                'uploaded_by': request.user.id,
+                'comments': comment
+            }
+            logger.debug("Processing file: %s", file.name)
+            serializer = DocumentSerializer(data=data)
+            if not serializer.is_valid():
+                errors.append({'file': file.name, 'errors': serializer.errors})
+
+        if errors:
+            logger.error("Errors encountered during upload: %s", errors)
+            return Response({'detail': 'Error uploading documents.', 'errors': errors}, status=status.HTTP_400_BAD_REQUEST)
+
+        for i, file in enumerate(document_files):
+            doc_type = document_types[i] if i < len(document_types) else None
+            comment = comments[i] if i < len(comments) else ''
+            data = {
+                'folder': folder.id,
+                'original_filename': file.name,
+                'document_type': doc_type,
+                'file': file,
+                'uploaded_by': request.user.id,
+                'comments': comment
+            }
+            serializer = DocumentSerializer(data=data)
+            if serializer.is_valid():
+                serializer.save()
+                logger.debug("File uploaded successfully: %s", file.name)
+
+        logger.info("All documents uploaded successfully for product_id: %s, folder_id: %s", product_id, folder_id)
+        return Response({'detail': 'Documents uploaded'}, status=status.HTTP_201_CREATED)
+
+
+
+
 
 
 class UploadDocumentPartnerView(APIView):
@@ -304,7 +334,7 @@ class UpdateDocument(APIView):
         serializer = DocumentUpdateSerializer(document, data=request.data, context={'request': request})
         if serializer.is_valid():
             serializer.save()
-            return Response({'message': 'Document updated successfully'}, status=200)
+            return Response({'message': 'Document updated'}, status=200)
         else:
             return Response(serializer.errors, status=400)
 
@@ -334,44 +364,27 @@ def ajax_update_document(request, document_id):
     return JsonResponse({'error': 'No file was uploaded'}, status=400)
 
 
-@require_POST  # Ensures only POST requests are handled
-@login_required
-def delete_document(request, document_id):
+class DeleteDocumentView(APIView):
+    permission_classes = [IsAuthenticated]
 
-    if not request.user.is_authenticated:
-        # Redirect or show an error if the user is not authenticated
-        return redirect('account_login')  # Replace 'account_login' with your login view's name
+    def delete(self, request):
+        document_ids = request.data.get('document_ids', [])
 
-    document = get_object_or_404(Document, id=document_id)
+        documents = Document.objects.filter(id__in=document_ids)
 
-    if not document.uploaded_by == request.user:
-        return HttpResponse("You do not have permission to delete this document.", status=403)
+        if not documents.exists():
+            return Response({"detail": "Documents not found."}, status=status.HTTP_404_NOT_FOUND)
 
-    if document.folder and document.folder.product:
-        product_id = document.folder.product.id
-        redirect_url = 'products:product_explorer_bin'
-    else:
-        # If no product is associated, use a default redirect
-        product_id = None
-        company_profile = CompanyProfile.objects.filter(partners_contract_folder=document.folder).first()
-        partnership = Partnership.objects.filter(
-            (Q(partner1=company_profile.user_profile.user) | Q(partner2=company_profile.user_profile.user)) &
-            (Q(partner1=request.user) | Q(partner2=request.user))
-        ).first()
-        partner_id = partnership.pk
-        redirect_url = 'partners:partner_company_profile'
+        for document in documents:
+            if document.folder.product.user != request.user:
+                return Response({"detail": "You do not have permission to delete this document."}, status=status.HTTP_403_FORBIDDEN)
 
-    # Delete all versions of the document
-    document.versions.all().delete()  # This deletes all related DocumentVersion instances
+            document.versions.all().delete()
+            document.delete()
 
-    # Delete the document itself
-    document.delete()
+        return Response({'detail': 'Items deleted'}, status=status.HTTP_200_OK)
 
-    # Redirect back to the appropriate folder view
-    if product_id:
-        return redirect(redirect_url, product_id=product_id)
-    else:
-        return redirect(redirect_url, partner_id=partner_id)
+
 
 
 @login_required
@@ -483,21 +496,17 @@ def ajax_comments_versions(request, document_id):
     })
 
 
-
-logger = logging.getLogger(__name__)
-
 class EditComment(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, document_id, version_number=None):
         logger.debug(f"Received request for document_id: {document_id} with version_number: {version_number}")
+
         if version_number is not None:
             if version_number == 1:
-                # Try to fetch the document as version 1
                 instance = get_object_or_404(Document, id=document_id)
                 serializer_class = DocumentCommentSerializer
             else:
-                # Fetch other versions normally
                 instance = get_object_or_404(DocumentVersion, document_id=document_id, version=version_number)
                 serializer_class = DocumentVersionCommentSerializer
             logger.debug(f"Editing version instance: {instance}")
@@ -506,9 +515,12 @@ class EditComment(APIView):
             logger.debug(f"Editing document instance: {instance}")
             serializer_class = DocumentCommentSerializer
 
+        logger.debug(f"Request data: {request.data}")
         serializer = serializer_class(instance, data=request.data)
         if serializer.is_valid():
             serializer.save()
+            logger.debug(f"Comment updated successfully for instance: {instance}")
+            logger.debug(f"Updated instance data: {serializer.data}")
             return Response({
                 'success': True,
                 'message': 'Comment updated',
@@ -516,7 +528,8 @@ class EditComment(APIView):
             })
         else:
             logger.error(f"Serializer errors: {serializer.errors}")
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 def user_has_access(user, document):

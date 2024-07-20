@@ -217,6 +217,7 @@ MEDIA_URL = '/media/'
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
+FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
 
 LANGUAGES = [
     ('en', 'English'),
@@ -268,6 +269,14 @@ LOGGING = {
             'level': 'DEBUG',
         },
         'invitation': {  
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
+        'folder': {  
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
+        'products': {  
             'handlers': ['console'],
             'level': 'DEBUG',
         },

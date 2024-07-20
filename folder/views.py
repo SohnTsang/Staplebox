@@ -16,8 +16,10 @@ from rest_framework.response import Response
 from .serializers import FolderSerializer
 from rest_framework.parsers import JSONParser
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+import logging
 
-
+logger = logging.getLogger(__name__)
 
 @login_required
 def folder_create(request, product_id):
@@ -127,22 +129,25 @@ def ajax_get_folder_details(request, product_id, folder_id):
     return JsonResponse(data)
 
 
-@login_required
-def delete_folder(request, folder_id):
-    if request.method == 'POST':
-        folder = get_object_or_404(Folder, id=folder_id)
-        product_id = folder.product_id  # Assuming Folder model has a 'product' field linking to Product
-        parent_id = folder.parent_id if folder.parent else ''  # Capture parent ID before deletion
-        
-        folder.delete()
-        
-        # Redirect to the parent folder if it exists, or the product's root if not
-        if parent_id:
-            return redirect('products:product_explorer_bin', product_id=product_id)
-        else:
-            return redirect('products:product_explorer_bin', product_id=product_id)
-    else:
-        return redirect('products:product_explorer')  # Or some error handling
+class DeleteFolderView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request):
+        folder_ids = request.data.get('folder_ids', [])
+
+        folders = Folder.objects.filter(id__in=folder_ids)
+
+        if not folders.exists():
+            return Response({"detail": "Folders not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        for folder in folders:
+            if folder.product.user != request.user:
+                return Response({"detail": "You do not have permission to delete this folder."}, status=status.HTTP_403_FORBIDDEN)
+
+            folder.delete()
+
+        return Response({'detail': 'Items deleted'}, status=status.HTTP_200_OK)
+
     
 
 @login_required

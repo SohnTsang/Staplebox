@@ -30,6 +30,8 @@ from django.db import transaction
 from rest_framework.renderers import TemplateHTMLRenderer
 import logging
 from rest_framework.decorators import api_view, permission_classes
+from partners.models import Partnership
+from companies.models import CompanyProfile
 
 logger = logging.getLogger(__name__)
 
@@ -143,47 +145,24 @@ class ManageAccessView(APIView):
         logger.debug("Completed update_access method.")
 
 
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def access_control_modal(request, product_id):
-    item_id = request.data.get('item_id')
-    item_type = request.data.get('item_type')
+    item_ids = request.data.get('item_id').split(',')
+    item_types = request.data.get('item_type').split(',')
     partner_ids = request.data.getlist('partners')
+
+    if len(item_ids) != len(item_types):
+        return Response({'error': 'Mismatched item_ids and item_types'}, status=status.HTTP_400_BAD_REQUEST)
+
+    logger.debug(f'Received data: item_ids={item_ids}, item_types={item_types}, partner_ids={partner_ids}')
+
     user = request.user
     product = get_object_or_404(Product, id=product_id)
 
     selected_partners = User.objects.filter(id__in=partner_ids)
-    
-    if item_type == 'folder':
-        item = get_object_or_404(Folder, id=item_id)
-        for partner in selected_partners:
-            grant_folder_or_document_access(user, partner, product, folder=item)
-    elif item_type == 'document':
-        item = get_object_or_404(Document, id=item_id)
-        for partner in selected_partners:
-            grant_folder_or_document_access(user, partner, product, document=item)
-    else:
-        return Response({'error': 'Invalid item type'}, status=status.HTTP_400_BAD_REQUEST)
-
-    return Response({'success': 'Access granted'}, status=status.HTTP_200_OK)
-
-
-@login_required
-@require_http_methods(["POST"])
-def access_control_modal_original(request, product_id):
-    print("Access control view reached.")
-    print("POST data:", request.POST)
-    if request.method == 'POST':
-        item_id = request.POST.get('item_id')
-        item_type = request.POST.get('item_type')
-        partner_ids = request.POST.getlist('partners')  # Assuming checkboxes have names set to 'partners'
-        user = request.user
-        product = get_object_or_404(Product, id=product_id)
-
-        # Retrieve selected partners based on IDs
-        selected_partners = User.objects.filter(id__in=partner_ids)
-        
-        # Based on item_type, find the corresponding folder or document
+    for item_id, item_type in zip(item_ids, item_types):
         if item_type == 'folder':
             item = get_object_or_404(Folder, id=item_id)
             for partner in selected_partners:
@@ -193,13 +172,75 @@ def access_control_modal_original(request, product_id):
             for partner in selected_partners:
                 grant_folder_or_document_access(user, partner, product, document=item)
         else:
-            return HttpResponseNotAllowed("Invalid item type")
+            return Response({'error': 'Invalid item type'}, status=status.HTTP_400_BAD_REQUEST)
 
-        return redirect('products:product_explorer', product_id=product_id)
-    else:
-        # Handle non-POST requests if necessary
-        return HttpResponseNotAllowed("This URL only accepts POST requests")
+    return Response({'success': 'Access granted'}, status=status.HTTP_200_OK)
+
+
+@login_required
+def get_all_partners(request):
+    user = request.user
+
+    # Get partnerships for the request user
+    query = Q(partner1=user) | Q(partner2=user)
+    query &= Q(is_active=True)
+    partnerships = Partnership.objects.filter(query).distinct()
+
+    partners_data = []
+    for partnership in partnerships:
+        partner = partnership.partner2 if partnership.partner1 == user else partnership.partner1
+        try:
+            profile = CompanyProfile.objects.get(user_profile=partner.userprofile)
+            # Exclude partners who already have access
+            partners_data.append({
+                'partner_id': partner.id,
+                'company_name': profile.name,
+                'company_role': profile.role.capitalize(),
+            })
+        except CompanyProfile.DoesNotExist:
+            # Skip if the partner does not have a CompanyProfile
+            continue
+
+    return JsonResponse(partners_data, safe=False)
+
+
+@login_required
+def get_partners_without_access(request, product_id, item_id, item_type):
+    user = request.user
+    product = get_object_or_404(Product, id=product_id)
     
+    if item_type == 'folder':
+        item = get_object_or_404(Folder, id=item_id)
+        granted_partners = AccessPermission.objects.filter(folder=item).values_list('partner2', flat=True)
+    elif item_type == 'document':
+        item = get_object_or_404(Document, id=item_id)
+        granted_partners = AccessPermission.objects.filter(document=item).values_list('partner2', flat=True)
+    else:
+        return JsonResponse({'error': 'Invalid item type'}, status=400)
+
+    # Get partnerships for the request user
+    query = Q(partner1=user) | Q(partner2=user)
+    query &= Q(is_active=True)
+    partnerships = Partnership.objects.filter(query).distinct()
+
+    partners_data = []
+    for partnership in partnerships:
+        partner = partnership.partner2 if partnership.partner1 == user else partnership.partner1
+        try:
+            profile = CompanyProfile.objects.get(user_profile=partner.userprofile)
+            # Exclude partners who already have access
+            if partner.id not in granted_partners:
+                partners_data.append({
+                    'partner_id': partner.id,
+                    'company_name': profile.name,
+                    'company_role': profile.role.capitalize(),
+                })
+        except CompanyProfile.DoesNotExist:
+            # Skip if the partner does not have a CompanyProfile
+            continue
+
+    return JsonResponse(partners_data, safe=False)
+
 
 @login_required
 def fetch_partner_access_details(request, product_id, partner_id):
@@ -286,53 +327,16 @@ def remove_specific_access(request, product_id, entity_type, entity_id):
     if product.user != request.user:
         return JsonResponse({'success': False, 'error': 'Unauthorized'}, status=403)
 
-    entity_model = None
-    if entity_type == 'folder':
-        entity_model = get_object_or_404(Folder, pk=entity_id)
-    elif entity_type == 'document':
-        entity_model = get_object_or_404(Document, pk=entity_id)
-    
-    if entity_model and AccessPermission.objects.filter(product=product, partner2_id=request.POST.get('partner_id'), **{entity_type: entity_model}).exists():
-        AccessPermission.objects.filter(product=product, partner2_id=request.POST.get('partner_id'), **{entity_type: entity_model}).delete()
+    partner_id = json.loads(request.body).get('partner_id')
+    entity_model = Document if entity_type == "document" else Folder
+    entity = get_object_or_404(entity_model, pk=entity_id)
+
+    if AccessPermission.objects.filter(product=product, partner2_id=partner_id, **{entity_type: entity}).exists():
+        AccessPermission.objects.filter(product=product, partner2_id=partner_id, **{entity_type: entity}).delete()
         return JsonResponse({'success': True})
     
-    return JsonResponse({'success': False, 'error': 'Not Found'}, status=403)
+    return JsonResponse({'success': False, 'error': 'Not Found'}, status=404)
 
-
-@login_required
-@require_POST
-def remove_specific_access(request, product_id, entity_type, entity_id):
-    # Check if the product exists and the user has rights
-    product = get_object_or_404(Product, pk=product_id)
-    if product.user != request.user:
-        return JsonResponse({'success': False, 'error': 'Unauthorized'}, status=403)
-    
-    # Determine the entity model based on the type
-    entity_model = None
-    if entity_type == 'folder':
-        entity_model = get_object_or_404(Folder, pk=entity_id)
-    elif entity_type == 'document':
-        entity_model = get_object_or_404(Document, pk=entity_id)
-    
-    # Get partner_id from POST data
-    partner_id = request.POST.get('partner_id')
-    if not partner_id:
-        return JsonResponse({'success': False, 'error': 'Partner ID is required'}, status=400)
-
-    # Perform the deletion if the permission exists
-    if entity_model:
-        permission_qs = AccessPermission.objects.filter(
-            product=product,
-            partner2_id=partner_id,
-            **{entity_type: entity_model}
-        )
-        if permission_qs.exists():
-            permission_qs.delete()
-            return JsonResponse({'success': True})
-        else:
-            return JsonResponse({'success': False, 'error': 'No such permission'}, status=404)
-    
-    return JsonResponse({'success': False, 'error': 'Invalid entity type'}, status=400)
 
 
 ################################################################################################################################################

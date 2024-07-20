@@ -1,37 +1,29 @@
 <div id="editDocumentModal" class="modal fade" tabindex="-1" aria-labelledby="editDocumentModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
-            <div class="modal-header border-0">
-                <h5 class="modal-title" id="editDocumentModalLabel">Edit Document</h5>
-            </div>
-            <form method="post" enctype="multipart/form-data" id="editDocumentForm">
-                {% csrf_token %}
-                <div class="modal-body">
-                <!-- Document Type Dropdown -->
-                    <div class="mb-3">
-                        <label for="id_document_type" class="form-label small">Document Type:</label>
-                        <select name="document_type" id="id_document_type" class="form-select">
-                            <!-- Options populated dynamically -->
-                        </select>
-                    </div>
+            <div class="modal-title" id="editDocumentModalLabel">Edit Document</div>
+            <div class="modal-body">
+                <form method="post" enctype="multipart/form-data" id="editDocumentForm">
+                    {% csrf_token %}
+                    <!-- Document Type Dropdown -->
+                    <label for="id_document_type" class="">Document Type</label>
+                    <select name="document_type" id="id_document_type" class="">
+                        <!-- Options populated dynamically -->
+                    </select>
                     
                     <!-- Original Filename Input -->
-                    <div class="mb-3">
-                        <label for="id_original_filename" class="form-label small">File Name:</label>
-                        <input type="text" name="original_filename" id="id_original_filename" class="form-control" value="{{ form.original_filename.value }}">
-                    </div>
+                    <label for="id_original_filename" class="">Document Name</label>
+                    <input type="text" name="original_filename" id="id_original_filename" class="" value="{{ form.original_filename.value }}">
                 
-                    <div class="">
-                        <label for="id_comments" class="form-label small">Comments:</label>
-                        <textarea name="comments" id="id_comments" class="form-control">{{ form.comments.value }}</textarea>
-                    </div>
-                </div>
-                <div class="modal-footer border-0 p-1">
-                    <button type="button" class="btn text-primary-custom text-15" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn fw-less-bold text-primary-custom text-15">Update</button>
-                </div>
-            </form>
+                    <!-- Comments Textarea -->
+                    <label for="id_comments" class="">Comments</label>
+                    <input name="comments" id="id_comments" class="">{{ form.comments.value }}</input>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="cancel-btn" data-bs-dismiss="modal">Close</button>
+                <button type="submit" class="add-btn" form="editDocumentForm">Update</button>
+            </div>
         </div>
     </div>
 </div>
-

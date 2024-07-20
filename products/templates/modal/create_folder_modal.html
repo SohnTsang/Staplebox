@@ -1,33 +1,23 @@
-{% load static %}
-
-{% block extra_css %}
-
-{% endblock %}
-
-<div class="modal fade" id="createFolderModal" tabindex="-1" aria-labelledby="createFolderModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-custom">
-        <div class="modal-content" style="width:80%;">
-            <div class="modal-header border-0">
-                <h5 class="modal-title" id="createFolderModalLabel">New Folder</h5>
-            </div>
-            
-            <form id="create-folder-form-modal" method="post" action="{% url 'products:folder_create' product_id=product.id %}">
-                {% csrf_token %}
-                <div class="modal-body">
-                    <div class="">
-                        <input type="text" style="font-size: 14px;" class="form-control" id="folderNameModal" name="name" placeholder="Enter folder name" required>
-                    </div>
+<div id="createFolderModal" class="modal fade" tabindex="-1" aria-labelledby="createFolderModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-title" id="createFolderModalLabel">New Folder</div>
+            <div class="modal-body">
+                <form id="create-folder-form-modal" method="post" action="{% url 'products:folder_create' product_id=product.id %}">
+                    {% csrf_token %}
+                    <label for="folderNameModal" class="form-label">Folder Name:</label>
+                    <input type="text" class="form-control" id="folderNameModal" name="name" placeholder="Enter folder name" required>
                     {% if current_folder %}
                         <input type="hidden" id="parentFolderIdModal" name="parent_id" value="{{ current_folder.id }}">
                     {% else %}
                         <input type="hidden" id="parentFolderIdModal" name="parent_id" value="{{ root_folder.id }}">
                     {% endif %}
-                </div>
-                <div class="modal-footer border-0 p-1">
-                    <button type="button" class="btn text-primary-custom text-15" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn fw-less-bold text-primary-custom text-15">Create</button>
-                </div>
-            </form>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="cancel-btn" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="add-btn" form="create-folder-form-modal">Create</button>
+            </div>
         </div>
     </div>
 </div>

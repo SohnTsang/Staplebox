@@ -64,7 +64,7 @@ main {
 }
 
 
-.content-header-partner, .content-header-product {
+.content-header-partner, .content-header-product, .content-header-product-directory {
     display: flex;
     flex-direction: column;
     align-items: stretch;
@@ -72,6 +72,10 @@ main {
     background-color: white;
 }
 
+.content-header-product-directory {
+    border-radius: 5px;
+    box-shadow: rgba(9, 30, 66, 0.25) 0px 1px 1px, rgba(9, 30, 66, 0.13) 0px 0px 1px 1px;
+}
 .content-header-partner {
     border-radius: 5px;
     box-shadow: rgba(9, 30, 66, 0.25) 0px 1px 1px, rgba(9, 30, 66, 0.13) 0px 0px 1px 1px;
@@ -79,12 +83,14 @@ main {
 
 .content-header-product {
     border-radius: 5px 5px 0 0;
-    box-shadow: rgba(9, 30, 66, 0.13) 0px 0px 1px 1px;
+    box-shadow: rgba(9, 30, 66, 0.25) 0px 0px 0px 0px, rgba(9, 30, 66, 0.13) 0px 0px 1px 1px;
 }
 
-.content-header-partner, .table-container-2, .table-container, .content-header, .content-header-export-details, .content-header-product, .table-container-3 {
+.content-header-partner, .table-container-2, .table-container, .content-header, .content-header-export-details, .content-header-product, .table-container-3, .content-header-product-directory{
     margin: 2px;  /* Adjust as needed to give enough space for the shadow */
 }
+
+
 
 .header-top {
     display: flex;
@@ -136,8 +142,16 @@ main {
 .table-container-2, .table-container-3 {
     overflow-x: auto;
     background-color: #ffffff;
-    height: 75vh;
+    height: 71vh;
     position: relative; /* Ensure the table container is positioned relative */
+    border-radius: 0 0 5px 5px;
+}
+
+.table-container-3 {
+    box-shadow: rgba(9, 30, 66, 0.25) 0px 1px 1px, rgba(9, 30, 66, 0.13) 0px 0px 1px 1px;
+}
+
+.table-container-2 {
     box-shadow: rgba(9, 30, 66, 0.25) 0px 1px 1px, rgba(9, 30, 66, 0.13) 0px 0px 1px 1px;
 }
 
@@ -155,6 +169,8 @@ table {
 }
 
 th {
+    position: relative; /* To position the pseudo-element */
+    padding-right: 1.5em; /* Adjust according to the icon size */
     background-color: #ffffff;
     padding: 10px 10px;
     font-size: 1em; /* Lowered font size */
@@ -179,6 +195,12 @@ td {
     text-overflow: ellipsis !important;
     max-width: 0; /* Allow the text to overflow */
 }
+
+td a {
+    color: #295893;
+    text-decoration: none;
+}
+
 
 td.actions{
     overflow: visible !important; /* Allow the dropdown to overflow */
@@ -249,6 +271,7 @@ th:nth-child(4), td:nth-child(4) {
 th:nth-child(5), td:nth-child(5) {
     width: 10%;
 }
+
 
 th:nth-child(6), td:nth-child(6),
 th:nth-child(7), td:nth-child(7),
@@ -466,7 +489,7 @@ tbody tr:nth-child(even) {
     box-shadow: rgba(255, 255, 255, .7) 0 1px 0 0 inset;
     box-sizing: border-box;
     color: #555555;
-    cursor: not-allowed;
+    cursor: default;
     display: inline-flex;
     align-items: center;
     font-family: 'DM Sans', sans-serif;
@@ -484,7 +507,7 @@ tbody tr:nth-child(even) {
     touch-action: manipulation;
     vertical-align: baseline;
     white-space: nowrap;
-    margin-right: 10px;
+    margin-right: 5px;
     opacity: 0.6; /* Default to disabled state */
 }
 
@@ -573,17 +596,18 @@ tbody tr:nth-child(even) {
     position: absolute;
     background-color: #ffffff;
     min-width: 160px;
+    max-width: 200px;
     box-shadow: 0px 1px 2px 0px rgba(0,0,0,0.2);
     top: 100%; /* Position it below the button */
     right: 0;
     display: none;
-    z-index: 9999;
+    z-index: 9996;
     text-align: left;
 }
 
 .action-button-dropdown a {
     color: black;
-    padding: 12px 16px;
+    padding: 9px 16px;
     text-decoration: none;
     display: block;
 }
@@ -607,6 +631,17 @@ tbody tr:nth-child(even) {
     display: inline-block;
     background-size: contain;
     background-repeat: no-repeat;
+    vertical-align: top;
+    position: absolute; /* Position the icon absolutely within the header cell */
+    top: 50%; /* Center vertically */
+    transform: translateY(-50%); /* Adjust vertical centering */
+}
+
+.sort-icon.inactive::before {
+    content: ''; /* Reserve space for the icon when it's inactive */
+    display: inline-block;
+    width: 1.2em;
+    height: 1.2em;
     vertical-align: top;
 }
 
@@ -662,8 +697,25 @@ tbody tr:nth-child(even) {
 }
 
 .file-icon {
-    width: 2em;
-    height: 1.85em;
+    width: 1.2em;
+    height: 1.5em;
+    padding-right: 8px;
+    padding-left: 1.5px;
+    vertical-align: bottom;
+    display: inline-block; /* Ensures the image behaves like text */
+    overflow: hidden; /* Prevents the icon from expanding the row */
+}
+
+.folder-icon {
+    width: 1.4em;
+    height: 1.2em;
+    padding-right: 8px;
+    vertical-align: top;
+    display: inline-block; /* Ensures the image behaves like text */
+    overflow: hidden; /* Prevents the icon from expanding the row */
+}
+
+.file-name-table {
 }
 
 .file-info {
@@ -718,9 +770,10 @@ tbody tr:nth-child(even) {
 .dropdown-content {
     display: none;
     position: absolute;
-    background-color: #f9f9f9;
-    min-width: 160px;
-    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    background-color: #fcfcfc;
+    min-width: 200px;
+    max-width:200px;
+    box-shadow: 0px 2px 4px 0px rgba(0,0,0,0.2);
     z-index: 1;
 }
 
@@ -733,10 +786,75 @@ tbody tr:nth-child(even) {
     background: none;
     width: 100%;
     text-align: left;
+    cursor: pointer;
+}
+
+.dropdown-divider {
+    margin: 0 !important;
 }
 
 .dropdown-content button:hover {
     background-color: #f1f1f1;
+}
+
+.dropdown-content.show {
+    display: block;
+}
+
+
+.header-bottom {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 5px; /* Optional: Adjust the margin between header-top and header-bottom */
+}
+
+
+ol {
+    margin-top: 10px;
+    margin-bottom: 5px;
+    padding-left: 0;
+}
+
+li {  
+    list-style-type: none;
+}
+
+li a {
+    text-decoration: none;
+    color: #295893;
+}
+
+.breadcrumb {
+    display: flex;
+    flex-wrap: nowrap; /* Ensure items stay on one line */
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.breadcrumb-item {
+    display: inline-flex; /* Make items inline-flex */
+    align-items: center; /* Vertically align items */
+}
+
+.breadcrumb-navigation:hover {
+    background-color: #3d9dd433;
+}
+
+.breadcrumb-item + .breadcrumb-item::before {
+    content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' viewBox='0 0 20 20'%3E%3Cpath d='M10 17L15 12' stroke='%23454545' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M15 12L10 7' stroke='%23454545' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
+    margin: 0 8px; /* Adjust spacing as needed */
+    color: #7d8daa;
+}
+
+
+.breadcrumb-item + .breadcrumb-item::before {
+    float: left;
+    color: 295893;
+    content: var(--bs-breadcrumb-divider, "＞");
+}
+  .breadcrumb-item.active {
+    color: #ddd;
 }
 
 .filter-sort {
@@ -751,12 +869,12 @@ tbody tr:nth-child(even) {
     gap: 10px;
 }
 
-.form-control, .form-select, .btn-submit {
+.form-control, .form-select, .btn-submit, .orm-control-comment {
     box-sizing: border-box; /* Ensures padding and border are included in height */
     border-radius: 3px;
 }
 
-.form-control {
+.form-control, .form-control-comment {
     padding: 5px 10px;
 }
 
@@ -764,7 +882,7 @@ tbody tr:nth-child(even) {
     padding: 4px 10px;
 }
 
-.form-control, .form-select {
+.form-control, .form-select, .form-control-comment {
     border: 1px solid #ccc;
 }
 
@@ -804,9 +922,6 @@ tbody tr:nth-child(even) {
     background-color: #234b7c;
 }
 
-.clickable-header {
-    cursor: pointer;
-}
 
 th[id] {
     cursor: pointer;
@@ -831,4 +946,36 @@ th[id] {
     background-color: #dcf0ff;
 }
 
+.clickable-header {
+    cursor: pointer;
+}
+
+
+.clickable-row:hover, .clickable-td:hover {
+    cursor: pointer;
+}
+.clickable-row:hover{
+    background-color: #d8f1ff;
+}
+
+.clickable-td:hover {
+    background-color: #d8f1ff;
+}
+
+.non-clickable-tr:hover {
+    cursor: default;
+    background-color: #f5f5f5;
+}
+
+.text-danger {
+    color: #e53e3e !important;
+}
+
+.char-counter.danger, input.danger, textarea.danger {
+    color: #e53e3e; /* Red color */
+}
+
+input.danger, textarea.danger {
+    border-color: #e53e3e !important; /* Red border color */
+}
 

@@ -1,34 +1,32 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import redirect
 from .models import Partnership
 from users.models import User
 from companies.models import CompanyProfile
 from access_control.models import AccessPermission
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
-from django.views.decorators.http import require_POST
 from django.shortcuts import get_object_or_404
-from django.db.models import Q
+from django.db.models import Q, Prefetch
 from invitations.models import Invitation
 from django.contrib import messages
 from invitations.forms import InvitationForm
 from django.core.mail import send_mail
 from django.conf import settings
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404
 from .models import Partnership
 from companies.models import CompanyProfile
 from documents.models import Document
-from django.http import HttpResponseForbidden
-from .serializers import PartnershipSerializer, CompanyProfileSerializer, InvitationSerializer
+from .serializers import PartnershipSerializer, InvitationSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.utils.decorators import method_decorator
 from rest_framework.renderers import TemplateHTMLRenderer
-from documents.serializers import DocumentSerializer
 from rest_framework.permissions import IsAuthenticated
 from django.views.decorators.http import require_http_methods
-
+from folder.models import Folder
+from users.models import UserProfile
 
 @method_decorator(login_required, name='dispatch')
 class PartnerCompanyProfileView(APIView):
@@ -249,3 +247,5 @@ def delete_partner(request, partner_id):
             return JsonResponse({'error': 'You do not have permission to delete this partner'}, status=403)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+

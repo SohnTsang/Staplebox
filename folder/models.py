@@ -39,3 +39,13 @@ class Folder(models.Model):
         self.documents.all().delete()
         super().delete(*args, **kwargs)
     
+    def is_descendant_of(self, potential_parent):
+        """
+        Determine if this folder is a descendant of another folder.
+        """
+        current_folder = self.parent
+        while current_folder is not None:
+            if current_folder.id == potential_parent:
+                return True
+            current_folder = current_folder.parent
+        return False

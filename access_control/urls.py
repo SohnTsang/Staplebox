@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views
-from .views import ManageAccessView, access_control_modal
+from .views import ManageAccessView, access_control_modal, get_all_partners
 
 app_name = 'access_control'
 
@@ -20,7 +20,9 @@ urlpatterns = [
         views.remove_specific_access,
         name='remove_specific_access'
     ),
-
+    
+    path('get_partners_without_access/<int:product_id>/<int:item_id>/<str:item_type>/', views.get_partners_without_access, name='get_partners_without_access'),
+    path('get_all_partners/', get_all_partners, name='get_all_partners'),
     path('get_partners_with_access_json/<int:item_id>/<str:item_type>/', views.get_partners_with_access_json, name='get_partners_with_access_json'),
     #path('grant_access/<int:product_id>/', views.access_control_modal, name='grant_access'),
 

@@ -1,12 +1,12 @@
 
 from django.urls import path, re_path
-from .views import create_product, edit_product, delete_product, move_entity
+from .views import move_entity
 from folder.views import folder_create, edit_folder
-from documents.views import upload_document, delete_document, get_documents
+from documents.views import get_documents, DocumentUploadView
 from document_types.views import document_types_list
 from . import views
 from access_control.views import access_control_modal
-from .views import FolderContentView, ProductListView, CreateProductView, ProductExplorerView, ListProductsAPIView
+from .views import FolderContentView, ProductListView, CreateProductView, ProductExplorerView, ListProductsAPIView, DeleteProductView, EditProductView
 #products/urls.py
 
 app_name = 'products'
@@ -16,8 +16,8 @@ urlpatterns = [
     #path('new/', create_product, name='create_product'),
     path('create/', CreateProductView.as_view(), name='create_product'),
 
-    path('edit/<int:pk>/', edit_product, name='edit_product'),
-    path('delete/<int:pk>/', delete_product, name='delete_product'),
+    path('edit/<int:pk>/', EditProductView.as_view(), name='edit_product'),
+    path('delete/<int:pk>/', DeleteProductView.as_view(), name='delete_product'),
 
     path('api/products/', ListProductsAPIView.as_view(), name='api_list_products'),
 
@@ -32,7 +32,7 @@ urlpatterns = [
     path('<int:product_id>/create_folder/', folder_create, name='folder_create'),
     path('<int:product_id>/explorer/edit_folder/<int:folder_id>/', edit_folder, name='edit_folder'),
     # Document management URLs within the context of a product and folder
-    path('<int:product_id>/folders/<int:folder_id>/upload_document/', upload_document, name='upload_document'),
+    path('<int:product_id>/folders/<int:folder_id>/upload_document/', DocumentUploadView.as_view(), name='upload_document'),
     path('<int:product_id>/folders/<int:folder_id>/documents/', get_documents, name='get_documents'),
 
     # New URL pattern for accessing a folder within the context of a specific product

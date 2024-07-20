@@ -18,6 +18,7 @@
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" type="text/css" href="{% static 'css/modal.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'css/loading.css' %}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.3.12/themes/default/style.min.css" />
     <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
     <link rel="stylesheet" type="text/css" href="{% static 'css/loading.css' %}">
@@ -28,7 +29,9 @@
     <style>
         * {
             font-family: 'DM Sans', sans-serif;
-            
+        }
+        html {
+            width: 99.8vw;
         }
         
         .checkbox-column {
@@ -290,10 +293,6 @@
             user-select: none; /* Prevents text selection */
             cursor: pointer;
         }
-        .modal-content-lg {
-            width: 100%; /* Could be more or less, depending on screen size */
-            max-width: 1280px; /* Maximum width */
-        }
         
         @media (min-width: 768px) {
             #right-side {
@@ -362,6 +361,28 @@
         animation: slideDown 0.5s forwards, slideUp 0.5s 3.5s forwards; /* Slide up after 3 seconds */
     }
 
+
+
+    /* Targets all scrollable elements */
+    ::-webkit-scrollbar {
+        width: 10px; /* Width of the vertical scrollbar */
+        height: 10px; /* Height of the horizontal scrollbar */
+        background-color: rgba(0,0,0,0.1); /* Optional: scrollbar background */
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background-color: #666; /* Color of the scroll thumb */
+        border-radius: 6px; /* Rounded corners for the thumb */
+        border: 3px solid rgba(0,0,0,0); /* Optional: border around the thumb */
+    }
+
+    ::-webkit-scrollbar-track {
+        background-color: rgba(0,0,0,0.1); /* Color of the track (part the thumb slides within) */
+        border-radius: 6px; /* Rounded corners for the track */
+    }
+
+    
+
     </style>
     {% block extra_css %}
     {% endblock extra_css %}
@@ -401,6 +422,101 @@
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js" integrity="sha384-7+zCNj/IqJ95wo16oMtfsKbZ9ccEh31eOz1HGyDuCQ6wgnyJNSYdrPa03rtR1zdB" crossorigin="anonymous"></script>
 
 {% block extra_js %}
+
+<script>
+    
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let currentOpenDropdown = null;
+    let currentOpenButton = null;
+
+    // Initialize and append dropdowns to body
+    document.querySelectorAll('.action-button, .action-button-title').forEach(button => {
+        let dropdown = button.parentNode.querySelector('.action-button-dropdown');
+        if (dropdown) {
+            if (!dropdown.hasAttribute('id')) {
+                dropdown.setAttribute('id', `dropdown-${Math.random().toString(36).substr(2, 9)}`); // Assign a unique ID
+            }
+            button.dataset.dropdownId = dropdown.id; // Link button to dropdown via ID
+            dropdown.style.display = 'none'; // Hide initially
+            dropdown.style.position = 'absolute'; // Ensure positioning is absolute
+            document.body.appendChild(dropdown); // Append to body immediately
+        }
+    });
+
+    function adjustDropdownPosition(button) {
+        const dropdownId = button.dataset.dropdownId;
+        const dropdown = document.getElementById(dropdownId);
+        if (!dropdown) return; // Ensure the dropdown exists
+
+        // Toggle the current dropdown
+        const isOpen = dropdown === currentOpenDropdown;
+        if (isOpen) {
+            dropdown.style.display = 'none';
+            currentOpenDropdown = null;
+            currentOpenButton = null;
+            return;
+        }
+
+        // Close any currently open dropdown
+        if (currentOpenDropdown) {
+            currentOpenDropdown.style.display = 'none';
+        }
+
+        // Temporarily make visible for measurement with visibility hidden
+        dropdown.style.visibility = 'hidden';
+        dropdown.style.display = 'block';
+
+        const rect = button.getBoundingClientRect();
+        const dropdownRect = dropdown.getBoundingClientRect(); // Get fresh measurements
+
+        // Calculate the necessary left position
+        let calculatedLeft = rect.left + window.scrollX;
+        if (rect.left + dropdownRect.width > window.innerWidth) {
+            calculatedLeft = rect.right + window.scrollX - dropdownRect.width; // Align right edge to button's right edge if overflowing
+        }
+
+        // Calculate the necessary top position
+        const spaceBelow = window.innerHeight - rect.bottom;
+        let calculatedTop = rect.bottom + window.scrollY;
+        if (spaceBelow < dropdownRect.height) {
+            calculatedTop = rect.top + window.scrollY - dropdownRect.height; // If not enough space below, expand upwards
+        }
+
+        // Set final positions and make visible
+        dropdown.style.top = `${calculatedTop}px`;
+        dropdown.style.left = `${calculatedLeft}px`;
+        dropdown.style.visibility = 'visible'; // Switch to visible
+
+        currentOpenDropdown = dropdown;
+        currentOpenButton = button;
+    }
+    // Event listeners for both action buttons and action button titles
+    document.querySelectorAll('.action-button, .action-button-title').forEach(button => {
+        button.addEventListener('click', function(event) {
+            event.stopPropagation();
+            adjustDropdownPosition(button);
+        });
+    });
+
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function() {
+        if (currentOpenDropdown) {
+            currentOpenDropdown.style.display = 'none';
+            currentOpenDropdown = null;
+            currentOpenButton = null;
+        }
+    });
+
+    // Prevent dropdown from closing when clicking inside
+    document.querySelectorAll('.action-button-dropdown').forEach(dropdown => {
+        dropdown.addEventListener('click', function(event) {
+            event.stopPropagation();
+        });
+    });
+});
+</script>
 <script>
     function getCookie(name) {
         let cookieValue = null;

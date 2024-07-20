@@ -82,7 +82,7 @@
         <div class="table-container-2">
             <table>
                 <thead>
-                    <tr>
+                    <tr class="">
 						<th></th>
 						<th id="companyNameHeader">Partner Name <span class="sort-icon desc inactive"></span></th>
 						<th id="roleHeader">Partner Role <span class="sort-icon desc inactive"></span></th>
@@ -93,7 +93,7 @@
                 </thead>
                 <tbody id="partnerTableBody">
                     {% for partner in partner_info %}
-                    <tr>
+                    <tr class="non-clickable-tr">
 						<td></td>
                         <td>{{ partner.company_name }}</td>
                         <td>{{ partner.company_role }}</td>
@@ -128,33 +128,6 @@
 {% block javascript %}
 
 <script>
-    // Function to toggle dropdown visibility
-    document.querySelectorAll('.action-button').forEach(button => {
-        button.addEventListener('click', function(e) {
-            e.stopPropagation(); // Prevents the click from propagating to other elements
-            const dropdown = this.parentNode.querySelector('.action-button-dropdown');
-
-            // Close other dropdowns first
-            document.querySelectorAll('.action-button-dropdown').forEach(d => {
-                if (d !== dropdown) {
-                    d.style.display = 'none'; // Hide other dropdowns
-                }
-            });
-
-            // Toggle current dropdown
-            const isOpen = dropdown.style.display === 'block';
-            dropdown.style.display = isOpen ? 'none' : 'block'; // Toggle visibility
-        });
-    });
-
-    // Add this to handle clicks outside of dropdowns to close them
-    document.addEventListener('click', function(e) {
-        if (!e.target.matches('.action-button, .action-button *')) {
-            document.querySelectorAll('.action-button-dropdown').forEach(dropdown => {
-                dropdown.style.display = 'none';
-            });
-        }
-    });
     // Function to delete a partner
     document.addEventListener('DOMContentLoaded', () => {
         const deleteLinks = document.querySelectorAll('#delete-partner');

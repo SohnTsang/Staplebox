@@ -20,17 +20,22 @@ from partners.utils import get_partner_info
 from folder.utils import clean_bins
 from access_control.utils import user_has_access_to
 from folder.serializers import FolderSerializer
-from documents.serializers import DocumentSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.renderers import TemplateHTMLRenderer, JSONRenderer
 from folder.serializers import FolderSerializer
-from documents.serializers import DocumentSerializer
 from document_types.serializers import DocumentTypeSerializer
 from rest_framework import generics
-from .serializers import ProductSerializer
+from .serializers import ProductSerializer, MoveEntitiesSerializer
+from django.db import IntegrityError
+from rest_framework import status
+from rest_framework.response import Response
+from access_control.models import AccessPermission
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class ProductListView(APIView):
@@ -60,8 +65,10 @@ class ProductListView(APIView):
             'root_folder_id': Folder.objects.filter(product=product, name='Root').first().id if Folder.objects.filter(product=product, name='Root').exists() else None
         } for product in products]
 
-        paginator = Paginator(products_with_root, 19)  # Adjust the count as needed
+        paginator = Paginator(products_with_root, 18)  # Adjust the count as needed
         page_obj = paginator.get_page(request.query_params.get('page', 1))
+
+        form = ProductForm()  # Initialize the create product form
 
         context = {
             'page_obj': page_obj,
@@ -69,7 +76,8 @@ class ProductListView(APIView):
             'current_direction': current_direction,
             'filter_value': filter_value,
             'filter_type': filter_type,
-            'product_count': product_count,  # Add product count to the context
+            'product_count': product_count,
+            'form': form,
         }
         return Response(context)
 
@@ -88,57 +96,48 @@ class ListProductsAPIView(generics.ListAPIView):
 
 
 
-@login_required
-def create_product(request):
-    if request.method == 'POST':
-        form = ProductForm(request.POST, user=request.user)
-        if form.is_valid():
-            product = form.save(commit=False)
-            product.user = request.user
-            product.save()
-            messages.success(request, 'Product created successfully!')
-            return redirect('products:product_list')
-    else:
-        form = ProductForm(user=request.user)
-    return render(request, 'products/product_form.html', {'form': form})
-
-
-
 class CreateProductView(APIView):
     permission_classes = [IsAuthenticated]
-    renderer_classes = [TemplateHTMLRenderer]
-    template_name = 'products/product_form.html'
-
-    def get(self, request):
-        print("get CreateProductView")
-        form = ProductForm()  # Use Django form for rendering
-        return Response({'form': form})
 
     def post(self, request):
-        print("post CreateProductView")
+        print(request.POST)
         form = ProductForm(request.POST)
         if form.is_valid():
             product = form.save(commit=False)
             product.user = request.user
             product.save()
-            messages.success(request, 'Product created')
-            return redirect('products:product_list')
-        return Response({'form': form}, template_name=self.template_name)
+            return Response({'message': 'Product created'}, status=status.HTTP_201_CREATED)
+        else:
+            # Converting errors to a more usable JSON format
+            errors = {field: [str(e) for e in errors] for field, errors in form.errors.items()}
+            print(errors)
+            return Response({'errors': errors}, status=status.HTTP_400_BAD_REQUEST)
 
 
-@login_required
-def edit_product(request, pk):
-    product = get_object_or_404(Product, pk=pk, user=request.user)
+class EditProductView(APIView):
+    permission_classes = [IsAuthenticated]
 
-    if request.method == 'POST':
-        form = ProductForm(request.POST, instance=product, user=request.user)
-        if form.is_valid():
-            form.save()
-            messages.success(request, 'Product updated successfully!')
-            return redirect('products:product_list')
-    else:
-        form = ProductForm(instance=product)
-    return render(request, 'products/product_form.html', {'form': form})
+    def get(self, request, pk, format=None):
+        product = get_object_or_404(Product, pk=pk, user=request.user)
+        serializer = ProductSerializer(product)
+        product_types = Product.PRODUCT_TYPES
+        return Response({'product': serializer.data, 'product_types': product_types})
+
+    def put(self, request, pk, format=None):
+        product = get_object_or_404(Product, pk=pk, user=request.user)
+        serializer = ProductSerializer(product, data=request.data, partial=True)
+        if serializer.is_valid():
+            try:
+                serializer.save()
+                return Response({"message": "Product updated"}, status=status.HTTP_200_OK)
+            except IntegrityError as e:
+                error_msg = str(e)
+                if "product_user_id_product_code_53834cce_uniq" in error_msg:
+                    return Response({'errors': {'product_code': ['This product code is already in use.']}}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'errors': {'non_field_errors': [error_msg]}}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+
 
 
 class ProductExplorerView(APIView):
@@ -146,8 +145,9 @@ class ProductExplorerView(APIView):
     renderer_classes = [TemplateHTMLRenderer, JSONRenderer]
     template_name = 'products/product_explorer.html'
 
-    def get(self, request, product_id, folder_id=None):
+    def get(self, request, product_id, folder_id=None, item_id=None, item_type=None):
         user = request.user
+        partner_info = get_partner_info(user)
         product = get_object_or_404(Product, id=product_id)
         root_folder, _ = Folder.objects.get_or_create(product=product, name='Root', defaults={'parent': None})
 
@@ -155,6 +155,17 @@ class ProductExplorerView(APIView):
             current_folder = get_object_or_404(Folder, id=folder_id)
         else:
             current_folder = root_folder
+
+            # Determine item to exclude access partners
+        exclude_partner_ids = []
+        if item_type and item_id:
+            item_model = Document if item_type == "document" else Folder
+            item = get_object_or_404(item_model, pk=item_id)
+            exclude_partner_ids = AccessPermission.objects.filter(
+                Q(document=item) | Q(folder=item)
+            ).values_list('partner2_id', flat=True)
+
+        partner_info = get_partner_info(user, exclude_partner_ids)
 
         breadcrumbs = [{'id': root_folder.id, 'name': product.product_name}]
         if current_folder != root_folder:
@@ -165,7 +176,13 @@ class ProductExplorerView(APIView):
         documents = Document.objects.filter(folder=current_folder).order_by('original_filename')
         document_types = DocumentType.objects.all()
 
+        # Count total folders and documents
+        total_folder_count = Folder.objects.filter(product=product).count() - 2
+
+        total_document_count = Document.objects.filter(folder__product=product).count()
+
         context = {
+            'partners': partner_info,
             'product': product,
             'current_folder': FolderSerializer(current_folder).data,
             'root_folder': root_folder,
@@ -174,6 +191,8 @@ class ProductExplorerView(APIView):
             'document_types': DocumentTypeSerializer(document_types, many=True).data,
             'breadcrumbs': breadcrumbs,
             'is_owner': product.user == user,
+            'total_folder_count': total_folder_count,
+            'total_document_count': total_document_count,
         }
 
         # Determine response type based on 'Accept' header or URL parameter
@@ -198,6 +217,7 @@ def product_explorer(request, product_id, folder_id=None):
         current_folder = get_object_or_404(Folder, id=folder_id)
     else:
         current_folder = root_folder
+
 
     # Generate breadcrumbs for navigation
     breadcrumbs = [{'id': root_folder.id, 'name': product.product_name}]
@@ -267,18 +287,26 @@ def product_explorer_bin(request, product_id):
     return render(request, 'products/product_explorer.html', context)
 
 
-@login_required
-def delete_product(request, pk):
-    product = get_object_or_404(Product, pk=pk, user=request.user)
-    if request.method == 'POST':
-        # Optional: Handle related objects (like folders) here if needed
-        # For example, delete or reassign related folders
-        Folder.objects.filter(product=product).delete()  # Adjust as necessary
+class DeleteProductView(APIView):
+    permission_classes = [IsAuthenticated]
 
-        product.delete()
-        return redirect('products:product_list')  # Adjust the redirect as needed
-    else:
-        return redirect('products:product_list')  # Adjust the redirect as needed
+    def delete(self, request, pk, format=None):
+        try:
+            product = get_object_or_404(Product, pk=pk, user=request.user)
+
+            # Handle related objects (like folders) here if needed
+            # For example, delete or reassign related folders
+            Folder.objects.filter(product=product).delete()  # Adjust as necessary
+
+            product.delete()
+            return Response({"message": "Product deleted"}, status=status.HTTP_204_NO_CONTENT)
+
+        except Product.DoesNotExist:
+            return Response({"error": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 @login_required
 def home_view(request):
@@ -309,7 +337,8 @@ def home_view(request):
 
 class MoveEntitiesView(APIView):
     
-    def get(self, request, product_id, entity_type, entity_id, current_folder_id=None):
+    def get(self, request, product_id, entity_type, entity_id, current_folder_id=None, moving_folder_id=None):
+        print("Move entities view called")
         product = get_object_or_404(Product, pk=product_id)
         root_folder, _ = Folder.objects.get_or_create(product=product, name='Root', defaults={'parent': None})
         current_folder = get_object_or_404(Folder, pk=current_folder_id) if current_folder_id else root_folder
@@ -340,30 +369,39 @@ class MoveEntitiesView(APIView):
             return JsonResponse({'html': html})
         else:
             return JsonResponse({'error': 'Invalid request type'}, status=400)
-
+    
     def post(self, request, product_id, entity_type, entity_id, current_folder_id=None):
-        product = get_object_or_404(Product, pk=product_id)
-        entity = get_object_or_404(Folder if entity_type == 'folder' else Document, pk=entity_id)
-        current_folder = get_object_or_404(Folder, pk=current_folder_id) if current_folder_id else Folder.objects.get(product=product, name='Root')
-        target_folder_id = request.data.get('target_folder_id')
-        target_folder = get_object_or_404(Folder, pk=target_folder_id)
+        # Build data for the serializer
+        data = {
+            'entity_ids': [int(entity_id)],  # Ensure IDs are integers
+            'entity_types': [entity_type],
+            'target_folder_id': int(request.data.get('target_folder_id'))
+        }
 
-        if target_folder_id == str(entity_id) and entity_type == 'folder':
-            return Response({'success': False, 'message': 'Cannot move a folder into itself.'}, status=status.HTTP_400_BAD_REQUEST)
+        serializer = MoveEntitiesSerializer(data=data)
+        if serializer.is_valid():
+            target_folder = serializer.validated_data['target_folder']
+            try:
+                with transaction.atomic():
+                    for entity_id, entity_type in zip(serializer.validated_data['entity_ids'], serializer.validated_data['entity_types']):
+                        entity = get_object_or_404(Folder if entity_type == 'folder' else Document, pk=entity_id)
 
-        if (entity_type == 'folder' and entity.parent_id == target_folder_id) or \
-           (entity_type == 'document' and entity.folder_id == target_folder_id):
-            return Response({'success': False, 'message': 'Item is already in this location.'}, status=status.HTTP_400_BAD_REQUEST)
+                        # Perform the move logic as needed
+                        if entity_type == 'folder':
+                            entity.parent = target_folder
+                        else:
+                            entity.folder = target_folder
+                        entity.save()
 
-        with transaction.atomic():
-            if entity_type == 'folder':
-                entity.parent = target_folder
-            else:
-                entity.folder = target_folder
-            entity.save()
-
-        redirect_url = reverse('products:product_explorer_folder', kwargs={'product_id': product_id, 'folder_id': current_folder.id})
-        return Response({'success': True, 'message': 'Item moved', 'redirect': redirect_url})
+                return Response({'success': True, 'message': 'Entities moved'}, status=status.HTTP_200_OK)
+            
+            except Exception as e:
+                logger.error(f"Failed to move entities for product {product_id}: {str(e)}")
+                return Response({'success': False, 'message': 'Failed to move entities due to a server error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        else:
+            logger.error(f"Validation errors: {serializer.errors}")
+            return Response({'success': False, 'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
     def get_breadcrumbs(self, folder, product, root_folder):
         breadcrumbs = [{'id': root_folder.id, 'name': product.product_name}]
@@ -500,7 +538,6 @@ class FolderContentView(APIView):
         subfolders = Folder.objects.filter(parent=folder).order_by('name')
         documents = Document.objects.filter(folder=folder)
         is_empty = not subfolders.exists() and not documents.exists()
-
         if moving_folder_id and moving_folder_id.isdigit():
             moving_folder_id = int(moving_folder_id)
         else:

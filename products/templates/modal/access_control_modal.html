@@ -1,105 +1,400 @@
-{% load static %}
+<style>
+
+
+.modal-body-access {
+    max-height: 500px;
+}
+
+.modal-content-access {
+    max-width: 550px;
+}
+
+.tabs {
+    overflow: hidden;
+    border-bottom: 1px solid #ccc;
+}
+
+.tablinks {
+    float: left;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    padding: 14px 16px;
+    transition: 0.3s;
+    font-size: 17px;
+}
+
+.tablinks:hover {
+    background-color: #ddd;
+}
+
+.tab-content-access {
+    display: block;
+    min-height: 40vh;
+    max-height: 40vh;
+    overflow-y: auto;
+}
+
+.tabcontent {
+    border-top: none;
+}
+
+.partner-info {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 10px;
+    align-items: center;
+}
+
+.partner-name, .partner-role {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.partner-with-access {
+    padding: 5px 10px 5px 10px !important;
+}
+
+.partner-info.grayed-out {
+    color: #aaa;
+}
+
+.partners-list {
+    position: relative; /* Ensure the loading overlay is positioned correctly */
+}
+
+</style>
 
 <!-- Access Control Modal -->
-<div class="modal fade" id="accessControlModal" tabindex="-1" aria-labelledby="accessControlModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content modal-content-lg">
-            <div class="modal-header border-0">
-                <h5 class="modal-title" id="accessControlModalLabel">Access Control</h5>
+<div class="modal fade" id="accessControlModal">
+    <div class="modal-dialog">
+        <div class="modal-content modal-content-access">
+            <div class="modal-title" id="accessControlModalLabel">Access Control</div>
+            <div class="tabs">
+                <div class="tab active" data-tab="AllPartners">All Partners</div>
+                <div class="tab" data-tab="PartnersWithAccess" id="partnersWithAccessTab">Granted</div>
             </div>
-            <form method="post" id="accessControlForm">
-                {% csrf_token %}
-                <div class="modal-body">
-                    <div class="row">
-                        <!-- All Partners Column -->
-                        <div class="col-md-6">
-                            <h6>All Partners</h6>
-                            <div class="tab-content" id="all-partners" style="max-height:39vh;">
-                                <div class="list-group" id="all-partner-information">
-                                    {% for partner in partners %}
-                                    <div class="list-group-item flex-column">
-                                        <div class="d-flex py-1">
-                                            <div class="form-check align-content-center">
-                                                <input type="checkbox" name="partners" value="{{ partner.partner_id }}" id="partner_{{ partner.partner_id }}" class="form-check-input custom-checkbox">
-                                            </div>
-                                            <div class="ps-3">
-                                                <div class="fw-less-bold">{{ partner.company_name }}</div>
-                                                <div class="text-primary-custom fw-medium small">{{ partner.company_role|title }}</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    {% empty %}
-                                    <small class="mt-3">No partners available</small>
-                                    {% endfor %}
+            <div class="modal-body-access">
+                <form method="post" id="accessControlForm">
+                    <div class="tab-content-access">
+                        
+                        <div id="AllPartners" class="tabcontent">
+                            <strong>All Partners</strong>
+                            <ul class="partners-list" id="partnersList">
+                                <div class="loading-overlay">
+                                    <div class="loading-spinner"></div>
                                 </div>
-                            </div>
+                                <div class="partners-content">
+                                    <!-- Partners will be dynamically populated here -->
+                                </div>
+                            </ul>
                         </div>
-
-                        <!-- Partners Granted Access Column -->
-                        <div class="col-md-6">
-                            <h6>Partners with Access</h6>
-                            <div class="tab-content" id="partners-granted-access" style="max-height:39vh;">
-                                <div class="list-group" id="granted-partner-information">
-                                    <!-- Dynamically populated based on backend logic -->
-                                    {% for partner in partner_with_access_info %}
-                                    <div class="list-group-item flex-column">
-                                        <div class="d-flex py-1">
-                                            <div class="form-check" style="align-self: center;">
-                                                <input type="checkbox" checked disabled name="granted_partners" value="{{ partner.partner_id }}" id="granted_partner_{{ partner.partner_id }}" class="form-check-input">
-                                            </div>
-                                            <div class="ps-3">
-                                                <div class="fw-less-bold">{{ partner.company_name }}</div>
-                                                <div class="text-primary-custom fw-medium small">{{ partner.company_role|title }}</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    {% empty %}
-                                    <small class="mt-3">No access granted to any partners</small>
-                                    {% endfor %}
+                        
+                        <div id="PartnersWithAccess" class="tabcontent">
+                            <strong>Partners with Access</strong>
+                            <ul class="partners-list" id="partnersWithAccessList">
+                                <div class="loading-overlay">
+                                    <div class="loading-spinner"></div>
                                 </div>
-                            </div>
+                                <div class="partners-content">
+                                    <!-- List to be populated dynamically -->
+                                </div>
+                            </ul>
                         </div>
                     </div>
+                </form>
+                <div class="modal-footer" style="margin-top:0;">
+                    <input type="hidden" name="item_id" id="item_id" value="{{ item_id }}">
+                    <input type="hidden" name="item_type" id="item_type" value="{{ item_type }}">
+                    <button type="button" class="cancel-btn" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="add-btn" form="accessControlForm">Share</button>
                 </div>
-                <div class="modal-footer border-0 p-1">
-                    <input type="hidden" name="item_id" id="item_id" value="">
-                    <input type="hidden" name="item_type" id="item_type" value="">     
-                    <button type="button" class="btn text-primary-custom text-15" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn fw-less-bold text-primary-custom text-15">Grant</button>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
 </div>
 
+
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const form = document.getElementById('accessControlForm');
-        form.addEventListener('submit', function(event) {
-            event.preventDefault(); // Prevent the default form submission
 
-            const formData = new FormData(form);
-            const productId = "{{ product.id }}"; // Dynamically set the productId using Django's template language
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('accessControlModal');
+    const partnersList = modal.querySelector('#partnersList .partners-content');
+    const partnersWithAccessList = modal.querySelector('#partnersWithAccessList .partners-content');
+    const allPartnersLoadingOverlay = modal.querySelector('#partnersList .loading-overlay');
+    const partnersWithAccessLoadingOverlay = modal.querySelector('#partnersWithAccessList .loading-overlay');
 
-            fetch(`/access_control/grant_access/${productId}/`, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    setSessionMessage('Access granted', 'success');
-                    location.reload(); // Reload the page to reflect changes
-                } else {
-                    setSessionMessage('Error updating document: ' + Object.values(data.errors).join(', '), 'error');
-                    location.reload(); // Reload the page to reflect changes
-                }
-            })
-            .catch(error => setSessionMessage('Failed to update document due to a network error.', 'error'));
-            location.reload(); // Reload the page to reflect changes
+    // Clear modal data when it is hidden
+    modal.addEventListener('hidden.bs.modal', function() {
+        partnersList.innerHTML = ''; // Clear All Partners list
+        partnersWithAccessList.innerHTML = ''; // Clear Partners with Access list
+
+        // Reset loading overlays
+        if (allPartnersLoadingOverlay) {
+            allPartnersLoadingOverlay.style.display = 'none';
+        }
+        if (partnersWithAccessLoadingOverlay) {
+            partnersWithAccessLoadingOverlay.style.display = 'none';
+        }
+    });
+
+    document.querySelectorAll('[data-bs-toggle="modal"][data-bs-target="#accessControlModal"]').forEach(element => {
+        element.addEventListener('click', function() {
+            const productId = this.getAttribute('data-product-id');
+            const folderId = this.getAttribute('data-folder-id');
+            const documentId = this.getAttribute('data-document-id');
+            const itemType = folderId ? 'folder' : 'document';
+            const itemId = folderId || documentId;
+
+            // Set the item_id and item_type values in the form
+            modal.querySelector('#item_id').value = itemId;
+            modal.querySelector('#item_type').value = itemType;
+
+            // Show loading spinner
+            if (allPartnersLoadingOverlay) {
+                allPartnersLoadingOverlay.style.display = 'flex';
+            }
+            if (partnersWithAccessLoadingOverlay) {
+                partnersWithAccessLoadingOverlay.style.display = 'flex';
+            }
+
+            // Fetch partners with access
+            let url = `/access_control/get_partners_with_access_json/${itemId}/${itemType}/`;
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    partnersWithAccessList.innerHTML = '';  // Clear previous entries
+
+                    if (Array.isArray(data) && data.length === 0) {
+                        partnersWithAccessList.innerHTML = '<p>No access granted to any partners</p>';
+                    } else if (Array.isArray(data)) {
+                        data.forEach(partner => {
+                            const li = document.createElement('li');
+                            li.className = 'partner-info partner-with-access';
+                            li.innerHTML = `
+                                <div class="partner-name">${partner.company_name}</div>
+                                <small class="partner-role">${partner.company_role}</small>
+                                <button type="button" class="remove-btn" data-partner-id="${partner.partner2_id}" data-item-id="${itemId}" data-item-type="${itemType}" data-company-name="${partner.company_name}" data-company-role="${partner.company_role}">Remove</button>
+                            `;
+                            partnersWithAccessList.appendChild(li);
+                        });
+
+                        // Add event listeners to remove buttons
+                        document.querySelectorAll('.remove-btn').forEach(button => {
+                            button.addEventListener('click', function() {
+                                const partnerId = this.getAttribute('data-partner-id');
+                                const itemId = this.getAttribute('data-item-id');
+                                const itemType = this.getAttribute('data-item-type');
+                                const companyName = this.getAttribute('data-company-name');
+                                const companyRole = this.getAttribute('data-company-role');
+
+                                fetch(`/access_control/remove_specific_access/${productId}/${itemType}/${itemId}/`, {
+                                    method: 'POST',
+                                    headers: {
+                                        'X-CSRFToken': getCookie('csrftoken'),
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify({ partner_id: partnerId })
+                                })
+                                .then(response => response.json())
+                                .then(data => {
+                                    if (data.success) {
+                                        // Remove the partner element from the list
+                                        button.parentElement.remove();
+
+                                        // Update the "All Partners" tab
+                                        const partnerItem = partnersList.querySelector(`[data-partner-id="${partnerId}"]`);
+                                        if (partnerItem) {
+                                            partnerItem.classList.remove('grayed-out');
+                                            partnerItem.classList.add('selected');
+                                        } else {
+                                            // If the partner is not already in the "All Partners" list, add them back
+                                            const newPartnerItem = document.createElement('li');
+                                            newPartnerItem.className = 'partner-info';
+                                            newPartnerItem.setAttribute('data-partner-id', partnerId);
+                                            newPartnerItem.innerHTML = `
+                                                <div class="partner-name">${companyName}</div>
+                                                <div class="partner-role">${companyRole}</div>
+                                            `;
+                                            newPartnerItem.addEventListener('click', function() {
+                                                this.classList.toggle('selected');
+                                            });
+                                            partnersList.appendChild(newPartnerItem);
+
+                                            const noPartnersMessage = partnersList.querySelector('p');
+                                            if (noPartnersMessage) {
+                                                noPartnersMessage.remove();
+                                            }
+                                        }
+                                    } else {
+                                        console.error('Failed to remove access:', data.error);
+                                    }
+                                })
+                                .catch(error => console.error('Error removing access:', error));
+                            });
+                        });
+                    } else {
+                        console.error('Unexpected data format:', data);
+                    }
+
+                    // Hide loading spinner
+                    if (partnersWithAccessLoadingOverlay) {
+                        partnersWithAccessLoadingOverlay.style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading partner data:', error);
+                    // Hide loading spinner in case of error
+                    if (partnersWithAccessLoadingOverlay) {
+                        partnersWithAccessLoadingOverlay.style.display = 'none';
+                    }
+                });
+
+            // Fetch partners without access
+            let urlWithoutAccess = `/access_control/get_partners_without_access/${productId}/${itemId}/${itemType}/`;
+            console.log(urlWithoutAccess);
+            fetch(urlWithoutAccess)
+                .then(response => response.json())
+                .then(data => {
+                    partnersList.innerHTML = '';  // Clear previous entries
+
+                    if (Array.isArray(data) && data.length === 0) {
+                        partnersList.innerHTML = '<p>No partners available</p>';
+                    } else if (Array.isArray(data)) {
+                        data.forEach(partner => {
+                            const li = document.createElement('li');
+                            li.className = 'partner-info';
+                            li.setAttribute('data-partner-id', partner.partner_id);
+                            li.innerHTML = `
+                                <div class="partner-name">${partner.company_name}</div>
+                                <div class="partner-role">${partner.company_role}</div>
+                            `;
+                            partnersList.appendChild(li);
+
+                            // Add event listener to toggle 'selected' class
+                            li.addEventListener('click', function() {
+                                this.classList.toggle('selected');
+                            });
+                        });
+
+                        // Remove 'No partners available' message if it exists
+                        const noPartnersMessage = partnersList.querySelector('p');
+                        if (noPartnersMessage) {
+                            noPartnersMessage.remove();
+                        }
+
+                    } else {
+                        console.error('Unexpected data format:', data);
+                    }
+
+                    // Hide loading spinner
+                    if (allPartnersLoadingOverlay) {
+                        allPartnersLoadingOverlay.style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading partner data:', error);
+                    // Hide loading spinner in case of error
+                    if (allPartnersLoadingOverlay) {
+                        allPartnersLoadingOverlay.style.display = 'none';
+                    }
+            });
         });
     });
+
+    const form = document.getElementById('accessControlForm');
+    const partnerListItems = document.querySelectorAll('#partnersList .partner-info');
+
+    // Toggle 'selected' class on partner list items
+    partnerListItems.forEach(item => {
+        item.addEventListener('click', function() {
+            if (!this.classList.contains('grayed-out')) {
+                this.classList.toggle('selected');
+            }
+        });
+    });
+
+    form.addEventListener('submit', function(event) {
+        event.preventDefault(); // Prevent the default form submission
+
+        const formData = new FormData(this);
+        const productId = "{{ product.id }}"; // Dynamically set the productId using Django's template language
+
+        formData.append('item_id', document.getElementById('item_id').value);
+        formData.append('item_type', document.getElementById('item_type').value);
+
+        // Add selected partners to formData
+        const selectedPartners = document.querySelectorAll('.partner-info.selected');
+        selectedPartners.forEach(partner => {
+            formData.append('partners', partner.getAttribute('data-partner-id'));
+        });
+
+        fetch(`/access_control/grant_access/${productId}/`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken') // Make sure CSRF token is correctly fetched
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                setSessionMessage('Access granted', 'success');
+                location.reload(); // Reload the page to reflect changes
+            } else {
+                showMessage('Error granting access: ' + Object.values(data.errors).join(', '), 'error');
+            }
+        })
+        .catch(error => {
+            showMessage('Failed to grant access due to a network error.', 'error');
+        });
+    });
+});
+
+// Tabbed modal content
+document.addEventListener('DOMContentLoaded', function() {
+    const tabs = document.querySelectorAll('.tab'); // Get all tab elements
+    const tabContents = document.querySelectorAll('.tabcontent'); // Get all tab content elements
+
+    function deactivateAllTabs() {
+        tabs.forEach(tab => {
+            tab.classList.remove('active'); // Remove active class from all tabs
+        });
+        tabContents.forEach(content => {
+            content.style.display = 'none'; // Hide all tab contents
+        });
+    }
+
+    function activateTab(tab) {
+        const contentId = tab.getAttribute('data-tab'); // Get the content ID that the tab corresponds to
+        const content = document.getElementById(contentId); // Find the corresponding content element
+        
+        if (!content) {
+            return; // Exit the function if no content element is found
+        }
+
+        deactivateAllTabs(); // Hide all other tabs and contents
+        tab.classList.add('active'); // Mark this tab as active
+        content.style.display = 'block'; // Show this tab's content
+    }
+
+    // Set click event listeners on tabs
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            activateTab(this); // Activate the clicked tab
+        });
+    });
+
+    // Initialize by showing the content for the first tab when the modal opens
+    if (tabs.length > 0) {
+        activateTab(tabs[0]); // Assume the first tab is "All Partners"
+    }
+});
+
 </script>

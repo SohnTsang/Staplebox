@@ -1,19 +1,19 @@
 from django.urls import path
 from . import views
-from .views import EditComment, UpdateDocument, UploadDocumentPartnerView
+from .views import EditComment, UpdateDocument, UploadDocumentPartnerView, DocumentUploadView, DeleteDocumentView
 
 
 
 app_name = 'documents'
 
 urlpatterns = [
-    path('products/<int:product_id>/folders/<int:folder_id>/upload_document/', views.upload_document, name='upload_document'),
+    path('products/<int:product_id>/folders/<int:folder_id>/upload_document/', DocumentUploadView.as_view(), name='upload_document'),
     
     ##path('folders/<int:folder_id>/upload_document_partner/', views.upload_document_partner, name='upload_document_partner'),
     path('folders/<int:folder_id>/upload_document_partner/', UploadDocumentPartnerView.as_view(), name='upload_document_partner'),
 
+    path('delete_documents/', DeleteDocumentView.as_view(), name='delete_documents'),  # For multiple deletions
 
-    path('delete/<int:document_id>/', views.delete_document, name='delete_document'),
     path('products/<int:product_id>/folders/<int:folder_id>/documents/', views.get_documents, name='get_documents'),
     path('document/<int:document_id>/versions/', views.document_versions, name='document_versions'),
     path('document/<int:document_id>/<int:version_id>/', views.download_document, name='download_document'),

@@ -1,12 +1,13 @@
 {% extends "base_users.html" %}
 {% load static %}
-{% load crispy_forms_tags %}
-{% load crispy_forms_filters %}
+{% load custom_filters %}
+{% load file_tags %}
 
-{% block title %}Product Directory{% endblock %}
+{% block title %}Product Directory {% endblock %}
 
-
-{% block extra_css %}
+{% block css %}
+<link rel="stylesheet" type="text/css" href="{% static 'exports/css/style.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'exports/css/modal.css' %}">
 
 <style>
 
@@ -194,393 +195,217 @@
         font-size: 0.9rem;
     }
 
+    /* Column widths */
+    th:nth-child(1), td:nth-child(1) {
+        width: 3%;
+        text-align: center;
+    }
+
+    th:nth-child(2), td:nth-child(2) {
+        width: 30%;
+    }
+
+    th:nth-child(3), td:nth-child(3) {
+        width: 17%;
+    }
+
+    th:nth-child(4), td:nth-child(4) {
+        width: 15%;
+    }
+
+    th:nth-child(5), td:nth-child(5) {
+        width: 10%;
+    }
+
+    th:nth-child(6), td:nth-child(6) {
+        width: 5%;
+        text-align: center;
+    }
+
 </style>
-{% endblock extra_css %}
+{% endblock %}
 
 {% block content %}
 
-
-<div id="product-explorer" data-product-id="{{ product.id }}" data-root-folder-id="{{ root_folder_id }}" class="container-fluid mt-1" data-product-id="{{ product.id }}">
-    <div class="row">
-        <div id="left-explorer" class="col-md-12 col-lg-9 pe-lg-2">
-            <div class="rounded-2 upper-wrapper vh-13 d-flex align-items-center"> <!-- Added Flexbox classes for vertical centering -->
-                <div class=""> <!-- Added a container for better control over the padding and alignment -->
-                    <div class="main-title px-4">
-                        <h5 class="fw-bold"><a href="{% url 'products:product_explorer_folder' product_id=product.id folder_id=root_folder.id %}" class="text-primary-custom">{{ product.product_name }}</a></h5>
-                    </div>
-                    <div class="product-info">
-                        <div class="info-box">
-                            <div class="info-title">Product Code</div>
-                            <div class="info-content">{{ product.product_code }}</div>
+<main>
+    <div id="product-explorer" data-product-id="{{ product.id }}" data-root-folder-id="{{ root_folder_id }}" class="">
+        <input type="hidden" id="productId" value="{{ product.id }}">
+        <div class="background-overlay"></div>
+        <div class="content-section">
+            <div class="content-header-product-directory">
+                <div class="header-top">
+                    <div class="header-title-product">
+                        <h3>{{ product.product_name }}</h3>
+                        <div class="subheading">
+                            <div><strong>Product Code:</strong> {{ product.product_code }}</div>
+                            <div><strong>Product Type:</strong> {{ product.product_type }}</div>
+                            <div><strong>Description:</strong> {{ product.product_description }}</div>
                         </div>
-                        <div class="info-box">
-                            <div class="info-title">Description</div>
-                            <div class="info-content">{{ product.product_description }}</div>
-                        </div>
+                        
                     </div>
-                </div>
-            </div>
-            
-            <div class="my-3-custom"> <!-- This div creates a vertical gap between the two wrappers -->
-                <!-- Adjust the margin as needed to increase or decrease the gap -->
-            </div>
-            
-            <div class="rounded-2 wrapper vh-79"> <!-- Adjusted vh-47 for visual height -->
-                <div id="folders-container" class="ms-3 mt-3">
-                    <nav aria-label="breadcrumb">
-                        <ol class="breadcrumb">
-                            {% for breadcrumb in breadcrumbs %}
-                                <li class="breadcrumb-item">
-                                    {% if forloop.last %}
-                                        <span class="p-2 h6 fw-bold">{{ breadcrumb.name }}</span>
-                                    {% else %}
-                                        <a href="{% url 'products:product_explorer_folder' product_id=product.id folder_id=breadcrumb.id %}" class="text-primary-custom opacity-75 breadcrumb-navigation p-2 h6">{{ breadcrumb.name }}</a>
-                                    {% endif %}
-                                </li>
-                            {% endfor %}
-                        </ol>
-                    </nav>
-                </div>
-                
-                <div class="d-flex justify-content-start align-items-center mb-2 pt-1 px-4">
                     {% if is_owner %}
-                        <noscript>
-                            <form id="create-folder-form" method="post" action="{% url 'products:folder_create' product_id=product.id %}" class="">
-                                {% csrf_token %}
-                                <div class="row g-2 align-items-center">
-                                    <div class="col-auto">
-                                        <input type="text" class="form-control" placeholder="New Folder Name" id="folderName" name="name" required>
-                                        <button class="btn btn-modern" type="submit">Create Folder</button>
-                                    </div>
-                                    {% if current_folder %}
-                                        <input type="hidden" id="parentFolderId" name="parent_id" value="{{ current_folder.id }}">
-                                    {% else %}
-                                        <input type="hidden" id="parentFolderId" name="parent_id" value="{{ root_folder.id }}">
-                                    {% endif %}
-                                </div>
-                            </form>
-                        </noscript>
-                        <!-- Spacer div to push the next element(s) to the right -->
-                        <div class="gap-4 d-flex">
-                            {% if not bin %}
-                                <button type="button" class="btn align-items-center justify-content-center img-wrapper" data-bs-toggle="modal" title="Create New Folder" data-bs-delay='{"show": 500, "hide": 100}' data-bs-target="#createFolderModal" style="background: none; border: none; padding: 0;">
-                                    <img src="{% static 'images/navbar_icon/new_folder.png' %}" alt="New Folder" style="height: 20px; width: 21px;">
-                                </button>
-                                <button type="button" class="btn align-items-center justify-content-center img-wrapper" data-bs-toggle="modal" title="Upload Document" data-bs-delay='{"show": 500, "hide": 100}' data-bs-target="#uploadDocumentModal" style="background: none; border: none; padding: 0;">
-                                    <img src="{% static 'images/navbar_icon/upload_file.png' %}" alt="New Folder" style="height: 20px; width: 21px;">
-                                </button>
-                            {% else %}
-
-                            {% endif %}
+                    <div class="button-group">
+                        <div class="bulk-action-wrapper">
+                            <button class="button-bulk-action" id="bulkActionButton" disabled>
+                                Bulk Action
+                                <img src="{% static 'images/table_icon/arrow_drop_down_24dp_FILL0_wght400_GRAD0_opsz24_333333.png' %}" alt="Visibility" class="icon-bulk-action" id="bulkActionIcon"> 
+                            </button>
+                            <div class="bulk-action-dropdown" id="bulkActionDropdown">
+                                <a href="#" id="shareAccess" class="" data-product-id="{{ product.id }}">Share</a>
+                                <a href="#" id="deleteSelectedItems" class="bulk-action-delete text-danger">Delete</a>
+                            </div>
                         </div>
-                        <div class="ms-auto"></div>
-                        <div class="gap-4 d-flex">
-                            {% if not bin %}
-                                <a href="{% url 'products:product_explorer_bin' product_id=product.id %}" class="btn align-items-center justify-content-center img-wrapper" title="Bin Folder" data-bs-delay='{"show": 500, "hide": 100}' style="background: none; border: none; padding: 0;">
-                                    <img src="{% static 'images/navbar_icon/bin.png' %}" alt="Bin" style="height: 20px; width: 20px;">  <!-- Ensure you have an icon for the bin -->
-                                </a>
-                            {% else %}
-                                <a href="{% url 'products:product_explorer_folder' product_id=product.id folder_id=root_folder.id %}" class="btn align-items-center justify-content-center img-wrapper" title="Product Folder" data-bs-delay='{"show": 500, "hide": 100}' style="background: none; border: none; padding: 0;">
-                                    back to folder
-                                </a>
-                            {% endif %}
-                            <!-- This link/button will be aligned to the right -->
-                            <a href="{% url 'access_control:manage_access' product_id=product.id %}" class="btn-modern text-white" style="font-size:13px;">Manage Access</a>
+                        <div class="action-button-container">
+                            <button class="button-8 action-button-title" data-dropdown-target="ActionDropdown">
+                                New
+                            </button>
+                            <div class="action-button-dropdown dropdown-content" id="ActionDropdown">
+                                <a href="#" data-bs-toggle="modal" data-bs-target="#createFolderModal">New Folder</a>
+                                <a href="#" data-bs-toggle="modal" id="openUploadModaProductlBtn" data-bs-target="#uploadDocumentModal">New Document</a>
+                            </div>
+                            <a href="{% url 'access_control:manage_access' product_id=product.id %}" class="button-8">Access</a>
                         </div>
-                    {% else %}
+                    </div>
                     {% endif %}
                 </div>
+            
+                <div class="header-bottom">
 
-                <div class="table-responsive px-4">
-                    <table class="table document-table table-hover align-middle">
-                        <thead>
-                            <tr class="">
-                                <th scope="col" class="small name-header">Name</th>
-                                <th scope="col" class="small">Category</th>
-                                <th scope="col" class="small">Date Modified</th>
-                                <th scope="col" class="small">Version</th>
-                                <th scope="col" class="fixed-width-header"></th>
-                            </tr>
-                        </thead>
-                        
-                        <tbody>
+                    <div style="margin: 15px 0 5px 0;"><small>Folders: {{ total_folder_count }} | Documents: {{ total_document_count }}</small></div>
+                    
+                    <div class="filter-sort">
+                        <form method="get" action="" id="filterSortForm">
+                            <button type="reset" class="btn-reset" id="resetButton">Reset</button>
+                            <input type="text" class="form-control" id="filter_value" name="filter_value" value="{{ request.GET.filter_value }}" placeholder="Search Partners" aria-label="Filter...">
+                            <select class="form-select" name="filter_type" aria-label="Filter type">
+                                <option value="company_name" {% if request.GET.filter_type == 'company_name' %}selected{% endif %}>Name</option>
+                                <option value="email" {% if request.GET.filter_type == 'email' %}selected{% endif %}>Email</option>
+                                <option value="role" {% if request.GET.filter_type == 'role' %}selected{% endif %}>Role</option>
+                            </select>
+                            <button type="submit" class="btn-submit">Apply</button>
+                        </form>
+                        {% if form.errors %}
+                            {% for field in form %}
+                                {% if field.errors %}
+                                    <div id="alert-message" class="alert alert-danger fw-bold" role="alert">
+                                        {{ field.errors|first }}
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="breadcrumb-section" style="margin: 15px 0 5px 0; padding-left:2px;">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        {% for breadcrumb in breadcrumbs %}
+                        <li class="breadcrumb-item">
+                            {% if forloop.last %}
+                            <span class="p-2 h6 fw-bold">{{ breadcrumb.name }}</span>
+                            {% else %}
+                            <a href="{% url 'products:product_explorer_folder' product_id=product.id folder_id=breadcrumb.id %}" class="breadcrumb-navigation">{{ breadcrumb.name }}</a>
+                            {% endif %}
+                        </li>
+                        {% endfor %}
+                    </ol>
+                </nav>
+            </div>
+
+            <div class="table-container-2" style="margin-top: 0px;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" id="selectAllItems"></th>
+                            <th>Name <span class="sort-icon desc inactive"></span></th>
+                            <th>Category <span class="sort-icon desc inactive"></span></th>
+                            <th>Date Modified <span class="sort-icon desc inactive"></span></th>
+                            <th>Version <span class="sort-icon desc inactive"></span></th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if subfolders or documents %}
                             <!-- Folders -->
                             {% for folder in subfolders %}
-                            <!--<tr class="clickable-row" onclick="window.location='{% url 'products:product_explorer_folder' product_id=product.id folder_id=folder.id %}';">-->
-                                <tr class="clickable-row {% if bin %}in-bin{% endif %}" draggable="true" data-id="{{ folder.id }}" data-owner="{{ folder.created_by }}" data-name="{{ folder.name }}" data-modified="{{ folder.updated_at|date:"Y-m-d H:i" }}" data-created="{{ folder.created_at|date:"Y-m-d H:i" }}" data-type="folder">
-                                    <td class="small name-cell">
-                                        <svg class="me-2" width="23" height="20" viewBox="0 0 17 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M16 6.32099V12.642C16 13.4751 15.3473 14.1576 14.5194 14.2179L14.4 14.2222H1.6C0.75651 14.2222 0.0654679 13.5776 0.00438862 12.7599L0 12.642L0 6.32099L16 6.32099ZM6.0155 0C6.45292 0 6.86907 0.176755 7.16925 0.485378L7.26488 0.593075L8.38448 1.97531L14.4 1.97531C15.2435 1.97531 15.9345 2.61995 15.9956 3.43762L16 3.55556V4.74074L0 4.74074L0 1.58025C0 0.747171 0.652702 0.0646597 1.48059 0.00433444L1.6 0L6.0155 0Z" fill="#CCA92D"/>
-                                        </svg>
-                                        {% if bin %}
-                                            <span class="fw-less-bold">{{ folder.name }}</span> <!-- Non-clickable text for bin folders -->
-                                        {% else %}
-                                            <a href="{% url 'products:product_explorer_folder' product_id=product.id folder_id=folder.id %}">
-                                                <span class="fw-less-bold">{{ folder.name }}</span>
-                                            </a>
-                                        {% endif %}
-                                    </td>
-                                    <td class="text-muted-weight small"> — </td>
-                                    <td class="text-muted-weight small">{{ folder.updated_at|date:"Y-m-d H:i" }}</td>
-                                    <td class="text-muted-weight small ps-4"> — </td>
-                                    <td class="text-center">
-                                        <div class="dropdown img-wrapper">
-                                            <button class="btn btn-secondary dropdown-toggle px-0 py-1" type="button" id="actionDropdown{{ forloop.counter }}" data-bs-toggle="dropdown" aria-expanded="false">
-                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                    <g clip-path="url(#clip0_1417_12)">
-                                                        <rect x="12" y="12" width="0.01" height="0.01" stroke="#292929" stroke-width="3" stroke-linejoin="round"/>
-                                                        <rect x="12" y="5" width="0.01" height="0.01" stroke="#292929" stroke-width="3" stroke-linejoin="round"/>
-                                                        <rect x="12" y="19" width="0.01" height="0.01" stroke="#292929" stroke-width="3" stroke-linejoin="round"/>
-                                                    </g>
-                                                    <defs>
-                                                        <clipPath id="clip0_1417_12">
-                                                            <rect width="40" height="40" fill="white" transform="translate(0 0.000915527)"/>
-                                                        </clipPath>
-                                                    </defs>
-                                                </svg>
-                                            </button>
-                                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionDropdown{{ forloop.counter }}">
-                                                {% if bin %}
-                                                    <li>
-                                                        <form action="{% url 'folder:restore_folder' folder_id=folder.id %}" method="post">
-                                                            {% csrf_token %}
-                                                            <button type="submit" class="dropdown-item">
-                                                                <i class="fas fa-recycle"></i> &nbsp; Restore
-                                                            </button>
-                                                        </form>
-                                                    </li>
-                                                    <li><hr class="dropdown-divider"></li>
-                                                    <!-- Permanently Delete Action -->
-                                                    <li>
-                                                        <form action="{% url 'folder:delete_folder' folder_id=folder.id %}" method="post" onsubmit="return confirm('Are you sure you want to permanently delete this folder?');">
-                                                            {% csrf_token %}
-                                                            <button type="submit" class="dropdown-item text-danger">
-                                                                <i class="fas fa-trash-alt"></i> &nbsp; Delete Permanently
-                                                            </button>
-                                                        </form>
-                                                    </li>
-                                                {% else %}
-                                                    <li>
-                                                        <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#accessControlModal" data-folder-id="{{ folder.id }}" data-product-id="{{ product.id }}">
-                                                            <i class="fas fa-user"></i> &nbsp; Share
-                                                        </a>
-                                                    </li>
-
-                                                    <li>
-                                                        <a class="dropdown-item edit-folder" href="#" data-bs-toggle="modal" data-bs-target="#editFolderModal" data-folder-id="{{ folder.id }}" data-product-id="{{ product.id }}">
-                                                            <i class="fas fa-edit"></i> &nbsp; Edit
-                                                        </a>
-                                                    </li>
-
-                                                    <!-- Update Action -->
-                                                    <li>
-                                                        <a href="#" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#moveEntityModal"
-                                                        data-entity-type="folder" data-entity-id="{{ folder.id }}" data-product-id="{{ product.id }}" data-moving-folder-id="{{ folder.id }}"
-                                                        data-current-folder-id="{{ folder.parent.id }}" data-url="{% url 'products:move_entity' product_id=product.id entity_type='folder' entity_id=folder.id current_folder_id=folder.parent.id %}">
-                                                            <i class="fas fa-user"></i> &nbsp; Move
-                                                        </a>
-                                                    </li>
-
-                                                    <li><hr class="dropdown-divider"></li>
-                                                    <!-- Delete Action -->
-                                                    <li>
-                                                        <form action="{% url 'folder:move_to_bin_folder' folder_id=folder.id %}" method="post">
-                                                            {% csrf_token %}
-                                                            <button type="submit" class="dropdown-item text-danger">
-                                                                <i class="fas fa-trash"></i> &nbsp; Move to Bin
-                                                            </button>
-                                                        </form>
-                                                    </li>
-                                                {% endif %}
-                                            </ul>
+                            <tr class="clickable-td" data-href="{% url 'products:product_explorer_folder' product_id=product.id folder_id=folder.id %}" data-id="{{ folder.id }}" data-owner="{{ folder.created_by }}" data-name="{{ folder.name }}" data-modified="{{ folder.updated_at|date:"Y-m-d H:i" }}" data-created="{{ folder.created_at|date:"Y-m-d H:i" }}" data-type="folder">
+                                <td class="checkbox-cell" style="cursor: default;"><input class="folder-checkbox" type="checkbox"></td>
+                                <td class="name-cell">
+                                    <img src="{% static 'images/table_icon/folder.png' %}" alt="File Icon" class="folder-icon">
+                                    <span class="">{{ folder.name }}</span>
+                                </td>
+                                <td class="text-muted-weight">Folder</td>
+                                <td class="text-muted-weight">{{ folder.updated_at|date:"Y-m-d H:i" }}</td>
+                                <td class="text-muted-weight ps-4">—</td>
+                                <td class="actions">
+                                    <div class="action-button-container">
+                                        <button class="action-button" data-dropdown-target="actionDropdown{{ forloop.counter }}">
+                                            <img src="{% static 'images/table_icon/more_vert_24dp_FILL0_wght400_GRAD0_opsz24_333333.png' %}" alt="Actions">
+                                        </button>
+                                        <div class="action-button-dropdown dropdown-content" id="actionDropdown{{ forloop.counter }}">
+                                            <a href="#" data-bs-toggle="modal" data-bs-target="#accessControlModal" data-folder-id="{{ folder.id }}" data-product-id="{{ product.id }}">Share</a>
+                                            <a href="#" data-bs-toggle="modal" data-bs-target="#editFolderModal" data-folder-id="{{ folder.id }}" data-product-id="{{ product.id }}">Edit</a>
+                                            <a href="#" data-bs-toggle="modal" data-bs-target="#moveEntityModal" data-entity-type="folder" data-entity-id="{{ folder.id }}" data-product-id="{{ product.id }}" data-moving-folder-id="{{ folder.id }}" data-current-folder-id="{{ folder.parent.id }}" data-url="{% url 'products:move_entity' product_id=product.id entity_type='folder' entity_id=folder.id current_folder_id=folder.parent.id %}">Move</a>
+                                            <hr class="dropdown-divider">
+                                            <form class="delete-folder-form" data-id="{{ folder.id }}" method="post">
+                                                {% csrf_token %}
+                                                <button type="submit" class="text-danger">Delete</button>
+                                            </form>
                                         </div>
-                                    </td>
-                                </tr>
+                                    </div>
+                                </td>
+                            </tr>
                             {% endfor %}
                             
                             <!-- Documents -->
                             {% for document in documents %}
-                            <tr class="clickable-row {% if bin %}in-bin{% endif %}" draggable="true" data-id="{{ document.id }}" data-owner="{{ document.uploaded_by }}" data-version="{{ document.version }}" data-filetype="{{ document.file_type }}" data-name="{{ document.display_filename }}" data-modified="{{ document.updated_at|date:"Y-m-d H:i" }}" data-original="{{ document.original_filename }}" data-category="{{ document.document_type.type_name }}" data-created-by="{{ document.latest_uploaded_by }}" data-created="{{ document.created_at|date:"Y-m-d H:i" }}" data-latest-comment="{{ document.latest_comment }}" data-filesize="{{ document.latest_file_size }}" data-type="document">
-                                <td class="small name-cell">
-                                    <a href="{% url 'documents:download_document' document.id %}" data-document-id="{{ document.id }}">
-                                        {% with document.file_type|upper as doc_type %}
-                                            {% if doc_type == '.PDF' %}
-                                                <svg class="me-2" width="23" height="22" viewBox="0 0 15 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                    <path d="M6.8 0V5.525C6.8 6.18774 7.30568 6.73238 7.95221 6.79416L8.075 6.8H13.6V15.3C13.6 16.1962 12.9065 16.9304 12.0269 16.9953L11.9 17H1.7C0.803792 17 0.0695594 16.3065 0.0046627 15.4269L0 15.3L0 1.7C0 0.803792 0.693496 0.0695596 1.57313 0.00466291L1.7 0L6.8 0ZM8.5 0.036856C8.77387 0.094843 9.03044 0.219882 9.24584 0.402096L9.35 0.497921L13.1021 4.25C13.3031 4.451 13.4486 4.69715 13.5286 4.96461L13.5631 5.1H8.5V0.036856Z" fill="#295893"/>
-                                                </svg>  
-                                            {% elif doc_type == '.WORD' %}
-                                                <img src="{% static 'icons/word-icon.png' %}" alt="Word" width="16" height="16" class="me-2">
-                                            {% elif doc_type == '.PNG' %}
-                                                <svg class="me-2" width="23" height="20" viewBox="0 0 17 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                    <path d="M14.4 0C15.2837 0 16 0.696446 16 1.55556V12.4444C16 13.3036 15.2837 14 14.4 14H1.6C0.716344 14 0 13.3036 0 12.4444L0 1.55556C0 0.696446 0.716344 0 1.6 0L14.4 0ZM14.4 1.55556L1.6 1.55556L1.6 9.4115L5.59584 5.52666C5.98637 5.147 6.61952 5.147 7.01008 5.52666L10.2627 8.68902L11.2527 7.7266C11.6432 7.34689 12.2764 7.34689 12.6669 7.7266L14.4 9.4115V1.55556ZM10.8 3.11111C11.4627 3.11111 12 3.63344 12 4.27778C12 4.92211 11.4627 5.44444 10.8 5.44444C10.1373 5.44444 9.6 4.92211 9.6 4.27778C9.6 3.63344 10.1373 3.11111 10.8 3.11111Z" fill="#AC3140"/>
-                                                </svg>
-                                            {% elif doc_type == '.JPG' %}
-                                                <svg class="me-2" width="23" height="20" viewBox="0 0 17 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                    <path d="M14.4 0C15.2837 0 16 0.696446 16 1.55556V12.4444C16 13.3036 15.2837 14 14.4 14H1.6C0.716344 14 0 13.3036 0 12.4444L0 1.55556C0 0.696446 0.716344 0 1.6 0L14.4 0ZM14.4 1.55556L1.6 1.55556L1.6 9.4115L5.59584 5.52666C5.98637 5.147 6.61952 5.147 7.01008 5.52666L10.2627 8.68902L11.2527 7.7266C11.6432 7.34689 12.2764 7.34689 12.6669 7.7266L14.4 9.4115V1.55556ZM10.8 3.11111C11.4627 3.11111 12 3.63344 12 4.27778C12 4.92211 11.4627 5.44444 10.8 5.44444C10.1373 5.44444 9.6 4.92211 9.6 4.27778C9.6 3.63344 10.1373 3.11111 10.8 3.11111Z" fill="#AC3140"/>
-                                                </svg>
-                                            {% elif doc_type == '.SVG' %}
-                                                <svg class="me-2" width="23" height="20" viewBox="0 0 17 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                    <path d="M14.4 0C15.2837 0 16 0.696446 16 1.55556V12.4444C16 13.3036 15.2837 14 14.4 14H1.6C0.716344 14 0 13.3036 0 12.4444L0 1.55556C0 0.696446 0.716344 0 1.6 0L14.4 0ZM14.4 1.55556L1.6 1.55556L1.6 9.4115L5.59584 5.52666C5.98637 5.147 6.61952 5.147 7.01008 5.52666L10.2627 8.68902L11.2527 7.7266C11.6432 7.34689 12.2764 7.34689 12.6669 7.7266L14.4 9.4115V1.55556ZM10.8 3.11111C11.4627 3.11111 12 3.63344 12 4.27778C12 4.92211 11.4627 5.44444 10.8 5.44444C10.1373 5.44444 9.6 4.92211 9.6 4.27778C9.6 3.63344 10.1373 3.11111 10.8 3.11111Z" fill="#AC3140"/>
-                                                </svg>
-                                            {% else %}
-                                                <!-- Optionally, show a default icon for unspecified document types -->
-                                                <svg class="me-2" width="23" height="22" viewBox="0 0 15 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                    <path d="M6.8 0V5.525C6.8 6.18774 7.30568 6.73238 7.95221 6.79416L8.075 6.8H13.6V15.3C13.6 16.1962 12.9065 16.9304 12.0269 16.9953L11.9 17H1.7C0.803792 17 0.0695594 16.3065 0.0046627 15.4269L0 15.3L0 1.7C0 0.803792 0.693496 0.0695596 1.57313 0.00466291L1.7 0L6.8 0ZM8.5 0.036856C8.77387 0.094843 9.03044 0.219882 9.24584 0.402096L9.35 0.497921L13.1021 4.25C13.3031 4.451 13.4486 4.69715 13.5286 4.96461L13.5631 5.1H8.5V0.036856Z" fill="#295893"/>
-                                                </svg>                                            
-                                            {% endif %}
-                                        {% endwith %}
-                                        <span class="fw-less-bold">{{ document.original_filename }}</span>
-
-                                    </a>
+                            <tr class="non-clickable-tr" data-document-id="{{ document.id }}" data-id="{{ document.id }}" data-owner="{{ document.uploaded_by }}" data-version="{{ document.version }}" data-filetype="{{ document.file_type }}" data-name="{{ document.display_filename }}" data-modified="{{ document.updated_at|date:"Y-m-d H:i" }}" data-original="{{ document.original_filename }}" data-category="{{ document.document_type.type_name }}" data-created-by="{{ document.latest_uploaded_by }}" data-created="{{ document.created_at|date:"Y-m-d H:i" }}" data-latest-comment="{{ document.latest_comment }}" data-filesize="{{ document.latest_file_size }}" data-type="document">
+                                <td class="checkbox-cell" style="cursor: default;"><input class="document-checkbox" type="checkbox"></td>
+                                <td class="name-cell">
+                                    <img src="{{ document.original_filename|file_icon }}" alt="File Icon" class="file-icon">
+                                    <span class="file-name-table" style="color: black !important">
+                                        {{ document.original_filename }}
+                                    </span>
                                 </td>
-                                <td class="text-muted-weight small">{{ document.document_type.type_name }}</td>
-                                <td class="text-muted-weight small">{{ document.updated_at|date:"Y-m-d H:i" }}</td>
-                                <td class="text-muted-weight small ps-4">{{ document.version }}</td>
-                                <td class="text-center">
-                                    <div class="dropdown img-wrapper">
-                                        <button class="btn btn-secondary dropdown-toggle px-0 py-1" type="button" id="actionDropdown{{ forloop.counter }}" data-bs-toggle="dropdown" aria-expanded="false">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                <g clip-path="url(#clip0_1417_12)">
-                                                    <rect x="12" y="12" width="0.01" height="0.01" stroke="#292929" stroke-width="3" stroke-linejoin="round"/>
-                                                    <rect x="12" y="5" width="0.01" height="0.01" stroke="#292929" stroke-width="3" stroke-linejoin="round"/>
-                                                    <rect x="12" y="19" width="0.01" height="0.01" stroke="#292929" stroke-width="3" stroke-linejoin="round"/>
-                                                </g>
-                                                <defs>
-                                                    <clipPath id="clip0_1417_12">
-                                                        <rect width="40" height="40" fill="white" transform="translate(0 0.000915527)"/>
-                                                    </clipPath>
-                                                </defs>
-                                            </svg>
+                                <td class="text-muted-weight">{# document.document_type.type_name #}Document</td>
+                                <td class="text-muted-weight">{{ document.updated_at|date:"Y-m-d H:i" }}</td>
+                                <td class="text-muted-weight ps-4">{{ document.version }}</td>
+                                <td class="actions">
+                                    <div class="action-button-container">
+                                        <button class="action-button">
+                                            <img src="{% static 'images/table_icon/more_vert_24dp_FILL0_wght400_GRAD0_opsz24_333333.png' %}" alt="Actions">
                                         </button>
-                                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionDropdown{{ forloop.counter }}">
-                                            {% if bin %}
-                                                <li>
-                                                    <form action="{% url 'documents:restore_document' document_id=document.id %}" method="post">
-                                                        {% csrf_token %}
-                                                        <button type="submit" class="dropdown-item">
-                                                            <i class="fas fa-recycle"></i> &nbsp; Restore
-                                                        </button>
-                                                    </form>
-                                                </li>
-                                                <!-- Permanently Delete Action -->
-                                                <li><hr class="dropdown-divider"></li>
-                                                <li>
-                                                    <form action="{% url 'documents:delete_document' document_id=document.id %}" method="post" onsubmit="return confirm('Are you sure you want to permanently delete this folder?');">
-                                                        {% csrf_token %}
-                                                        <button type="submit" class="dropdown-item text-danger">
-                                                            <i class="fas fa-trash-alt"></i> &nbsp; Delete Permanently
-                                                        </button>
-                                                    </form>
-                                                </li>
-                                            {% else %}
-                                                <li>
-                                                    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#accessControlModal" data-document-id="{{ document.id }}" data-product-id="{{ product.id }}">
-                                                        <i class="fas fa-user"></i> &nbsp; Share
-                                                    </a>
-                                                </li>
-
-                                                <li>
-                                                    <a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#editDocumentModal" data-document-id="{{ document.id }}">
-                                                        <i class="fas fa-user"></i> &nbsp; Edit
-                                                    </a>
-                                                </li>
-
-                                                <li>
-                                                    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#commentModal" data-document-id="{{ document.id }}">
-                                                        <i class="fas fa-user"></i> &nbsp; Comment
-                                                    </a>
-                                                </li>
-                                                
-                                                <li>
-                                                    <a href="#" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#moveEntityModal"
-                                                    data-entity-type="document" data-entity-id="{{ document.id }}" data-product-id="{{ product.id }}"
-                                                    data-current-folder-id="{{ document.folder.id }}" data-url="{% url 'products:move_entity' product_id=product.id entity_type='document' entity_id=document.id current_folder_id=document.folder.id %}">
-                                                        <i class="fas fa-user"></i> &nbsp; Move
-                                                    </a>
-                                                </li>
-
-                                                <li>
-                                                    <a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#updateDocumentModal" data-document-id="{{ document.id }}">
-                                                        <i class="fas fa-edit"></i> &nbsp; Upload New Version
-                                                    </a>
-                                                </li>
-
-                                                <li>
-                                                    <a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#documentVersionsModal" data-document-id="{{ document.id }}">
-                                                        <i class="fas fa-history"></i> &nbsp; Version History
-                                                    </a>
-                                                </li>
-
-                                                <!-- Update Action -->
-                                                
-                                                <li><hr class="dropdown-divider"></li>
-                                                <!-- Delete Action -->
-                                                <li>
-                                                    <form action="{% url 'documents:move_to_bin_document' document_id=document.id %}" method="post">
-                                                        {% csrf_token %}
-                                                        <button type="submit" class="dropdown-item text-danger"">
-                                                            <i class="fas fa-trash"></i> &nbsp; Move to Bin
-                                                        </button>
-                                                    </form>
-                                                </li>
-                                            {% endif %}
-                                        </ul>
+                                        <div class="action-button-dropdown dropdown-content">
+                                            <a href="#" data-bs-toggle="modal" data-bs-target="#accessControlModal" data-document-id="{{ document.id }}" data-product-id="{{ product.id }}">Share</a>
+                                            <a href="#" data-bs-toggle="modal" data-bs-target="#editDocumentModal" data-document-id="{{ document.id }}">Edit</a>
+                                            <a href="#" data-bs-toggle="modal" data-bs-target="#commentModal" data-document-id="{{ document.id }}">Comment</a>
+                                            <a href="#" data-bs-toggle="modal" data-bs-target="#moveEntityModal" data-entity-type="document" data-entity-id="{{ document.id }}" data-product-id="{{ product.id }}" data-current-folder-id="{{ document.folder.id }}" data-url="{% url 'products:move_entity' product_id=product.id entity_type='document' entity_id=document.id current_folder_id=document.folder.id %}">Move</a>
+                                            <a href="#" data-bs-toggle="modal" data-bs-target="#updateDocumentModal" data-document-id="{{ document.id }}">Upload New Version</a>
+                                            <a href="#" data-bs-toggle="modal" data-bs-target="#documentVersionsModal" data-document-id="{{ document.id }}">Version History</a>
+                                            <a href="{% url 'documents:download_document' document.id %}">Download</a>
+                                            <hr class="dropdown-divider">
+                                            <form class="delete-document-form" data-id="{{ document.id }}" method="post">
+                                                {% csrf_token %}
+                                                <button type="submit" class="text-danger">Delete</button>
+                                            </form>                                            
+                                        </div>
                                     </div>
                                 </td>
                             </tr>
                             {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+                        {% else %}
+                        <tr>
+                            <td colspan="6">No Folders or Documents Added</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
             </div>
         </div>
-        <div id="detail" class="col-lg-3 ps-2">
-            <div class="rounded-2 wrapper vh-92">
-                <div class="title">
-                    <h6 id="right-panel-title" class="text-primary-custom mb-0 px-3 fw-bold">{{ product.product_name }}</h6>
-                </div>
-				<div class="">
-					<ul class="nav nav-tabs modern-tabs col-12" id="invitationTab" role="tablist">
-						
-						<li class="nav-item col-6" role="presentation">
-							<button class="nav-link active tab-link py-2-custom" id="details-tab" data-bs-toggle="tab" data-bs-target="#details" type="button" role="tab" aria-controls="sent" aria-selected="false">
-								<div class="button-text small">Details</div>
-							</button>
-						</li>
-                        <li class="nav-item col-6" role="presentation">
-							<button class="nav-link  tab-link py-2-custom" id="access-tab" data-bs-toggle="tab" data-bs-target="#access" type="button" role="tab" aria-controls="received" aria-selected="true">
-								<div class="button-text small">Access</div>
-							</button>
-						</li>
-					</ul>
-				</div>
-				<div class="tab-content" id="information">
-                    <div id="loadingSpinner" class="loading-spinner-overlay" style="display: none;">
-                        <div class="loader"></div>
-                    </div>
-                    
-					<div class="tab-pane fade show active" id="details" role="tabpanel" aria-labelledby="details-tab">
-						<div class="list-group" id="details-information">
-							<img src="{% static 'images/empty_state/show_info2.png' %}" alt="No Items Selected" class="mt-5 text-center" style="align-self:center;" width="210" height="180">
-                            <small class="text-center mt-3">Select an item to show information</small>
-						</div>
-					</div>
-
-                    <div class="tab-pane fade" id="access" role="tabpanel" aria-labelledby="access-tab">
-						<div class="list-group" id="access-information">
-							<img src="{% static 'images/empty_state/no_partners.png' %}" alt="No Items Selected" class="mt-5 text-center" style="align-self:center;" width="210" height="180">
-                            <small class="text-center mt-3">Select an item to show information</small>
-                        </div>
-					</div>
-
-				</div>
-			</div>
-		</div>
     </div>
-</div>
+</main>
 
-<!-- Create Folder Modal -->
-<!--{% include "modal/create_folder_modal.html" %}-->
 {% include "modal/upload_document_modal.html" %}
 {% include "modal/create_folder_modal.html" %}
 {% include "modal/edit_folder_modal.html" %}
@@ -593,6 +418,7 @@
 {% include "modal/access_control_modal.html" %}
 
 
+
 {% block javascript %}
 
 <!--<script src="{% static 'products/js/product_explorer.js' %}"></script>-->
@@ -602,48 +428,475 @@
     const productId = '{{ product.id }}'; // Make sure this is rendered server-side or appropriately defined somewhere accessible
 </script>
 
-<!-- Upload Document Modal -->
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const uploadForm = document.getElementById('upload-document-form');
-        uploadForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const formData = new FormData(this);
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('shareAccess').addEventListener('click', function(event) {
+        event.preventDefault();
 
-            // Add other fields to formData
-            formData.append('document_types', JSON.stringify(formData.getAll('document_types[]')));
-            formData.append('comments', JSON.stringify(formData.getAll('comments[]')));
+        const selectedFolders = Array.from(document.querySelectorAll('.folder-checkbox:checked')).map(cb => ({
+            id: cb.closest('tr').dataset.id,
+            type: 'folder'
+        }));
 
-            console.log("Submitting the following data as FormData:", formData);  // Debug log
+        const selectedDocuments = Array.from(document.querySelectorAll('.document-checkbox:checked')).map(cb => ({
+            id: cb.closest('tr').dataset.id,
+            type: 'document'
+        }));
 
-            fetch(uploadForm.action, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-                },
-                credentials: 'include',
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    setSessionMessage('Documents uploaded', 'success');
-                    location.reload();
-                } else {
-                    if (typeof data.errors === 'object') {
-                        const errorMessages = Object.values(data.errors).map(err => err.join(', ')).join('; ');
-                        setSessionMessage('Error uploading documents: ' + errorMessages, 'error');
+        const selectedItems = selectedFolders.concat(selectedDocuments);
+        if (selectedItems.length === 0) {
+            showMessage('Please select at least one item to share.', 'error');
+            return;
+        }
+
+        const itemIds = selectedItems.map(item => item.id).join(',');
+        const itemTypes = selectedItems.map(item => item.type).join(',');
+
+        // Set the item_ids and item_types values in the modal
+        const modal = document.getElementById('accessControlModal');
+        modal.querySelector('#item_id').value = itemIds;
+        modal.querySelector('#item_type').value = itemTypes;
+
+        if (selectedItems.length > 0) {
+            // Hide the "Partners with Access" tab and content
+            document.getElementById('partnersWithAccessTab').style.display = 'none';
+            document.getElementById('PartnersWithAccess').style.display = 'none';
+
+            // Fetch and display all partners in the "All Partners" tab
+            fetch(`/access_control/get_all_partners/`)
+                .then(response => response.json())
+                .then(data => {
+                    const partnersList = document.getElementById('partnersList').querySelector('.partners-content');
+                    partnersList.innerHTML = ''; // Clear previous entries
+
+                    if (Array.isArray(data) && data.length === 0) {
+                        partnersList.innerHTML = '<small>No partners available</small>';
+                    } else if (Array.isArray(data)) {
+                        data.forEach(partner => {
+                            const li = document.createElement('li');
+                            li.className = 'partner-info';
+                            li.setAttribute('data-partner-id', partner.partner_id);
+                            li.innerHTML = `
+                                <div class="partner-name">${partner.company_name}</div>
+                                <div class="partner-role">${partner.company_role}</div>
+                            `;
+                            partnersList.appendChild(li);
+
+                            li.addEventListener('click', function() {
+                                this.classList.toggle('selected');
+                            });
+                        });
                     } else {
-                        setSessionMessage('Error uploading documents.', 'error');
+                        console.error('Unexpected data format:', data);
                     }
+
+                    // Hide loading spinner
+                    const allPartnersLoadingOverlay = document.querySelector('#partnersList .loading-overlay');
+                    if (allPartnersLoadingOverlay) {
+                        allPartnersLoadingOverlay.style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading partner data:', error);
+                    // Hide loading spinner in case of error
+                    const allPartnersLoadingOverlay = document.querySelector('#partnersList .loading-overlay');
+                    if (allPartnersLoadingOverlay) {
+                        allPartnersLoadingOverlay.style.display = 'none';
+                    }
+                });
+            }
+            modal.style.display = 'block';
+        });
+        // Close the modal when clicking the cancel button or outside the modal
+        document.querySelectorAll('.cancel-btn, .modal').forEach(element => {
+            element.addEventListener('click', function(event) {
+                if (event.target.classList.contains('cancel-btn') || event.target.classList.contains('modal')) {
+                    document.getElementById('accessControlModal').style.display = 'none';
                 }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                setSessionMessage('Failed to upload documents due to a network error.', 'error');
             });
         });
     });
+
+</script>
+    
+
+<script>
+// Function to delete selected items
+document.addEventListener('DOMContentLoaded', function () {
+    const selectAllItems = document.getElementById('selectAllItems');
+    const checkboxes = document.querySelectorAll('tbody input[type="checkbox"]');
+    const bulkActionButton = document.getElementById('bulkActionButton');
+    const bulkActionDropdown = document.getElementById('bulkActionDropdown');
+    const bulkActionIcon = document.getElementById('bulkActionIcon');
+    const deleteSelectedItems = document.getElementById('deleteSelectedItems'); // for deletion on documents and folders in product_explorer.html
+
+    selectAllItems.addEventListener('change', function () {
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+        toggleBulkActionButton();
+    });
+
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', toggleBulkActionButton);
+    });
+
+    function toggleBulkActionButton() {
+        const anyChecked = Array.from(checkboxes).some(c => c.checked);
+        bulkActionButton.disabled = !anyChecked;
+        if (anyChecked) {
+            bulkActionButton.classList.add('enabled');
+            bulkActionButton.style.cursor = 'pointer';
+        } else {
+            bulkActionButton.classList.remove('enabled');
+            bulkActionButton.style.cursor = 'initial';
+        }
+    }
+
+    toggleBulkActionButton();
+
+    bulkActionButton.addEventListener('click', function (event) {
+        event.preventDefault();
+        if (!bulkActionButton.disabled) {
+            bulkActionDropdown.classList.toggle('show');
+            if (bulkActionDropdown.classList.contains('show')) {
+                bulkActionIcon.src = '/static/images/table_icon/arrow_drop_up_24dp_FILL0_wght400_GRAD0_opsz24_333333.png';
+            } else {
+                bulkActionIcon.src = '/static/images/table_icon/arrow_drop_down_24dp_FILL0_wght400_GRAD0_opsz24_333333.png';
+            }
+        }
+    });
+
+    window.onclick = function (event) {
+        if (!event.target.matches('.button-bulk-action') && !event.target.closest('.bulk-action-wrapper')) {
+            if (bulkActionDropdown.classList.contains('show')) {
+                bulkActionDropdown.classList.remove('show');
+                bulkActionIcon.src = "/static/images/table_icon/arrow_drop_down_24dp_FILL0_wght400_GRAD0_opsz24_333333.png";
+            }
+        }
+    };
+
+    deleteSelectedItems.addEventListener('click', function () {
+        if (bulkActionButton.disabled) {
+            return;
+        }
+
+        const selectedFolders = Array.from(checkboxes)
+            .filter(checkbox => checkbox.checked && checkbox.closest('tr').getAttribute('data-type') === 'folder')
+            .map(checkbox => checkbox.closest('tr').getAttribute('data-id'));
+
+        const selectedDocuments = Array.from(checkboxes)
+            .filter(checkbox => checkbox.checked && checkbox.closest('tr').getAttribute('data-type') === 'document')
+            .map(checkbox => checkbox.closest('tr').getAttribute('data-id'));
+
+        if (confirm('Are you sure you want to delete the selected items?')) {
+            if (selectedFolders.length > 0) {
+                fetch(`/folder/delete_folders/`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ folder_ids: selectedFolders })
+                })
+                .then(handleResponse)
+                .catch(handleError);
+            }
+
+            if (selectedDocuments.length > 0) {
+                fetch(`/documents/delete_documents/`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ document_ids: selectedDocuments })
+                })
+                .then(handleResponse)
+                .catch(handleError);
+            }
+        }
+    });
+
+    function handleResponse(response) {
+        if (response.ok) {
+            return response.json().then(data => {
+                setSessionMessage(data.detail || 'Operation successful.', 'success');
+                location.reload();
+            }).catch(() => {
+                setSessionMessage('Operation successful.', 'success');
+                location.reload();
+            });
+        } else {
+            throw new Error('Network response was not ok.');
+        }
+    }
+
+    function handleError(error) {
+        setSessionMessage('There was an error processing your request.', 'error');
+        location.reload();
+    }
+
+    document.querySelectorAll('.delete-folder-form').forEach(form => {
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+            if (confirm('Are you sure you want to delete this folder?')) {
+                fetch(`/folder/delete_folders/`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ folder_ids: [form.getAttribute('data-id')] })
+                })
+                .then(handleResponse)
+                .catch(handleError);
+            }
+        });
+    });
+
+    document.querySelectorAll('.delete-document-form').forEach(form => {
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+            if (confirm('Are you sure you want to delete this document?')) {
+                fetch(`/documents/delete_documents/`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ document_ids: [form.getAttribute('data-id')] })
+                })
+                .then(handleResponse)
+                .catch(handleError);
+            }
+        });
+    });
+
+    // Function to handle row clicks except on the action button and actions cell
+    document.querySelectorAll('.clickable-td').forEach(row => {
+        row.addEventListener('click', function(event) {
+            // Check if the click was within the checkbox, dropdown button, or actions cell
+            if (!event.target.closest('.actions, .actions *, .action-button, .action-button *, input[type="checkbox"]')) {
+                window.location.href = this.getAttribute('data-href');
+            }
+        });
+    });
+
+    // Prevent propagation of the click event from the checkbox to the row
+    document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+        checkbox.addEventListener('click', function(event) {
+            event.stopPropagation();
+        });
+    });
+
+    // Add event listener to handle clicks on the parent <td> of the checkbox
+    document.querySelectorAll('.checkbox-cell').forEach(cell => {
+        cell.addEventListener('click', function(event) {
+            const checkbox = this.querySelector('input[type="checkbox"]');
+            if (event.target !== checkbox) {
+                checkbox.checked = !checkbox.checked;
+                toggleBulkActionButton();
+                event.stopPropagation();
+            }
+        });
+    });
+
+});
+
+
+
+document.addEventListener('DOMContentLoaded', function() {
+    
+});
+
+
+
+</script>
+
+<!-- Upload Document Modal -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const csrftoken = getCookie('csrftoken');
+    let validFilesMap = new Map();
+    let invalidFileCount = 0;
+
+    const modal = document.getElementById('uploadDocumentModal');
+    const uploadZone = document.getElementById('uploadZoneDocument');
+    const uploadedFiles = document.getElementById('uploadedFilesDocument');
+    const cancelBtn = document.getElementById('cancelUploadBtn');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const openUploadModaProductlBtn = document.getElementById('openUploadModaProductlBtn');
+    const productId = "{{ product.id }}";
+    const folderId = "{{ current_folder.id }}";
+
+    function updateUploadButtonState() {
+        uploadBtn.disabled = invalidFileCount > 0 || validFilesMap.size === 0;
+    }
+
+    function formatFileSize(sizeInBytes) {
+        if (sizeInBytes < 1024) return "1 KB";
+        let sizeInKb = sizeInBytes / 1024.0;
+        const units = ['KB', 'MB', 'GB', 'TB', 'PB'];
+        for (let unit of units) {
+            if (sizeInKb < 1024.0) return `${sizeInKb.toFixed(1)} ${unit}`;
+            sizeInKb /= 1024.0;
+        }
+        return `${sizeInKb.toFixed(1)} PB`;
+    }
+
+    function getFileTypeIcon(fileName) {
+        const extension = fileName.split('.').pop().toLowerCase();
+        const iconMap = {
+            'png': '{% static "images/table_icon/png.png" %}',
+            'csv': '{% static "images/table_icon/csv.png" %}',
+            'zip': '{% static "images/table_icon/zip.png" %}',
+            'jpg': '{% static "images/table_icon/jpg.png" %}',
+            'pdf': '{% static "images/table_icon/pdf.png" %}',
+            'doc': '{% static "images/table_icon/doc.png" %}',
+            'xls': '{% static "images/table_icon/xls.png" %}',
+            'ppt': '{% static "images/table_icon/ppt.png" %}',
+            'txt': '{% static "images/table_icon/txt.png" %}',
+            'default': '{% static "images/table_icon/file.png" %}'
+        };
+        return iconMap[extension] || iconMap['default'];
+    }
+
+    function handleFiles(files) {
+        Array.from(files).forEach(file => {
+            const formattedSize = formatFileSize(file.size);
+            const li = document.createElement('li');
+            li.innerHTML = `<div class="file-info">
+                                <img src="${getFileTypeIcon(file.name)}" alt="${file.name.split('.').pop()}" class="file-icon">
+                                <span class="file-name">${file.name}</span>
+                                <span class="file-size">${formattedSize}</span>
+                                <button class="remove-document-btn">Delete</button>
+                            </div>
+                            <progress class="upload-progress" value="0" max="100"></progress>`;
+            uploadedFiles.appendChild(li);
+
+            const progressBar = li.querySelector('.upload-progress');
+            if (file.size <= 10 * 1024 * 1024) {
+                validFilesMap.set(file, li);
+            } else {
+                li.style.border = "1px solid red";
+                li.style.backgroundColor = "#ffcccc88";
+                invalidFileCount++;
+            }
+
+            let reader = new FileReader();
+            reader.onload = () => {
+                progressBar.value = 100;
+                progressBar.style.background = "linear-gradient(to right, #4caf50 100%, #f3f3f3 0%)";
+            };
+            reader.readAsDataURL(file);
+
+            li.querySelector('.remove-document-btn').addEventListener('click', () => {
+                if (file.size > 10 * 1024 * 1024) {
+                    invalidFileCount--;
+                } else {
+                    validFilesMap.delete(file);
+                }
+                uploadedFiles.removeChild(li);
+                updateUploadButtonState();
+            });
+        });
+        updateUploadButtonState();
+    }
+
+    function setupFileHandlers() {
+        uploadZone.addEventListener('click', function () {
+            var fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.multiple = true;
+            fileInput.style.display = 'none';
+            fileInput.addEventListener('change', function () {
+                handleFiles(fileInput.files);
+            });
+            fileInput.click();
+        });
+
+        uploadZone.addEventListener('dragover', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadZone.classList.add('dragover');
+        });
+
+        uploadZone.addEventListener('dragleave', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadZone.classList.remove('dragover');
+        });
+
+        uploadZone.addEventListener('drop', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadZone.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+    }
+
+    openUploadModaProductlBtn.addEventListener('click', function () {
+        var myModal = new bootstrap.Modal(modal);
+        myModal.show();
+        validFilesMap.clear();
+        invalidFileCount = 0;
+        updateUploadButtonState();
+    });
+
+    cancelBtn.addEventListener('click', function () {
+        var myModal = new bootstrap.Modal(modal);
+        myModal.hide();
+        validFilesMap.clear();
+        invalidFileCount = 0;
+        uploadedFiles.innerHTML = '';
+        updateUploadButtonState();
+    });
+
+    uploadBtn.addEventListener('click', function () {
+        const xhr = new XMLHttpRequest();
+        const formData = new FormData();
+        validFilesMap.forEach((li, file) => {
+            formData.append('document_files', file);
+            formData.append('document_types', li.querySelector('.document-type-select')?.value || '');
+            formData.append('comments', li.querySelector('.comment-textarea')?.value || '');
+        });
+        xhr.open('POST', `/products/${productId}/folders/${folderId}/upload_document/`, true);
+        xhr.setRequestHeader('X-CSRFToken', csrftoken);
+
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === XMLHttpRequest.DONE) {
+                if (xhr.status === 200 || xhr.status === 201) {
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        if (response.errors) {
+                            response.errors.forEach(error => {
+                                showMessage(`Error with file ${error.file}: ${JSON.stringify(error.errors)}`, 'error');
+                            });
+                        } else {
+                            setSessionMessage(response.detail, 'success');
+                            location.reload();  // Make sure this only happens after a successful response
+                        }
+                    } catch (e) {
+                        showMessage('Invalid response from server.', 'error');
+                        console.error('Error parsing response:', e);
+                    }
+                } else {
+                    showMessage('There was an error processing your request.', 'error');
+                    console.error('Server returned status:', xhr.status, xhr.responseText);
+                }
+            }
+        };
+        xhr.onerror = function () {
+            showMessage('There was an error processing your request.', 'error');
+            console.error('Request failed');
+        };
+
+        xhr.send(formData);
+    });
+
+    setupFileHandlers();
+});
 </script>
 
 <!-- Create Folder Modal-->
@@ -685,427 +938,146 @@
                     setSessionMessage('Folder created', 'success');
                     location.reload(); // Reload the page
                 } else {
-                    setSessionMessage('Error creating folder: ' + data.errors.join(', '), 'error');
+                    showMessage('Error creating folder: ' + data.errors.join(', '), 'error');
                 }
             })
             .catch(error => {
-                setSessionMessage('Failed to create folder due to a network error.', 'error');
+                showMessage('Failed to create folder due to a network error.', 'error');
             });
         });
     });
 
-</script>
-
-<!-- Access Control Modal -->
-<script>
-    document.querySelectorAll('[data-bs-toggle="modal"][data-bs-target="#accessControlModal"]').forEach(element => {
-        element.addEventListener('click', function() {
-
-            const modal = document.getElementById('accessControlModal');
-            const productId = this.getAttribute('data-product-id');
-            const folderId = this.getAttribute('data-folder-id');
-            const documentId = this.getAttribute('data-document-id');
-            const itemType = folderId ? 'folder' : 'document';
-            const itemId = folderId || documentId;
-
-            // Update the form hidden inputs for item_id and item_type
-            modal.querySelector('#item_id').value = itemId;
-            modal.querySelector('#item_type').value = itemType;
-
-            let url = `/access_control/get_partners_with_access_json/${itemId}/${itemType}/`;
-            
-            fetch(url)
-            .then(response => response.json())
-            .then(data => {
-                const partnerContainer = modal.querySelector('#granted-partner-information');
-                partnerContainer.innerHTML = '';  // Clear previous entries
-
-                // Check if 'data' is an array as expected
-                if (Array.isArray(data) && data.length === 0) {
-                    partnerContainer.innerHTML = '<small class="mt-3">No access granted to any partners</small>';
-                } else if (Array.isArray(data)) {
-                    data.forEach(partner => {
-                        const div = document.createElement('div');
-                        div.className = 'list-group-item flex-column';
-                        div.innerHTML = `
-                            <div class="d-flex py-1">
-                                <div class="flex-grow-1 d-flex flex-column ms-3">
-                                    <div class="fw-less-bold">${partner.company_name}</div>
-                                    <div class="text-primary-custom fw-medium small">${partner.company_role}</div>
-                                </div>
-                                <button type="button" class="btn btn-danger btn-sm remove-access" onclick="removeAccess(this.getAttribute('data-partner-id'), '${itemType}', ${itemId}, ${productId})" data-partner-id="${partner.partner2_id}" style="align-self:center;">Remove</button>
-                            </div>
-                        `;
-                        partnerContainer.appendChild(div);
-                    });
-                } else {
-                    console.error('Unexpected data format:', data);
-                }
-            })
-            .catch(error => console.error('Error loading partner data:', error));
-        });
-    });
-
-</script>
-
-
-<!-- drag and drop to move folder -->
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const rows = document.querySelectorAll('.clickable-row');
-        let lastSelectedRow = null;
-        const initialProductName = document.querySelector('#right-panel-title').textContent;
-        const productNameElement = document.querySelector('#right-panel-title');
-
-        rows.forEach(row => {
-            row.addEventListener('click', function(e) {
-                if (e.shiftKey && lastSelectedRow) {
-                    const startRow = Array.from(rows).indexOf(lastSelectedRow);
-                    const endRow = Array.from(rows).indexOf(this);
-                    const [startIndex, endIndex] = [Math.min(startRow, endRow), Math.max(startRow, endRow)];
-                    for (let i = startIndex; i <= endIndex; i++) {
-                        rows[i].classList.add('highlighted-row');
-                    }
-                } else if (e.ctrlKey) {
-                    this.classList.toggle('highlighted-row');
-                } else {
-                    if (!this.classList.contains('highlighted-row')) {
-                        rows.forEach(r => r.classList.remove('highlighted-row'));
-                        this.classList.add('highlighted-row');
-                        updatePanelsBasedOnSelection(this); // Update panels when a new row is selected
-                    } else {
-                        rows.forEach(r => r.classList.remove('highlighted-row'));
-                        resetPanelsToDefault(initialProductName); // Reset panels when deselecting
-                    }
-                }
-                lastSelectedRow = this; // This row now becomes the last selected row
-            });
-
-            row.addEventListener('dblclick', function() {
-                if (this.dataset.type === 'folder' && !this.classList.contains('in-bin')) {  // Add a class check for 'in-bin'
-                    const folderId = this.dataset.id;
-                    window.location.href = `/products/${productId}/explorer/${folderId}/`;
-                }
-            });
-
-            row.addEventListener('dragstart', function(e) {
-                if (!this.classList.contains('highlighted-row')) {
-                    this.classList.add('highlighted-row');
-                }
-                const selectedItems = document.querySelectorAll('.highlighted-row');
-                const ids = Array.from(selectedItems).map(row => row.dataset.id);
-                const types = Array.from(selectedItems).map(row => row.dataset.type);
-
-                const dragData = ids.join(',') + '|' + types.join(',');
-                e.dataTransfer.setData('text/plain', dragData);
-            });
-
-            row.addEventListener('dragover', function(e) {
-                e.preventDefault();
-                e.dataTransfer.dropEffect = 'move';
-            });
-
-            row.addEventListener('drop', function(e) {
-                e.preventDefault();
-                const dropData = e.dataTransfer.getData('text/plain').split('|');
-                const ids = dropData[0].split(',');
-                const entityTypes = dropData[1] ? dropData[1].split(',') : [];
-
-                if (ids.length === 1 && ids[0] === '') {
-                    return;
-                }
-
-                const targetId = this.dataset.id;
-                const targetType = this.dataset.type;
-
-                if (targetType === 'document') {
-                    return; // Do nothing when the target is a document
-                }
-
-                if (ids.includes(targetId)) return; // Avoid moving into itself
-
-                moveEntities(ids, entityTypes, targetId);
-            });
-        });
-
-        function moveEntities(ids, entityTypes, targetId) {
-            showLoading();
-            const formData = new FormData();
-            ids.forEach((id, index) => {
-                formData.append('entity_ids[]', id);
-                formData.append('entity_types[]', entityTypes[index]); // Ensure each ID has a corresponding type appended
-            });
-            formData.append('target_folder_id', targetId);
-
-            fetch(`/products/${productId}/move_entities/`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': getCookie('csrftoken') // CSRF token handling
-                },
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    console.log('Move successful:', data.message);
-                    window.location.reload();
-                } else {
-                    console.error('Move failed:', data.message);
-                    alert('Failed to move items: ' + data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error moving items:', error);
-                alert('An error occurred while moving items.');
-            })
-            .finally(() => {
-                hideLoading();
-            });
-        }
-
-        document.addEventListener('click', function(e) {
-            const modal = document.getElementById('confirmationModal');
-            const isModalOpen = modal && modal.style.display === 'block';
-            
-            if (!e.target.closest('.clickable-row') && !e.target.closest('#detail') && !isModalOpen) {
-                rows.forEach(row => row.classList.remove('highlighted-row'));
-                resetPanelsToDefault(initialProductName);
-            }
-        });
-
-        function updateLeftPanel(partners, itemType, itemId) {
-            const panel = document.getElementById('access-information');
-            let html = partners.length > 0 ? '' : '<div class="detail-item"><strong>No Partners Granted Access</strong></div>';
-            partners.forEach(partner => {
-                html += `<div class="list-group-item list-group-item-action partner-access-item" data-partner-id="${partner.partner2_id}" tabindex="0">
-                    <div class="d-flex py-1">
-                        <div class="visually-hidden" style="align-self: center;"><input type="radio" name="partners" value="${partner.partner2_id}" id="partner_${partner.partner2_id}"></div>
-                        <div class="flex-grow-1 d-flex flex-column ms-3">
-                            <div class="fw-less-bold">${partner.company_name}</div>
-                            <div class="text-primary-custom fw-medium small">${partner.company_role}</div>
-                            <!--<div class="small">${partner.access_detail}</div>-->
-                        </div>
-                    </div>
-                </div>`;
-            });
-            panel.innerHTML = html;
-        }
-
-        function updateRightPanel(data) {
-            const { owner, type, version, fileType, name, original, modified, category, createdBy, created, filesize, latestComment } = data;
-            if (type === "document") {
-                document.getElementById("details-information").innerHTML = `
-                    <div class="detail-item"><strong>Original Name</strong><small>${original}</small></div>
-                    <div class="detail-item"><strong>Category</strong><small>${category}</small></div>
-                    <div class="detail-item"><strong>Latest Comment</strong><small>${latestComment}</small></div>
-                    <div class="detail-item"><strong>Owner</strong><small>${owner}</small></div>
-                    <div class="detail-item"><strong>File Size</strong><small>${filesize}</small></div>
-                    <div class="detail-item"><strong>Version</strong><small>${version}</small></div>
-                    <div class="detail-item"><strong>Modified</strong><small>${modified} by ${createdBy}</small></div>
-                    <div class="detail-item"><strong>Created</strong><small>${created}</small></div>
-                    `;
-                    // Switch to the details tab
-                    // new bootstrap.Tab(document.querySelector('#details-tab')).show();
-            }
-            else if (type === "folder") {
-                document.getElementById("details-information").innerHTML = `
-                    <div class="detail-item"><strong>Owner</strong><small>${owner}</small></div>
-                    <div class="detail-item"><strong>Modified</strong><small>${modified}</small></div>
-                    <div class="detail-item"><strong>Created</strong><small>${created}</small></div>
-                    `;
-                    // Switch to the details tab
-                    // new bootstrap.Tab(document.querySelector('#details-tab')).show();
-            }
-        }
-
-        function getIconHTML(fileType) {
-            // Define your icons here
-            const icons = {
-                '.PDF': '<svg class="" width="20" height="23" viewBox="0 0 15 18" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6.8 0V5.525C6.8 6.18774 7.30568 6.73238 7.95221 6.79416L8.075 6.8H13.6V15.3C13.6 16.1962 12.9065 16.9304 12.0269 16.9953L11.9 17H1.7C0.803792 17 0.0695594 16.3065 0.0046627 15.4269L0 15.3L0 1.7C0 0.803792 0.693496 0.0695596 1.57313 0.00466291L1.7 0L6.8 0ZM8.5 0.036856C8.77387 0.094843 9.03044 0.219882 9.24584 0.402096L9.35 0.497921L13.1021 4.25C13.3031 4.451 13.4486 4.69715 13.5286 4.96461L13.5631 5.1H8.5V0.036856Z" fill="#295893"/></svg>',
-                '.WORD': '<img src="{% static "icons/word-icon.png" %}" alt="Word" width="16" height="16" class="">',
-                '.PNG': '<svg class="" width="23" height="19" viewBox="0 0 17 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14.4 0C15.2837 0 16 0.696446 16 1.55556V12.4444C16 13.3036 15.2837 14 14.4 14H1.6C0.716344 14 0 13.3036 0 12.4444L0 1.55556C0 0.696446 0.716344 0 1.6 0L14.4 0ZM14.4 1.55556L1.6 1.55556L1.6 9.4115L5.59584 5.52666C5.98637 5.147 6.61952 5.147 7.01008 5.52666L10.2627 8.68902L11.2527 7.7266C11.6432 7.34689 12.2764 7.34689 12.6669 7.7266L14.4 9.4115V1.55556ZM10.8 3.11111C11.4627 3.11111 12 3.63344 12 4.27778C12 4.92211 11.4627 5.44444 10.8 5.44444C10.1373 5.44444 9.6 4.92211 9.6 4.27778C9.6 3.63344 10.1373 3.11111 10.8 3.11111Z" fill="#AC3140"/></svg>',
-                '.JPG': '<svg class="" width="23" height="19" viewBox="0 0 17 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14.4 0C15.2837 0 16 0.696446 16 1.55556V12.4444C16 13.3036 15.2837 14 14.4 14H1.6C0.716344 14 0 13.3036 0 12.4444L0 1.55556C0 0.696446 0.716344 0 1.6 0L14.4 0ZM14.4 1.55556L1.6 1.55556L1.6 9.4115L5.59584 5.52666C5.98637 5.147 6.61952 5.147 7.01008 5.52666L10.2627 8.68902L11.2527 7.7266C11.6432 7.34689 12.2764 7.34689 12.6669 7.7266L14.4 9.4115V1.55556ZM10.8 3.11111C11.4627 3.11111 12 3.63344 12 4.27778C12 4.92211 11.4627 5.44444 10.8 5.44444C10.1373 5.44444 9.6 4.92211 9.6 4.27778C9.6 3.63344 10.1373 3.11111 10.8 3.11111Z" fill="#AC3140"/></svg>',
-                '.SVG': '<svg class="" width="23" height="19" viewBox="0 0 17 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14.4 0C15.2837 0 16 0.696446 16 1.55556V12.4444C16 13.3036 15.2837 14 14.4 14H1.6C0.716344 14 0 13.3036 0 12.4444L0 1.55556C0 0.696446 0.716344 0 1.6 0L14.4 0ZM14.4 1.55556L1.6 1.55556L1.6 9.4115L5.59584 5.52666C5.98637 5.147 6.61952 5.147 7.01008 5.52666L10.2627 8.68902L11.2527 7.7266C11.6432 7.34689 12.2764 7.34689 12.6669 7.7266L14.4 9.4115V1.55556ZM10.8 3.11111C11.4627 3.11111 12 3.63344 12 4.27778C12 4.92211 11.4627 5.44444 10.8 5.44444C10.1373 5.44444 9.6 4.92211 9.6 4.27778C9.6 3.63344 10.1373 3.11111 10.8 3.11111Z" fill="#AC3140"/></svg>',
-                // Add more as needed
-                'DEFAULT': '<svg class="icon-folder" xmlns="http://www.w3.org/2000/svg" width="22" height="20" fill="currentColor" viewBox="0 0 18 16"><path d="M16 6.32099V12.642C16 13.4751 15.3473 14.1576 14.5194 14.2179L14.4 14.2222H1.6C0.75651 14.2222 0.0654679 13.5776 0.00438862 12.7599L0 12.642L0 6.32099L16 6.32099ZM6.0155 0C6.45292 0 6.86907 0.176755 7.16925 0.485378L7.26488 0.593075L8.38448 1.97531L14.4 1.97531C15.2435 1.97531 15.9345 2.61995 15.9956 3.43762L16 3.55556V4.74074L0 4.74074L0 1.58025C0 0.747171 0.652702 0.0646597 1.48059 0.00433444L1.6 0L6.0155 0Z" fill="#CCA92D"/></svg>' // Default icon
-            };
-            if (!fileType) {
-                return icons['DEFAULT']; // Return default icon or an empty string if no icon should be shown
-            }
-
-            return icons[fileType.toUpperCase()] || icons['DEFAULT']; // Return matching icon or default
-        }
-
-        function fetchPartnersWithAccess(itemType, itemId) {
-            const url = `/access_control/get_partners_with_access_json/${itemId}/${itemType}/`;
-            fetch(url)
-                .then(response => response.json())
-                .then(data => {
-                    updateLeftPanel(data, itemType, itemId);
-                    hideLoading(); // Hide loading after async operation is complete
-                })
-                .catch(error => {
-                    console.error('Error loading partners:', error);
-                    hideLoading(); // Ensure loading is hidden on error
-                });
-        }
-
-        function updatePanelsBasedOnSelection(selectedRow) {
-            const fileType = selectedRow.dataset.filetype;
-            const iconHTML = getIconHTML(fileType);
-            const name = selectedRow.dataset.name;
-            const itemId = selectedRow.dataset.id;
-            const itemType = selectedRow.dataset.type;
-
-            productNameElement.innerHTML = `${iconHTML} <span class="name-container py-3">${name}</span>`;
-            updateRightPanel(selectedRow.dataset);
-            fetchPartnersWithAccess(itemType, itemId);
-        }
-
-        function resetPanelsToDefault(productName) {
-            document.getElementById("details-information").innerHTML = `
-                <img src="{% static 'images/empty_state/show_info2.png' %}" alt="Select an item to show information" class="mt-5 text-center" style="align-self:center;" width="210" height="180">
-                <small class="text-center mt-3">Select an item to show information</small>
-                `;
-            document.getElementById("access-information").innerHTML = `
-                <img src="{% static 'images/empty_state/no_partners.png' %}" alt="Select an item to show information" class="mt-5 text-center" style="align-self:center;" width="210" height="180">
-                <small class="text-center mt-3">Select an item to show information</small>
-                `;
-            document.querySelectorAll('.clickable-row').forEach(r => r.classList.remove('highlighted-row'));
-        }
-    });
-
-
-</script>
-
-<script>
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
-        }
-        return cookieValue;
-    }
-    $.ajaxSetup({
-        beforeSend: function(xhr, settings) {
-            if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type) && !this.crossDomain) {
-                xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
-            }
-        }
-    });
 </script>
 
 <!-- move entity modal -->
 <script>
-    var movingFolderId = null;
+let movingFolderId = null;
 
-    document.addEventListener('DOMContentLoaded', function() {
-        $('#moveEntityModal').on('show.bs.modal', function(event) {
-            var button = $(event.relatedTarget);
-            var modal = $(this);
-            var entityType = button.data('entity-type');
+document.addEventListener('DOMContentLoaded', function() {
+    const moveEntityModal = document.getElementById('moveEntityModal'); // Get the modal by its ID
 
-            var movingFolderId = entityType === 'folder' ? button.data('moving-folder-id') : null;
-            var url = button.data('url'); // Ensure this attribute is passed correctly
-            
-            $.ajax({
-                url: url,
-                success: function(response) {
-                    modal.find('.modal-body').html(response.html);
-                },
-                error: function() {
-                    modal.find('.modal-body').html('<p>Error loading information.</p>');
-                }
-            });
-        });
+    $('#moveEntityModal').on('show.bs.modal', function(event) {
+        const button = $(event.relatedTarget); // Button that triggered the modal
+        const modal = $(this);
+        const entityType = button.data('entity-type');
+        if (entityType !== 'folder') {
+            movingFolderId = null;
+        } 
+        else {
+            movingFolderId = button.data('moving-folder-id');
+        }
 
-        // Handling form submission within the modal
-        $(document).on('submit', '.action-form', function(e) {
-            e.preventDefault();
-            var form = $(this);
-            $.ajax({
-                type: 'POST',
-                url: form.attr('action'),
-                data: form.serialize(),
-                headers: {'X-CSRFToken': getCookie('csrftoken')},
-                success: function(response) {
-                    if (response.success) {
-                        setSessionMessage(response.message, 'success');
-                    } else {
-                        setSessionMessage(response.error, 'error');  // Corrected from data.error to response.error
-                    }
-                },
-                error: function() {
-                    setSessionMessage('Failed to move due to a network error.', 'error');
-                },
-                complete: function() {
-                    location.reload();
-                      // Ensure message handling after the AJAX completes
-                }
-            });
-        });
-
-        // Opening folders within the modal
-        document.body.addEventListener('click', function(event) {
-            const target = event.target;
-            if (target.classList.contains('open-folder') || target.classList.contains('breadcrumb-link')) {
-                const folderId = target.dataset.folderId;
-                const local_productId = productId;
-                if (!folderId || !local_productId) {
-                    console.error('Folder ID or Product ID is missing!');
-                    return;
-                }
-
-                const url = `/products/${local_productId}/explorer/folder/${folderId}/content/?moving_folder_id=${movingFolderId}`;
-                fetch(url, {
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'  // This line is crucial
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    document.querySelector('.content-section').innerHTML = data.html;
-                    updateBreadcrumbs(data.breadcrumbs);
-                    document.querySelector('input[name="target_folder_id"]').value = folderId;
-                })
-                .catch(error => {
-                    console.error('Error loading folder contents:', error);
-                });
+        const url = button.data('url'); // Ensure this attribute is passed correctly
+        $.ajax({
+            url: url,
+            success: function(response) {
+                modal.find('.modal-body').html(response.html);
+                modal.find('.action-form input[name="moving_folder_id"]').val(movingFolderId); // Set the value for the hidden input field in form
+            },
+            error: function() {
+                modal.find('.modal-body').html('<p>Error loading information.</p>');
             }
         });
+    });
 
-        function updateBreadcrumbs(breadcrumbs) {
-            const breadcrumbContainer = document.querySelector('.breadcrumb-container ol');
-            breadcrumbContainer.innerHTML = ''; // Clear existing breadcrumbs
-            breadcrumbs.forEach((breadcrumb, index) => {
-                const li = document.createElement('li');
-                li.className = 'breadcrumb-item';
-                if (index === breadcrumbs.length - 1) {
-                    const span = document.createElement('span');
-                    span.className = 'p-2 h6 fw-bold small';
-                    span.textContent = breadcrumb.name;
-                    li.appendChild(span);
+    // Handling form submission within the modal
+    $(moveEntityModal).on('submit', '.action-form', function(e) {
+        e.preventDefault();
+        var form = $(this);
+        $.ajax({
+            type: 'POST',
+            url: form.attr('action'),
+            data: form.serialize(),
+            headers: {'X-CSRFToken': getCookie('csrftoken')},
+            success: function(response) {
+                if (response.success) {
+                    setSessionMessage(response.message, 'success');
+                    location.reload();
                 } else {
-                    const a = document.createElement('a');
-                    a.href = "#";
-                    a.textContent = index === 0 ? '{{ product.product_name }}' : breadcrumb.name;
-                    a.className = 'breadcrumb-link text-primary-custom opacity-75 breadcrumb-navigation p-2 h6 small';
-                    a.setAttribute('data-folder-id', breadcrumb.id);
-                    a.setAttribute('data-product-id', productId);
-                    a.setAttribute('data-moving-folder-id', movingFolderId);
-                    li.appendChild(a);
+                    showMessage(response.error, 'error');
                 }
-                breadcrumbContainer.appendChild(li);
+            },
+            error: function(xhr) {
+                // Check if the error details are provided in a predictable structure
+                if (xhr.responseJSON && xhr.responseJSON.errors) {
+                    var errorMessage = '';
+                    if (Array.isArray(xhr.responseJSON.errors)) {
+                        errorMessage = xhr.responseJSON.errors.join('<br>'); // For array of errors
+                    } else if (typeof xhr.responseJSON.errors === 'object') {
+                        // For object type errors, we iterate over the keys and display each error
+                        Object.keys(xhr.responseJSON.errors).forEach(function(key) {
+                            errorMessage += xhr.responseJSON.errors[key];
+                        });
+                    } else {
+                        // If it's neither an array nor an object, directly show the error
+                        errorMessage = xhr.responseJSON.errors;
+                    }
+                    showMessage(errorMessage, 'error');
+                } else {
+                    // Fallback error message if responseJSON does not exist or has no error key
+                    showMessage('Failed to move due to a network error.', 'error');
+                }
+            }
+        });
+    });
+
+    // Click event handler to open folders within the modal
+    moveEntityModal.addEventListener('click', function(event) {
+        const target = event.target;
+        if (target.classList.contains('open-folder') || target.classList.contains('breadcrumb-link')) {
+            const folderId = target.dataset.folderId;
+            if (!folderId || !productId) {
+                console.error('Folder ID or Product ID is missing!');
+                return;
+            }
+
+            const url = `/products/${productId}/explorer/folder/${folderId}/content/?moving_folder_id=${movingFolderId}`;
+            
+            fetch(url, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const contentSection = moveEntityModal.querySelector('.content-section');
+                contentSection.innerHTML = data.html;
+                updateBreadcrumbs(data.breadcrumbs, moveEntityModal);
+                moveEntityModal.querySelector('input[name="target_folder_id"]').value = folderId; // Update the target_folder_id input
+
+            })
+            .catch(error => {
+                console.error('Error loading folder contents:', error);
             });
         }
     });
+
+    function updateBreadcrumbs(breadcrumbs, modalScope) {
+        const breadcrumbContainer = modalScope.querySelector('.breadcrumb-container ol');
+        breadcrumbContainer.innerHTML = ''; // Clear existing breadcrumbs
+        breadcrumbs.forEach((breadcrumb, index) => {
+            const li = document.createElement('li');
+            li.className = 'breadcrumb-item';
+            if (index === breadcrumbs.length - 1) {
+                const span = document.createElement('span');
+                span.className = 'p-2 h6 fw-bold small';
+                span.textContent = breadcrumb.name;
+                li.appendChild(span);
+            } else {
+                const a = document.createElement('a');
+                a.href = "#";
+                a.textContent = breadcrumb.name;
+                a.className = 'breadcrumb-link breadcrumb-navigation';
+                a.dataset.folderId = breadcrumb.id;
+                a.dataset.productId = productId; // Assuming productId is globally available or correctly passed
+                a.dataset.movingFolderId = movingFolderId; // Moving folder ID needs to be captured dynamically
+                li.appendChild(a);
+            }
+            breadcrumbContainer.appendChild(li);
+        });
+    }
+
+});
 </script>
 
 <!-- View and Edit Comment Modal-->
@@ -1127,11 +1099,11 @@
                     data.versions.forEach(function(version) {
                         var row = document.createElement('tr'); // Create a new table row
                         row.innerHTML = `
-                            <td class="text-center align-middle">${version.version}</td>
-                            <td id="modified-time-${version.version}" class="text-center align-middle">${version.modified}</td>
-                            <td class="text-center align-middle">${version.uploader}</td>
+                            <td class=""><span style="margin-left:20px;">${version.version}</span></td>
+                            <td id="modified-time-${version.version}" class="">${version.modified}</td>
+                            <td class="">${version.uploader}</td>
                             <td id="comment-text-${version.version}" class="text-start align-middle">${version.comment}</td>
-                            <td id="" class="text-center align-middle">${version.is_editable ? `<button class="btn btn-sm btn-edit-save btn-primary" onclick="editComment(${documentId}, ${version.version})">Edit</button>` : ''}</td>
+                            <td id="" class="">${version.is_editable ? `<button class="btn-edit-save" onclick="editComment(${documentId}, ${version.version})">Edit</button>` : ''}</td>
                         `;
                         tableBody.appendChild(row); // Append the row to the table body
                     });
@@ -1144,9 +1116,11 @@
         const commentCell = document.getElementById(`comment-text-${versionNumber}`);
         const originalComment = commentCell.textContent; // Get the current comment text
         const buttonCell = commentCell.nextElementSibling; // Assuming the button is next to the comment cell
+        const originalHeight = commentCell.offsetHeight; // Get the original height of the comment cell
 
-        commentCell.innerHTML = `<textarea class="form-control form-control-sm">${originalComment}</textarea>`;
-        buttonCell.innerHTML = `<button class="btn btn-sm btn-edit-save btn-primary" onclick="saveComment(${documentId}, ${versionNumber})">Save</button>`;
+
+        commentCell.innerHTML = `<textarea class="form-control-comment form-control-sm">${originalComment}</textarea>`;
+        buttonCell.innerHTML = `<button class="btn-edit-save" onclick="saveComment(${documentId}, ${versionNumber})">Save</button>`;
     }
 
     function saveComment(documentId, versionNumber) {
@@ -1160,7 +1134,7 @@
                 'Content-Type': 'application/x-www-form-urlencoded',
                 'X-CSRFToken': getCookie('csrftoken')
             },
-            body: `comment=${encodeURIComponent(newText)}`
+            body: `comments=${encodeURIComponent(newText)}`
         })
         .then(response => response.json()) // Ensure server sends back JSON
         .then(data => {
@@ -1171,14 +1145,14 @@
                 const modifiedTimeCell = document.querySelector(`#modified-time-${versionNumber}`);
                 modifiedTimeCell.innerText = data.modified;
 
-                buttonCell.innerHTML = `<button class="btn btn-sm btn-edit-save btn-primary" onclick="editComment(${documentId}, ${versionNumber})">Edit</button>`;
+                buttonCell.innerHTML = `<button class="btn-edit-save" onclick="editComment(${documentId}, ${versionNumber})">Edit</button>`;
             } else {
                 console.error(data.error || 'Failed to update comment. Please try again.');
-                alert(data.error || 'Failed to update comment. Please try again.');
+                showMessage('Failed to update comment. Please try again.', 'error');
             }
         })
         .catch(error => {
-            console.error('Error updating comment:', error);
+            showMessage(error, 'error');
         });
     }
 </script>
@@ -1210,19 +1184,20 @@
             .then(response => response.json())
             .then(data => {
                 if (data.error) {
-                    setSessionMessage('Error updating document: ' + Object.values(data.errors).join(', '), 'error');
+                    showMessage('Error updating document: ' + Object.values(data.errors).join(', '), 'error');
                 } else {
                     setSessionMessage('Document updated', 'success');
-                    
+                    location.reload();
                 }
             })
             .catch(error => {
-                setSessionMessage('Failed to update document due to a network error.', 'error');
+                showMessage('Failed to update document due to a network error.', 'error');
             });
-            location.reload();
+            
         });
     });
 </script>
+
 
 
 <!-- document version modal -->
@@ -1274,6 +1249,7 @@
 
 <!-- edit document modal -->
 <script>
+
     document.addEventListener('DOMContentLoaded', function () {
         var editModal = document.getElementById('editDocumentModal');
         editModal.addEventListener('show.bs.modal', function (event) {
@@ -1329,11 +1305,11 @@
                     setSessionMessage('Document updated', 'success');
                     location.reload();
                 } else {
-                    setSessionMessage('Error updating document: ' + Object.values(data.errors).join(', '), 'error');
+                    showMessage('Error updating document: ' + Object.values(data.errors).join(', '), 'error');
                 }
             })
             .catch(error => {
-                setSessionMessage('Failed to update document due to a network error.', 'error');
+                showMessage('Failed to update document due to a network error.', 'error');
             });
         });
     });

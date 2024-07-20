@@ -56,7 +56,7 @@
             if (!event.target.matches('.button-bulk-action') && !event.target.closest('.bulk-action-wrapper')) {
                 if (bulkActionDropdown.classList.contains('show')) {
                     bulkActionDropdown.classList.remove('show');
-                    bulkActionIcon.src = "{% static 'images/table_icon/arrow_drop_down_24dp_FILL0_wght400_GRAD0_opsz24_333333.png' %}";
+                    bulkActionIcon.src = "/static/images/table_icon/arrow_drop_down_24dp_FILL0_wght400_GRAD0_opsz24_333333.png";
                 }
             }
         };

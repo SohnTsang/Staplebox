@@ -1,0 +1,67 @@
+<style>
+
+textarea {
+    width: calc(100% - 22px);
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+textarea {
+    resize: vertical;
+}
+</style>
+
+<div id="productModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-title">{% if form.instance.pk %}Edit Product{% else %}Add Product{% endif %}</div>
+        <div class="tab-content active" id="productFormTab">
+            <form id="productForm" method="post">
+                {% csrf_token %}
+                <div class="form-messages" id="formMessages"></div>
+
+                <div class="form-group">
+                    <label for="product_name">Product Name:</label>
+                    <div class="status-indicators">
+                        <input type="text" id="product_name" name="product_name" value="{{ form.product_name.value|default_if_none:'' }}" maxlength="100" required>
+                        <div class="status-sub">
+                            <div class="form-error-container"></div>
+                            <div id="product_name_counter" class="char-counter">0/100</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="product_code">Product Code:</label>
+                    <div class="status-indicators">
+                        <input type="text" id="product_code" name="product_code" value="{{ form.product_code.value|default_if_none:'' }}" maxlength="50" required>
+                        <div class="status-sub">
+                            <div class="form-error-container"></div>
+                            <div id="product_code_counter" class="char-counter">0/50</div>
+                        </div>
+                    </div>
+                </div>
+
+                <label for="product_description">Product Description:</label>
+                <textarea id="product_description" name="product_description" maxlength="100">{{ form.product_description.value|default_if_none:'' }}</textarea>
+                <div id="product_description_counter" class="char-counter">0/100</div>
+
+                <div class="form-group">
+                    <label for="product_type">Product Type:</label>
+                    <div class="status-indicators">
+                        <select id="product_type" name="product_type" required>
+                            {% for value, text in form.product_type.field.choices %}
+                                <option value="{{ value }}" {% if value == form.product_type.value %}selected{% endif %}>{{ text }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="cancel-btn" id="CloseProductModal">Cancel</button>
+            <button class="add-btn" id="SubmitProductForm">Save</button>
+        </div>
+    </div>
+</div>

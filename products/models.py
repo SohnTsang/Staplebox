@@ -18,9 +18,9 @@ class Product(models.Model):
         ('processed_foods', 'Processed Foods'),
     ]
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='products')
-    product_code = models.IntegerField()
-    product_name = models.CharField(max_length=255)
-    product_description = models.TextField(blank=True, null=True)
+    product_code = models.CharField(max_length=50)
+    product_name = models.CharField(max_length=100)
+    product_description = models.TextField(blank=True, null=True, max_length=100)
     product_type = models.CharField(max_length=20, choices=PRODUCT_TYPES)  # New field
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
@@ -31,6 +31,7 @@ class Product(models.Model):
         unique_together = ('user', 'product_code')
         
     def save(self, *args, **kwargs):
+        self.product_code = self.product_code.upper()  # Ensure product_code is uppercase
         is_new = self._state.adding
         super().save(*args, **kwargs)
         if is_new:

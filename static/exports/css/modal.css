@@ -8,18 +8,22 @@
     height: 100%; 
     overflow: auto; 
     background-color: rgba(0, 0, 0, 0.4); 
-    
 }
+
+
 .modal-content {
-    margin: 5% auto !important; /* 15% from the top and centered */
+    position: fixed; /* Ensures the modal doesn't move with scrolling */
+    top: 45%; /* Place the top edge of the modal at the center of the screen */
+    left: 50%; /* Place the left edge of the modal at the center of the screen */
+    transform: translate(-50%, -50%); /* Shift the modal left and up by 50% of its own width and height */
     background-color: #fff;
-    padding: 20px;
+    padding: 20px 20px 10px 20px;
     border: 1px solid #888;
-    width: 60%;
+    width: 60%; /* You can adjust this as needed */
     border-radius: 5px;
     display: flex;
-    flex-direction: column; /* Use Flexbox for column layout */
-    max-width: 500px;
+    flex-direction: column;
+    max-width: 500px; /* Maximum width to ensure it does not get too large on bigger screens */
 }
 
 .create-export {
@@ -32,12 +36,14 @@
     font-size: 28px;
     font-weight: bold;
 }
+
 .close:hover,
 .close:focus {
     color: black;
     text-decoration: none;
     cursor: pointer;
 }
+
 .modal-title {
     font-size: 1.5em;
     margin-bottom: 10px;
@@ -153,6 +159,10 @@
     margin-right: 10px;
 }
 
+.modal-body table thead {
+    border-bottom: 2px solid #ddd;
+}
+
 .modal-footer {
     display: flex;
     padding: 10px 5px 0px 5px;
@@ -249,36 +259,52 @@
 }
 
 
-#editExportForm {
+/* Exclude filterSortForm and formMessages from the general form styles */
+[id*="Form"]:not(#filterSortForm):not(#formMessages):not(button[id*="Form"]),
+[id*="form"]:not(#filterSortForm):not(#formMessages):not(button[id*="form"]) {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    padding: 0 10px 10px 10px;
+    gap: 5px;
+    padding: 5px 5px 10px 5px;
     background-color: #ffffff;
     border-radius: 8px;
 }
 
-#editExportForm label, #send-invitation-form label {
+/* Apply styles to labels within forms where the ID contains "Form" or "form" */
+[id*="Form"]:not(#filterSortForm):not(#formMessages):not(button[id*="Form"]) label, 
+[id*="form"]:not(#filterSortForm):not(#formMessages):not(button[id*="form"]) label {
     font-size: 14px;
     color: #333;
     font-weight: 500;
-    margin-bottom: 5px;
 }
 
-#editExportForm input, #editExportForm select, #send-invitation-form input {
+/* Apply styles to inputs and selects within forms where the ID contains "Form" or "form" */
+[id*="Form"]:not(#filterSortForm):not(#formMessages):not(button[id*="Form"]) input, 
+[id*="Form"]:not(#filterSortForm):not(#formMessages):not(button[id*="Form"]) select, 
+[id*="form"]:not(#filterSortForm):not(#formMessages):not(button[id*="form"]) input, 
+[id*="form"]:not(#filterSortForm):not(#formMessages):not(button[id*="form"]) select {
     padding: 8px 12px;
+    margin-top: 6px;
     font-size: 14px;
     border-radius: 3px;
     border: 1px solid #ccc;
     outline: none;
 }
 
-#editExportForm input:focus, #editExportForm select:focus {
+/* Apply focus styles to inputs, selects, and textareas within forms where the ID contains "Form" or "form" */
+[id*="Form"]:not(#filterSortForm):not(#formMessages):not(button[id*="Form"]) input:focus, 
+[id*="Form"]:not(#filterSortForm):not(#formMessages):not(button[id*="Form"]) select:focus, 
+[id*="Form"]:not(#filterSortForm):not(#formMessages):not(button[id*="Form"]) textarea:focus,
+[id*="form"]:not(#filterSortForm):not(#formMessages):not(button[id*="form"]) input:focus, 
+[id*="form"]:not(#filterSortForm):not(#formMessages):not(button[id*="form"]) select:focus, 
+[id*="form"]:not(#filterSortForm):not(#formMessages):not(button[id*="form"]) textarea:focus {
     border-color: #0056b3;
     box-shadow: 0 0 0 3px rgba(0, 86, 179, 0.25);
 }
 
-#editExportForm .form-messages {
+/* Apply styles to form-messages within forms where the ID contains "Form" or "form" */
+[id*="Form"]:not(#filterSortForm):not(#formMessages):not(button[id*="Form"]) .form-messages, 
+[id*="form"]:not(#filterSortForm):not(#formMessages):not(button[id*="form"]) .form-messages {
     padding: 10px;
     background-color: #f8d7da;
     color: #721c24;
@@ -288,6 +314,9 @@
     text-align: center;
 }
 
+
+
+
 #formMessages {
     display: none; /* Hide by default */
     color: red; /* Error message color */
@@ -295,6 +324,45 @@
 
 @media (max-width: 768px) {
     .modal-content {
-        width: 90%;
+        width:75%;
+        max-width: 75%;
+        left: 45%;
     }
+
+    .tab {
+        font-size: 12px;
+        padding: 10px 14px;
+    }
+}
+
+
+.status-indicators {
+    display: flex;
+    flex-direction: column; /* Align children (input and status-sub) in a column */
+    width: 100%; /* Ensures the container takes full available width */
+}
+
+.status-indicators input,
+.status-indicators select {
+}
+
+.status-sub {
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* Aligns error container and counter on opposite sides */
+    width: 100%; /* Full width to align correctly under the input */
+}
+
+.form-error-container {
+    color: red;
+    flex-grow: 1; /* Allows it to take necessary space */
+    text-align: left; /* Error message alignment */
+    min-height: 20px; /* Ensures the container has space when empty */
+}
+
+.char-counter {
+    flex-shrink: 0; /* Prevents the counter from shrinking */
+    font-size: 12px;
+    color: #555;
+    text-align: right; /* Counter text alignment */
 }

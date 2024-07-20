@@ -10,10 +10,6 @@
 <link rel="stylesheet" type="text/css" href="{% static 'exports/css/style.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'exports/css/modal.css' %}">
 <style>
-.clickable-row {
-    cursor: pointer;
-}
-
 th:nth-child(1), td:nth-child(1) {
     width: 1%;
 }
@@ -55,8 +51,6 @@ th:nth-child(6), td:nth-child(6) {
 }
 
 .table-wrapper {
-    flex-grow: 1;
-    overflow-x: auto;
 }
 
 .pagination-container {
@@ -113,7 +107,7 @@ th:nth-child(6), td:nth-child(6) {
                     <small class="subheading">Total Products: {{ product_count }}</small>
                 </div>
                 <div class="button-group">
-                    <a href="{% url 'products:create_product' %}" class="button-8">New</a>
+                    <button type="button" class="button-8" id="NewProductButton">New</button>
                 </div>
             </div>
             <div class="filter-sort">
@@ -129,7 +123,6 @@ th:nth-child(6), td:nth-child(6) {
             </div>
         </div>
         <div class="table-container-3">
-            <div class="table-wrapper">
                 <table>
                     <thead>
                         <tr>
@@ -155,10 +148,10 @@ th:nth-child(6), td:nth-child(6) {
                                         <img src="{% static 'images/table_icon/more_vert_24dp_FILL0_wght400_GRAD0_opsz24_333333.png' %}" alt="Actions">
                                     </button>
                                     <div class="action-button-dropdown">
-                                        <a href="{% url 'products:edit_product' pk=item.product.id %}" class="dropdown-item">Edit</a>
+                                        <a href="#" class="edit-product-trigger" data-product-id="{{ item.product.id }}">Edit</a>
                                         <form action="{% url 'products:delete_product' pk=item.product.id %}" method="post" class="d-inline">
                                             {% csrf_token %}
-                                            <button type="submit" class="dropdown-item text-danger">Delete</button>
+                                            <a href="#" class="text-danger delete-product" data-product-id="{{ item.product.id }}">Delete</a>
                                         </form>
                                     </div>
                                 </div>
@@ -171,7 +164,6 @@ th:nth-child(6), td:nth-child(6) {
                         {% endfor %}
                     </tbody>
                 </table>
-            </div>
             <div class="pagination-container">
                 <ul class="pagination">
                     {% for num in page_obj.paginator.page_range %}
@@ -189,15 +181,342 @@ th:nth-child(6), td:nth-child(6) {
     </div>
 </main>
 
+{% include "modal/create_product_modal.html" %}
+{% include "modal/edit_product_modal.html" %}
+
 {% block javascript %}
 <script>
+
+// Function to handle the character counter for the product form fields
+function updateCounter(input, counter, maxLength) {
+    if (input && counter) {  // Ensure input and counter elements are present
+        const length = input.value.length;
+        counter.textContent = `${length}/${maxLength}`;
+        if (length >= maxLength) {
+            counter.classList.add('danger');
+            input.classList.add('danger');
+        } else {
+            counter.classList.remove('danger');
+            input.classList.remove('danger');
+        }
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
-    const rows = document.querySelectorAll('.clickable-row');
-    rows.forEach(function(row) {
+    const nameInput = document.getElementById('product_name');
+    const codeInput = document.getElementById('product_code');
+    const descriptionTextarea = document.getElementById('product_description');
+
+    const nameCounter = document.getElementById('product_name_counter');
+    const codeCounter = document.getElementById('product_code_counter');
+    const descriptionCounter = document.getElementById('product_description_counter');
+
+    const editNameInput = document.getElementById('edit_product_name');
+    const editCodeInput = document.getElementById('edit_product_code');
+    const editDescriptionTextarea = document.getElementById('edit_product_description');
+
+    const editNameCounter = document.getElementById('edit_product_name_counter');
+    const editCodeCounter = document.getElementById('edit_product_code_counter');
+    const editDescriptionCounter = document.getElementById('edit_product_description_counter');
+
+    // Check if input elements exist before adding event listeners
+    if (nameInput && nameCounter) {
+        nameInput.addEventListener('input', function() {
+            updateCounter(nameInput, nameCounter, 100);
+        });
+    }
+
+    if (codeInput && codeCounter) {
+        codeInput.addEventListener('input', function() {
+            updateCounter(codeInput, codeCounter, 50);
+        });
+    }
+
+    if (descriptionTextarea && descriptionCounter) {
+        descriptionTextarea.addEventListener('input', function() {
+            updateCounter(descriptionTextarea, descriptionCounter, 100);
+        });
+    }
+
+    if (editNameInput && editNameCounter) {
+        editNameInput.addEventListener('input', function() {
+            updateCounter(editNameInput, editNameCounter, 100);
+        });
+    }
+
+    if (editCodeInput && editCodeCounter) {
+        editCodeInput.addEventListener('input', function() {
+            updateCounter(editCodeInput, editCodeCounter, 50);
+        });
+    }
+
+    if (editDescriptionTextarea && editDescriptionCounter) {
+        editDescriptionTextarea.addEventListener('input', function() {
+            updateCounter(editDescriptionTextarea, editDescriptionCounter, 100);
+        });
+    }
+
+    // Initialize counters on page load
+    updateCounter(nameInput, nameCounter, 100);
+    updateCounter(codeInput, codeCounter, 50);
+    updateCounter(descriptionTextarea, descriptionCounter, 100);
+
+    updateCounter(editNameInput, editNameCounter, 100);
+    updateCounter(editCodeInput, editCodeCounter, 50);
+    updateCounter(editDescriptionTextarea, editDescriptionCounter, 100);
+});
+
+// Function to handle the edit product form submission
+document.addEventListener('DOMContentLoaded', function() {
+    const editProductTriggers = document.querySelectorAll('.edit-product-trigger');
+    const editProductModal = document.getElementById('editProductModal');
+    const closeEditProductModal = document.getElementById('CloseEditProductModal');
+    const submitEditProductForm = document.getElementById('SubmitEditProductForm');
+    const editProductForm = document.getElementById('editProductForm');
+    const editFormMessages = document.getElementById('editFormMessages');
+    const productTypeSelect = document.getElementById('edit_product_type');
+
+    function populateProductTypes(types, selectedType) {
+        productTypeSelect.innerHTML = ''; // Clear existing options
+        types.forEach(type => {
+            const option = document.createElement('option');
+            option.value = type[0];
+            option.textContent = type[1];
+            if (type[0] === selectedType) {
+                option.selected = true;
+            }
+            productTypeSelect.appendChild(option);
+        });
+    }
+
+    let currentProductId = null;  // Step 1: Declare a variable to store the product ID
+
+    editProductTriggers.forEach(trigger => {
+        trigger.addEventListener('click', function(e) {
+            e.preventDefault();
+            currentProductId = this.getAttribute('data-product-id');  // Step 2: Assign the product ID
+            fetch(`/products/edit/${currentProductId}/`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data) {
+                    document.getElementById('edit_product_name').value = data.product.product_name || '';
+                    document.getElementById('edit_product_code').value = data.product.product_code || '';
+                    document.getElementById('edit_product_description').value = data.product.product_description || '';
+                    populateProductTypes(data.product_types, data.product.product_type);
+                    
+                    // Update the counters after setting the values
+                    updateCounter(document.getElementById('edit_product_name'), document.getElementById('edit_product_name_counter'), 100);
+                    updateCounter(document.getElementById('edit_product_code'), document.getElementById('edit_product_code_counter'), 50);
+                    updateCounter(document.getElementById('edit_product_description'), document.getElementById('edit_product_description_counter'), 100);
+                    
+                    editProductModal.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showMessage('There was an error processing your request.', 'error');
+            });
+        });
+    });
+
+    closeEditProductModal.addEventListener('click', function() {
+        editProductModal.style.display = 'none';
+
+        // Clear all form inputs
+        const inputs = editProductModal.querySelectorAll('input[type=text], textarea, select');
+        inputs.forEach(input => {
+            if (input.type === 'text' || input.tagName.toLowerCase() === 'textarea') {
+                input.value = '';
+            } else if (input.tagName.toLowerCase() === 'select') {
+                input.selectedIndex = 0;
+            }
+        });
+
+        // Clear all form error messages
+        const errorContainers = editProductModal.querySelectorAll('.form-error-container');
+        errorContainers.forEach(container => {
+            container.innerHTML = ''; // Clear any text or child elements
+        });
+
+        // Optionally reset any counters or specific UI elements back to their default state
+        const counters = editProductModal.querySelectorAll('.char-counter');
+        counters.forEach(counter => {
+            counter.textContent = '0/100'; // Assuming you want to reset counters to '0/100' or similar default values
+        });
+    });
+
+    submitEditProductForm.addEventListener('click', function(event) {
+        event.preventDefault();
+        const formData = new FormData(editProductForm);
+        const jsonData = {
+            product_name: formData.get('product_name'),
+            product_code: formData.get('product_code'),
+            product_description: formData.get('product_description'),
+            product_type: formData.get('product_type'),
+        };
+
+        fetch(`/products/edit/${currentProductId}/`, {
+            method: 'PUT',
+            body: JSON.stringify(jsonData),
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.errors) {
+                document.querySelectorAll('.form-error-container').forEach(container => {
+                    container.innerHTML = ''; // Clear previous messages
+                });
+
+                Object.entries(data.errors).forEach(([field, errors]) => {
+                    const errorMessages = errors.join('<br>');
+                    const fieldElement = document.getElementById(`edit_${field}`);
+                    if (fieldElement) {
+                        const statusIndicators = fieldElement.closest('.status-indicators');
+                        if (statusIndicators) {
+                            const errorContainer = statusIndicators.querySelector('.form-error-container');
+                            if (errorContainer) {
+                                const errorDiv = document.createElement('small');
+                                errorDiv.classList.add('alert', 'alert-danger', 'form-error');
+                                errorDiv.innerHTML = errorMessages;
+                                errorContainer.appendChild(errorDiv);
+                            }
+                        }
+                    } else {
+                        // Handle non-field errors or notify users of errors that don't directly associate with a field
+                        editFormMessages.innerHTML = `<div class="alert alert-danger">${errorMessages}</div>`;
+                    }
+                });
+            } else {
+                setSessionMessage(data.message, 'success');
+                location.reload(); // Reload the page to update the list
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showMessage('There was an error processing your request.', 'error');  // Ensure this function exists or replace with suitable code
+        });
+    });
+});
+
+
+// Function to handle the new product form submission
+document.addEventListener('DOMContentLoaded', function() {
+    const newProductButton = document.getElementById('NewProductButton');
+    const productModal = document.getElementById('productModal');
+    const closeProductModal = document.getElementById('CloseProductModal');
+    const submitProductForm = document.getElementById('SubmitProductForm');
+    const productForm = document.getElementById('productForm');
+    const formMessages = document.getElementById('formMessages');
+
+    newProductButton.addEventListener('click', function() {
+        productModal.style.display = 'block';
+    });
+
+    closeProductModal.addEventListener('click', function() {
+        productModal.style.display = 'none';
+    });
+
+    submitProductForm.addEventListener('click', function(event) {
+        event.preventDefault();
+        submitProductFormHandler();
+    });
+
+    function submitProductFormHandler() {
+        const formData = new FormData(productForm);
+
+        fetch("{% url 'products:create_product' %}", {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            }
+        })
+        .then(response => response.json().then(data => {
+            if (!response.ok) {
+                throw data; // If response is not OK, throw the error data
+            }
+            return data;
+        }))
+        .then(data => {
+            setSessionMessage(data.message, 'success');
+            location.reload();  // Reload the page to update the list
+        })
+        .catch(errorData => {
+            if (errorData && errorData.errors) {
+                Object.entries(errorData.errors).forEach(([field, errors]) => {
+                    console.log(`Field: ${field}, Errors: ${errors}`); // Check what fields and errors are received
+
+                    const inputElement = document.querySelector(`[name="${field}"]`);
+                    console.log(`Input element for ${field}:`, inputElement); // Verify the element is found
+
+                    if (inputElement) {
+                        const statusIndicatorsContainer = inputElement.closest('.status-indicators');
+                        console.log(`Status indicators container for ${field}:`, statusIndicatorsContainer); // Verify the container is found
+
+                        if (statusIndicatorsContainer) {
+                            const errorContainer = statusIndicatorsContainer.querySelector('.form-error-container');
+                            console.log(`Error container for ${field}:`, errorContainer); // Verify the error container is found
+
+                            if (errorContainer) {
+                                const errorDiv = document.createElement('small');
+                                errorDiv.classList.add('alert', 'alert-danger', 'form-error');
+                                errorDiv.innerHTML = errors.join('<br>');
+                                errorContainer.appendChild(errorDiv);
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    document.querySelectorAll('.delete-product').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const productId = this.getAttribute('data-product-id');
+            if (confirm('Are you sure you want to delete this product?')) {
+                fetch(`/products/delete/${productId}/`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Content-Type': 'application/json'
+                    }
+                }).then(response => {
+                    if (response.status === 204) {
+                        return { message: "Product deleted" };  // Handle No Content response
+                    }
+                    if (!response.ok) {
+                        return response.json().then(data => {
+                            throw new Error(data.error || 'Network response was not ok');
+                        });
+                    }
+                    return response.json();  // Parse JSON response if OK
+                }).then(data => {
+                    setSessionMessage(data.message, 'success');
+                    location.reload();  // Reload the page to update the list
+                }).catch(error => {
+                    console.error('Error:', error);
+                    showMessage(error.message || 'There was an error processing your request.', 'error');
+                });
+            }
+        });
+    });
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Function to handle row clicks except on the action button and actions cell
+    document.querySelectorAll('.clickable-row').forEach(row => {
         row.addEventListener('click', function(event) {
-            // Check if the click was within the dropdown
-            if (!event.target.closest('.dropdown, .dropdown *')) {
-                // Navigate to the URL in the data-href attribute
+            // Check if the click was within the dropdown button or actions cell
+            if (!event.target.closest('.actions, .actions *, .action-button, .action-button *')) {
                 window.location.href = this.getAttribute('data-href');
             }
         });

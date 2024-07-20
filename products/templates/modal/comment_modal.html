@@ -1,39 +1,78 @@
 <style>
+
+    .modal-content-lg {
+        max-width: 60vw;
+    }
+
+    .modal-body-p {
+        padding: 5px 5px 10px 5px;
+        overflow-x: auto; /* Enables horizontal scrolling */
+        max-height: 39vh;
+    }
+
     .btn-edit-save {
         min-width: 100%;
+        background-color: #295893;
+        border-radius: 3px;
+        border: 0;
+        box-sizing: border-box;
+        color: white;
+        cursor: pointer;
+        display: inline-block;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 13px;
+        margin: 0;
+        outline: none;
+        padding: 3px 0;
         text-align: center;
+        text-decoration: none;
+        user-select: none;
+        -webkit-user-select: none;
+        touch-action: manipulation;
+        vertical-align: baseline;
     }
+
+    .form-control-comment {
+        height: 18px;
+        vertical-align: middle;
+        width: 85%;
+        border-radius: 3px;
+    }
+
     .comment_version_table {
-        width: 100%;
-        table-layout: fixed;
+        table-layout: fixed; /* Optional: Helps with consistent column sizing */
     }
+
     .comment_version_table th, .comment_version_table td {
         overflow: hidden; /* Ensures content doesn't overflow */
         text-overflow: ellipsis; /* Adds an ellipsis if the text overflows */
         white-space: nowrap; /* Keeps the content on a single line */
-        text-align: center;
+        text-align: left;
     }
 
     .comment_version_table th:nth-child(1) { width: 10% !important; } /* Version */
-    .comment_version_table th:nth-child(2) { width: 25% !important; } /* Filename */
-    .comment_version_table th:nth-child(3) { width: 15% !important; } /* Last Modified */
+    .comment_version_table th:nth-child(2) { width: 20% !important; } /* Filename */
+    .comment_version_table th:nth-child(3) { width: 20% !important; } /* Last Modified */
     .comment_version_table th:nth-child(4) { width: 30% !important; } /* Uploader */
-    .comment_version_table th:nth-child(5) { width: 10% !important; } /* Actions */
+    .comment_version_table th:nth-child(5) { width: 8% !important; } /* Actions */
 
 
     .owner-view th, .owner-view td { color: #007bff; } /* Styling for owner view */
     .access-user-view th, .access-user-view td { color: #6c757d; } /* Styling for access users */
 
-    
+    @media screen and (max-width: 1024px) {
+        .modal-content-lg {
+            min-width: 90vw;
+        }
+    }
+
 </style>
 
 <div class="modal fade" id="commentModal" tabindex="-1" aria-labelledby="commentModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content modal-content-lg">
-            <div class="modal-header border-0">
-                <h5 class="modal-title" id="commentModalLabel">Comments</h5>
-            </div>
-            <div class="modal-body" style="max-height:39vh;">
+            <div class="modal-title" id="commentModalLabel">Comments</div>
+            <div class="modal-body modal-body-p" style="">
                 <table id="commentsTable" class="table comment_version_table">
                     <thead>
                         <tr class="small">
@@ -41,7 +80,7 @@
                             <th>Modified</th>
                             <th>Editor</th>
                             <th>Comment</th>
-                            <th>Action</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody class="small">
@@ -49,8 +88,8 @@
                     </tbody>
                 </table>
             </div>
-            <div class="modal-footer border-0 p-1">
-                <button type="button" class="btn text-primary-custom text-15" data-bs-dismiss="modal">Close</button>
+            <div class="modal-footer">
+                <button type="button" class="cancel-btn" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>

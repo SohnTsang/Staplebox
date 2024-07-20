@@ -7,44 +7,24 @@
     .breadcrumb-container ol {
         margin-bottom: 0;
     }
-    .content-header {
-    }
+
     .content-section {
         background: #fff;
-        padding: 15px;
         border-radius: 5px;
-        box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        height: 33vh;
     }
+    
     .content-item {
         padding: 3px 0 3px 10px;
+        display: flex;  /* This ensures flexbox is used */
+        align-items: center; /* This aligns children (svg, button) vertically in the center */
     }
+    
     .content-item:last-child {
         border-bottom: none;
     }
     .action-form {
         margin-top: 20px;
         text-align: center;
-    }
-    .fw-less-bold {
-        font-weight: 500;
-    }
-
-    .content-header {
-        display: block; /* Ensures that the div behaves like a regular block-level element */
-        padding-left: 0;
-    }
-
-    .content-header,
-    .content-header p {
-        display: block; /* Ensures that both the title and paragraph are on their own lines */
-        
-    }
-
-    .content-header p {
-        margin-top: 0;
-        padding-top: 0;
-        text-align: left; /* Align the description text to the left or center as per design */
     }
 
     .modal-body p {
@@ -59,18 +39,30 @@
         outline: none;
     }
 
-    .open-folder{
+
+    .open-folder {
+        padding: 3px 0 3px 8px;
         font-size: 14px;
+        font-weight: 500;
+        color: #39739d;
+        background-color: transparent;
+        border: none;
+        text-align: left;
+        cursor: pointer;
+        outline: none; /* Removes focus border */
+        display: block; /* Makes it take the full available width */
+        width: 100%; /* Ensures it fills the container */
+        text-decoration: none; /* Removes underline if it's accidentally inherited */
     }
+
+    
 </style>
 
-<div class="content-header modal-header border-0 pt-0">
-    {% if entity_type == 'folder' %}
-        <h5 class="modal-title">Move {{ entity.name }}</h5>
-    {% else %}
-        <h5 class="modal-title">Move {{ entity.display_filename }}</h5>
-    {% endif %}
-</div>
+{% if entity_type == 'folder' %}
+    <div class="modal-title">Moving {{ entity.name }}</div>
+{% else %}
+    <div class="modal-title">Moving {{ entity.display_filename }}</div>
+{% endif %}
 <div>
     {% if entity_type == 'folder' %}
         {% if entity.parent %}
@@ -89,22 +81,28 @@
 
 {% include 'partials/breadcrumbs.html' %}
 
-<div class="content-section">
+<div class="content-section" style="height: 33vh;">
     {% for folder in folders %}
-    <div class="content-item rounded-pill mb-1 d-flex align-items-center clickable-div open-folder" data-folder-id="{{ folder.id }}" data-product-id="{{ product.id }}">
+    <div class="content-item clickable-div" data-folder-id="{{ folder.id }}" data-product-id="{{ product.id }}">
         <svg class="me-2" width="23" height="20" viewBox="0 0 17 15" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M16 6.32099V12.642C16 13.4751 15.3473 14.1576 14.5194 14.2179L14.4 14.2222H1.6C0.75651 14.2222 0.0654679 13.5776 0.00438862 12.7599L0 12.642L0 6.32099L16 6.32099ZM6.0155 0C6.45292 0 6.86907 0.176755 7.16925 0.485378L7.26488 0.593075L8.38448 1.97531L14.4 1.97531C15.2435 1.97531 15.9345 2.61995 15.9956 3.43762L16 3.55556V4.74074L0 4.74074L0 1.58025C0 0.747171 0.652702 0.0646597 1.48059 0.00433444L1.6 0L6.0155 0Z" fill="#CCA92D"/>
         </svg>
-        <button id="openFolderBtn" class="btn btn-link text-primary-custom open-folder p-0 fw-less-bold" data-folder-id="{{ folder.id }}" data-product-id="{{ product.id }}">{{ folder.name }}</button>
+        <button id="openFolderBtn" class="open-folder" data-folder-id="{{ folder.id }}" data-product-id="{{ product.id }}">{{ folder.name }}</button>
     </div>
     {% endfor %}
 </div>
-<form class="action-form modal-footer border-0 p-1" action="{% url 'products:move_entity' product_id=product.id entity_type=entity_type entity_id=entity.id current_folder_id=current_folder.id %}">
+<form class="action-form modal-footer" action="{% url 'products:move_entity' product_id=product.id entity_type=entity_type entity_id=entity.id current_folder_id=current_folder.id %}">
     {% csrf_token %}
     <input type="hidden" name="target_folder_id" value="{{ current_folder.id }}">
     <input type="hidden" name="moving_folder_id" value="{{ moving_folder_id }}">
-    <button type="button" class="btn text-primary-custom text-15" data-bs-dismiss="modal">Close</button>
-    <button type="submit" class="btn small h6 fw-less-bold text-primary-custom text-15">Move Here</button>
+    <button type="button" class="cancel-btn" id="closeMoveEntityModalBtn">Close</button>
+    <button type="submit" class="add-btn">Move Here</button>
 </form>
 
 
+<script>
+    document.getElementById('closeMoveEntityModalBtn').addEventListener('click', function() {
+        var modal = document.getElementById('moveEntityModal');
+        $(modal).modal('hide'); // Using jQuery to hide the modal
+    });
+</script>

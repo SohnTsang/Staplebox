@@ -30,7 +30,7 @@ class Document(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='uploaded_documents')
     file_hash = models.CharField(max_length=64, blank=True, editable=False)  # SHA-256 hash strings are 64 characters
-    comments = models.TextField(blank=True, null=True)  # Add this line
+    comments = models.TextField(blank=True, null=True) 
     original_folder = models.ForeignKey(Folder, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
     bin_expires_at = models.DateTimeField(null=True, blank=True)
 

@@ -33,7 +33,6 @@
                     <div class="bulk-action-dropdown" id="bulkActionDropdown">
                         <a href="#" id="deleteSelectedExports" class="bulk-action-delete">Delete</a>
                     </div>
-                    
                 </div>
                 <button class="button-8" role="button" id="create_export_modal">New</button>
             </div>
@@ -53,7 +52,7 @@
                 </thead>
                 <tbody id="exportTableBody">
                     {% for partner in all_partners %}
-                    <tr data-export-id="{{ partner.export_id }}"> <!-- Add the export ID here -->
+                    <tr data-export-id="{{ partner.export_id }}" class="non-clickable-tr"> <!-- Add the export ID here -->
                         <td><input type="checkbox"></td>
                         <td>{{ partner.reference_number }}</td>
                         <td>{{ partner.partner_name }}</td>

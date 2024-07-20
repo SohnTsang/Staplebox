@@ -45,3 +45,5 @@ def get_partner_info(user, filter_value='', sort_by='created_at', search_query='
         partner_info.sort(key=lambda x: x['created_at'], reverse=True)  # Assuming you want the most recent first
 
     return partner_info
+
+

@@ -19,6 +19,7 @@ class DocumentSerializer(serializers.ModelSerializer):
             self.fields['file'].required = False
             self.fields['uploaded_by'].required = False
             
+        
     def create(self, validated_data):
         logger.debug("Create method called")
         try:
@@ -88,22 +89,28 @@ class DocumentSerializer(serializers.ModelSerializer):
 class DocumentCommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Document
-        fields = ['comments']  # Only include the comments field
+        fields = ['comments']
 
     def update(self, instance, validated_data):
-        instance.comments = validated_data.get('comments', instance.comments)
+        new_comment = validated_data.get('comments', instance.comments)
+        logger.debug(f"Received new comment: {new_comment}")
+        instance.comments = new_comment
         instance.save(update_fields=['comments'])
+        logger.debug(f"Updated comments: {instance.comments}")
         return instance
     
 
 class DocumentVersionCommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = DocumentVersion
-        fields = ['comments']  # Only include the comments field
+        fields = ['comments']
 
     def update(self, instance, validated_data):
-        instance.comments = validated_data.get('comments', instance.comments)
+        new_comment = validated_data.get('comments', instance.comments)
+        logger.debug(f"Received new comment: {new_comment}")
+        instance.comments = new_comment
         instance.save(update_fields=['comments'])
+        logger.debug(f"Updated comments: {instance.comments}")
         return instance
     
 

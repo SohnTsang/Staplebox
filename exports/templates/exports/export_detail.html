@@ -157,10 +157,10 @@
             {% if not export.completed and export.created_by_id == request.user.id %}
             <div class="button-group">
                 <div class="action-button-container">
-                    <button class="button-8 action-button-title">
+                    <button class="button-8 action-button-title" data-dropdown-target="ActionDropdown">
                         Action
                     </button>
-                    <div class="action-button-dropdown">
+                    <div class="action-button-dropdown dropdown-content" id="ActionDropdown">
                         <a href="#" id="edit_export" data-export-id="{{ export.id }}">Edit</a>
                         <a href="#" id="complete_export" data-export-id="{{ export.id }}">Complete</a>
                     </div>
@@ -234,7 +234,7 @@
                         </thead>
                         <tbody>
                             {% for document in export.documents %}
-                                <tr data-document-id="{{ document.document_id }}">
+                                <tr data-document-id="{{ document.document_id }}" class="non-clickable-tr">
                                     <td><input type="checkbox" class="document-checkbox"></td>
                                     <td>
                                         <span class="file-name-table">{{ document.file_name }}</span>
@@ -246,10 +246,10 @@
                                     <td>{{ document.created_at }}</td>
                                     <td class="actions">
                                         <div class="action-button-container">
-                                            <button class="action-button">
+                                            <button class="action-button" data-dropdown-target="actionDropdown{{ forloop.counter }}">
                                                 <img src="{% static 'images/table_icon/more_vert_24dp_FILL0_wght400_GRAD0_opsz24_333333.png' %}" alt="Actions">
                                             </button>
-                                            <div class="action-button-dropdown">
+                                            <div class="action-button-dropdown dropdown-content" id="actionDropdown{{ forloop.counter }}">
                                                 <a href="#" class="view-action">View</a>
                                                 <a href="{% url 'exports:download_document' document_id=document.document_id %}" class="download-action">Download</a>
                                                 <a href="#" class="delete-action" data-document-id="{{ document.document_id }}">Delete</a>
@@ -276,30 +276,6 @@
 {% block javascript %}
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Select all action-button-title containers
-    document.querySelectorAll('.action-button-container').forEach(container => {
-        const actionButtonTitle = container.querySelector('.action-button-title');
-        const dropdown = container.querySelector('.action-button-dropdown');
-        
-        function toggleDropdown() {
-            dropdown.classList.toggle('open');
-        }
-
-        // Add event listener to the action button
-        actionButtonTitle.addEventListener('click', function(e) {
-            e.stopPropagation(); // Prevents the click from propagating to other elements
-            toggleDropdown();
-        });
-
-        // Close the dropdown if clicked outside
-        document.addEventListener('click', function() {
-            if (dropdown.classList.contains('open')) {
-                dropdown.classList.remove('open');
-            }
-        });
-    });
-});
 
 document.addEventListener('DOMContentLoaded', function() {
     const completeExportButton = document.getElementById('complete_export');
@@ -568,59 +544,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // Toggle dropdown visibility
-    function adjustDropdownPosition() {
-        document.querySelectorAll('.action-button').forEach(button => {
-            button.addEventListener('click', function (e) {
-                e.stopPropagation(); // Prevents the click from propagating to other elements
-                const dropdown = this.parentNode.querySelector('.action-button-dropdown');
-                
-                // Close other dropdowns first
-                document.querySelectorAll('.action-button-dropdown').forEach(d => {
-                    if (d !== dropdown) {
-                        d.style.display = 'none'; // Hide other dropdowns
-                    }
-                });
-
-                // Toggle current dropdown
-                const isOpen = dropdown.style.display === 'block';
-                dropdown.style.display = isOpen ? 'none' : 'block'; // Toggle visibility
-
-                // Check if dropdown exceeds the visible area
-                const dropdownRect = dropdown.getBoundingClientRect();
-                const spaceBelow = window.innerHeight - dropdownRect.bottom;
-                
-                if (spaceBelow < 40) {
-                    // Not enough space below, flip the dropdown
-                    dropdown.style.bottom = '100%'; // Position it above the button
-                    dropdown.style.top = 'auto'; // Disable the default top positioning
-                } else {
-                    // Enough space below, use default positioning
-                    dropdown.style.top = '100%'; // Position it below the button
-                    dropdown.style.bottom = 'auto'; // Disable the flipped positioning
-                }
-            });
-        });
-    }
-
-    // Call the function to setup dropdown positioning
-    adjustDropdownPosition();
-
-    // Also handle clicks outside to close any open dropdown
-    document.addEventListener('click', function (e) {
-        if (!e.target.matches('.action-button')) {
-            document.querySelectorAll('.action-button-dropdown').forEach(function (dropdown) {
-                dropdown.style.display = 'none';
-            });
-        }
-    });
-
-    // Close dropdown if clicked outside
-    document.addEventListener('click', function () {
-        document.querySelectorAll('.action-button-container').forEach(container => {
-            container.classList.remove('open');
-        });
-    });
 
     // Individual document delete functionality
     document.querySelectorAll('.delete-action').forEach(deleteBtn => {
@@ -723,6 +646,7 @@ document.addEventListener('DOMContentLoaded', function () {
             } else {
                 li.style.border = "1px solid red";
                 li.style.backgroundColor = "#ffcccc88";
+                progress.style.background = "linear-gradient(to right, #f44336 100%, #f3f3f3 0%) !important";
                 invalidFileCount++; // Increment invalid file count
             }
 

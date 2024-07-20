@@ -7,11 +7,11 @@
         overflow: hidden; /* Ensures content doesn't overflow */
         text-overflow: ellipsis; /* Adds an ellipsis if the text overflows */
         white-space: nowrap; /* Keeps the content on a single line */
-        text-align: center;
+        
     }
 
     .version-table th:nth-child(1) { width: 10% !important; } /* Version */
-    .version-table th:nth-child(2) { width: 40% !important; } /* Filename */
+    .version-table th:nth-child(2) { width: 40% !important; text-align: left; } /* Filename */
     .version-table th:nth-child(3) { width: 20% !important; } /* Last Modified */
     .version-table th:nth-child(4) { width: 20% !important; } /* Uploader */
     .version-table th:nth-child(5) { width: 10% !important; } /* Actions */
@@ -25,10 +25,9 @@
 <div class="modal fade" id="documentVersionsModal" tabindex="-1" aria-labelledby="documentVersionsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content modal-content-lg">
-            <div class="modal-header border-0">
-                <h5 class="modal-title" id="documentVersionsModalLabel">Document Versions</h5>
-            </div>
-            <div class="modal-body" style="max-height:39vh;">
+            <div class="modal-title" id="documentVersionsModalLabel">Document Versions</div>
+
+            <div class="modal-body modal-body-p" style="max-height:39vh;">
                 <table class="table version-table">
                     <thead>
                         <tr class="small">
@@ -42,8 +41,8 @@
                     <tbody id="versionList" class="small"></tbody>
                 </table>
             </div>
-            <div class="modal-footer border-0 p-1">
-                <button type="button" class="btn text-primary-custom text-15" data-bs-dismiss="modal">Close</button>
+            <div class="modal-footer">
+                <button type="button" class="cancel-btn" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
