@@ -32,7 +32,7 @@ def login_signup_view(request):
 
     if request.user.is_authenticated:
         return redirect('home')
-    
+
     # Determine the default form to show based on the request path
     default_form = 'signup' if request.path == '/accounts/signup/' else 'login'
 

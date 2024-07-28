@@ -27,7 +27,7 @@ class DocumentSerializer(serializers.ModelSerializer):
 
         logger.info(f"Creating document with data: {validated_data}")
         document = Document.objects.create(file=file, **validated_data)
-        logger.info(f"Document created with ID {document.id}")
+        logger.info(f"Document created with ID {document.uuid}")
         return document
 
 class ExportSerializer(serializers.ModelSerializer):
@@ -36,7 +36,7 @@ class ExportSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Export
-        fields = ['id', 'reference_number', 'label', 'export_date', 'created_by', 'partner', 'folder', 'documents', 'products']
+        fields = ['uuid', 'reference_number', 'label', 'export_date', 'created_by', 'partner', 'folder', 'documents', 'products']
         read_only_fields = ['created_by']
 
     def create(self, validated_data):
@@ -45,7 +45,7 @@ class ExportSerializer(serializers.ModelSerializer):
         products_data = validated_data.pop('products', [])
 
         export = Export.objects.create(**validated_data)
-        logger.info(f"Created export with ID {export.id}")
+        logger.info(f"Created export with ID {export.uuid}")
 
         if products_data:
             export.products.set(products_data)
@@ -59,7 +59,7 @@ class ExportSerializer(serializers.ModelSerializer):
                 logger.info("Document serializer is valid")
                 document = doc_serializer.save()
                 export.documents.add(document)
-                logger.info(f"Added document with ID {document.id} to export {export.id}")
+                logger.info(f"Added document with ID {document.uuid} to export {export.uuid}")
             else:
                 logger.error(f"Document serializer errors: {doc_serializer.errors}")
                 raise serializers.ValidationError(doc_serializer.errors)

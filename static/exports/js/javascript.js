@@ -257,29 +257,40 @@
         }
     
         function loadPartners() {
+            console.log('loadPartners function called'); // Check if the function is called
+        
             fetch('/exports/list_partners/')
-                .then(response => response.json())
+                .then(response => {
+                    console.log('Response status:', response.status); // Log response status
+                    return response.text(); // Change to text() to log the full response
+                })
                 .then(data => {
-                    partnersList.innerHTML = '';
-                    data.partners.forEach(partner => {
-                        var li = document.createElement('li');
-                        li.textContent = partner.partner_name;
-                        li.setAttribute('data-partner', partner.id);  // Use partnership ID from the response
-                        li.addEventListener('click', function() {
-                            document.querySelectorAll('.partners-list li').forEach(item => {
-                                item.classList.remove('selected');
+                    console.log('Data received:', data); // Log the received data
+                    try {
+                        const jsonResponse = JSON.parse(data); // Parse the JSON response
+                        partnersList.innerHTML = '';
+                        jsonResponse.partners.forEach(partner => {
+                            var li = document.createElement('li');
+                            li.textContent = partner.partner_name;
+                            li.setAttribute('data-partner', partner.id);  // Use partnership ID from the response
+                            li.addEventListener('click', function() {
+                                document.querySelectorAll('.partners-list li').forEach(item => {
+                                    item.classList.remove('selected');
+                                });
+                                li.classList.add('selected');
+                                selectedPartner = partner.id;  // Correctly set selectedPartner
                             });
-                            li.classList.add('selected');
-                            selectedPartner = partner.id;  // Correctly set selectedPartner
+                            partnersList.appendChild(li);
                         });
-                        partnersList.appendChild(li);
-                    });
+                    } catch (e) {
+                        console.error('Error parsing JSON:', e);
+                    }
                 })
                 .catch(error => {
                     console.error('Error loading partners:', error);
                 });
         }
-    
+        
         if (btn) {
             btn.addEventListener('click', function() {
                 formData = new FormData();

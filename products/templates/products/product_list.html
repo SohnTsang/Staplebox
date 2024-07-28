@@ -136,7 +136,7 @@ th:nth-child(6), td:nth-child(6) {
                     </thead>
                     <tbody id="productTableBody">
                         {% for item in page_obj %}
-                        <tr class="clickable-row" data-href="{% if item.root_folder_id %}{% url 'products:product_explorer_folder' product_id=item.product.id folder_id=item.root_folder_id %}{% endif %}">
+                        <tr class="clickable-row" data-href="{% if item.signed_root_folder_uuid %}{% url 'products:product_explorer_folder' product_uuid=item.signed_product_uuid folder_uuid=item.signed_root_folder_uuid %}{% endif %}">
                             <td></td>
                             <td class="">{{ item.product.product_name }}</td>
                             <td>{{ item.product.product_code }}</td>
@@ -148,10 +148,10 @@ th:nth-child(6), td:nth-child(6) {
                                         <img src="{% static 'images/table_icon/more_vert_24dp_FILL0_wght400_GRAD0_opsz24_333333.png' %}" alt="Actions">
                                     </button>
                                     <div class="action-button-dropdown">
-                                        <a href="#" class="edit-product-trigger" data-product-id="{{ item.product.id }}">Edit</a>
-                                        <form action="{% url 'products:delete_product' pk=item.product.id %}" method="post" class="d-inline">
+                                        <a href="#" class="edit-product-trigger" data-product-id="{{ item.signed_product_uuid }}">Edit</a>
+                                        <form action="{% url 'products:delete_product' product_uuid=item.signed_product_uuid %}" method="post" class="d-inline">
                                             {% csrf_token %}
-                                            <a href="#" class="text-danger delete-product" data-product-id="{{ item.product.id }}">Delete</a>
+                                            <a href="#" class="text-danger delete-product" data-product-id="{{ item.signed_product_uuid }}">Delete</a>
                                         </form>
                                     </div>
                                 </div>

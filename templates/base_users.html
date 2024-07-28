@@ -21,10 +21,10 @@
     <link rel="stylesheet" type="text/css" href="{% static 'css/loading.css' %}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.3.12/themes/default/style.min.css" />
     <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
-    <link rel="stylesheet" type="text/css" href="{% static 'css/loading.css' %}">
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet">
 
     <script src="{% static 'js/loading.js' %}"></script>
+
 
     <style>
         * {
@@ -54,7 +54,7 @@
             padding: 0;
         }
         .text-primary-custom {
-            color: #295893 !important;
+            color: #2c5777 !important;
         }
         .text-primary-custom:hover {
             background-color: transparent !important;
@@ -302,6 +302,7 @@
 
         /* Container for the message popup */
         .message-popup-container {
+            max-width: 40vw;
             position: fixed;
             top: 20px;
             left: 50%;
@@ -321,7 +322,10 @@
             max-width: 90%; /* Limit maximum width */
             color: #ffffff;
             background: rgba(0, 0, 0, 0.8); /* More subtle background */
-            white-space: nowrap; /* Prevent text wrapping */
+            word-wrap: break-word; /* Allow text to wrap within the container */
+            white-space: normal; /* Allow the text to wrap to the next line */
+            overflow-wrap: break-word; /* Ensure the text wraps properly */
+            overflow: hidden; /* Hide any overflowing content */
         }
 
         /* Success message styling */
@@ -405,6 +409,8 @@
         </div>
     </div>
 
+    {% include "remove_modal.html" %}
+
 
 
 <!-- Optional: Include the jQuery library -->
@@ -424,9 +430,32 @@
 {% block extra_js %}
 
 <script>
-    
-</script>
-<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Function to close the modal
+    function closeModal(modal) {
+        modal.style.display = 'none';
+    }
+
+    // Attach event listener to all elements with the class 'cancel-btn'
+    const cancelButtons = document.querySelectorAll('.cancel-btn');
+    cancelButtons.forEach(function(cancelButton) {
+        cancelButton.addEventListener('click', function () {
+            // Find the nearest modal to the cancel button and close it
+            const modal = cancelButton.closest('.modal');
+            if (modal) {
+                closeModal(modal);
+            }
+        });
+    });
+
+    // Close the modal when clicking outside of the modal content
+    window.addEventListener('click', function (event) {
+        if (event.target.classList.contains('modal')) {
+            closeModal(event.target);
+        }
+    });
+});
+
 document.addEventListener('DOMContentLoaded', function() {
     let currentOpenDropdown = null;
     let currentOpenButton = null;

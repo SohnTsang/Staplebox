@@ -1,6 +1,5 @@
 
 from django.urls import path, re_path
-from .views import move_entity
 from folder.views import folder_create, edit_folder
 from documents.views import get_documents, DocumentUploadView
 from document_types.views import document_types_list
@@ -13,45 +12,25 @@ app_name = 'products'
 
 urlpatterns = [
     path('', ProductListView.as_view(), name='product_list'),
-    #path('new/', create_product, name='create_product'),
     path('create/', CreateProductView.as_view(), name='create_product'),
-
-    path('edit/<int:pk>/', EditProductView.as_view(), name='edit_product'),
-    path('delete/<int:pk>/', DeleteProductView.as_view(), name='delete_product'),
-
+    path('edit/<str:product_uuid>/', EditProductView.as_view(), name='edit_product'),
+    path('delete/<str:product_uuid>/', DeleteProductView.as_view(), name='delete_product'),
     path('api/products/', ListProductsAPIView.as_view(), name='api_list_products'),
-
-    #path('<int:product_id>/explorer/', views.product_explorer, name='product_explorer'),
-    #path('<int:product_id>/explorer/<int:folder_id>/', views.product_explorer, name='product_explorer_folder'),
-    path('<int:product_id>/explorer/', ProductExplorerView.as_view(), name='product_explorer'),
-    path('<int:product_id>/explorer/<int:folder_id>/', ProductExplorerView.as_view(), name='product_explorer_folder'),
-    
-    path('<int:product_id>/explorer/bin/', views.product_explorer_bin, name='product_explorer_bin'),
-    path('<int:product_id>/explorer/folder/<int:folder_id>/', views.product_explorer, name='product_explorer_with_folder'),
+    path('<str:product_uuid>/explorer/', ProductExplorerView.as_view(), name='product_explorer'),
+    path('<str:product_uuid>/explorer/<str:folder_uuid>/', ProductExplorerView.as_view(), name='product_explorer_folder'),
+    path('<str:product_uuid>/explorer/bin/', views.product_explorer_bin, name='product_explorer_bin'),
     # Folder control
-    path('<int:product_id>/create_folder/', folder_create, name='folder_create'),
-    path('<int:product_id>/explorer/edit_folder/<int:folder_id>/', edit_folder, name='edit_folder'),
+    path('<str:product_uuid>/create_folder/', folder_create, name='folder_create'),
+    path('<str:product_uuid>/explorer/edit_folder/<str:folder_uuid>/', edit_folder, name='edit_folder'),
     # Document management URLs within the context of a product and folder
-    path('<int:product_id>/folders/<int:folder_id>/upload_document/', DocumentUploadView.as_view(), name='upload_document'),
-    path('<int:product_id>/folders/<int:folder_id>/documents/', get_documents, name='get_documents'),
-
+    path('<str:product_uuid>/folders/<str:folder_uuid>/upload_document/', DocumentUploadView.as_view(), name='upload_document'),
+    path('<str:product_uuid>/folders/<str:folder_uuid>/documents/', get_documents, name='get_documents'),
     # New URL pattern for accessing a folder within the context of a specific product
-    path('<int:product_id>/folders/<int:folder_id>/api/document_types/', document_types_list, name='document_types_list'),
-
+    path('<str:product_uuid>/folders/<str:folder_uuid>/api/document_types/', document_types_list, name='document_types_list'),
     # Move entity
-    #path('<int:product_id>/explorer/folder/<int:folder_id>/content/', views.folder_content, name='folder_content'),
-    path('<int:product_id>/explorer/folder/<int:folder_id>/content/', FolderContentView.as_view(), name='folder_content'),
-
-
-    #path('<int:product_id>/move/<str:entity_type>/<int:entity_id>/', views.move_entity, name='move_entity'),
-    #path('<int:product_id>/move/<str:entity_type>/<int:entity_id>/<int:current_folder_id>/', views.move_entity, name='move_entity'),
-    #path('<int:product_id>/move_entities/', views.move_entities, name='move_entities'),  # Make sure this line is correct
-
-    path('<int:product_id>/move/<str:entity_type>/<int:entity_id>/', views.MoveEntitiesView.as_view(), name='move_entity'),
-    path('<int:product_id>/move/<str:entity_type>/<int:entity_id>/<int:current_folder_id>/', views.MoveEntitiesView.as_view(), name='move_entity'),
-    path('<int:product_id>/move_entities/', views.MoveEntitiesView.as_view(), name='move_entities'),
-
+    path('<str:product_uuid>/explorer/folder/<str:folder_uuid>/content/', FolderContentView.as_view(), name='folder_content'),
+    path('<str:product_uuid>/move/<str:entity_type>/<str:entity_uuid>/', views.MoveEntitiesView.as_view(), name='move_entity'),
+    path('<str:product_uuid>/move/<str:entity_type>/<str:entity_uuid>/<str:current_folder_uuid>/', views.MoveEntitiesView.as_view(), name='move_entity'),
+    path('<str:product_uuid>/move_entities/', views.MoveEntitiesView.as_view(), name='move_entities'),
     # Access Control
-
-
 ]

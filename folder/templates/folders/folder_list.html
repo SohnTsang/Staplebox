@@ -7,7 +7,7 @@
 {% block content %}
 <div class="container">
     <h2>Folders in {{ product.product_name }}</h2>
-    <a href="{% url 'folder_create' product_id=product.id %}" class="btn btn-primary">Add Folder</a>
+    <a href="{% url 'folder_create' product_uuid=product.uuid %}" class="btn btn-primary">Add Folder</a>
     <div>
         {% for folder in folders %}
             <p>{{ folder.name }}</p>

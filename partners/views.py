@@ -12,7 +12,7 @@ from django.contrib import messages
 from invitations.forms import InvitationForm
 from django.core.mail import send_mail
 from django.conf import settings
-from django.http import JsonResponse
+from django.http import JsonResponse, Http404
 from django.shortcuts import get_object_or_404
 from .models import Partnership
 from companies.models import CompanyProfile
@@ -25,8 +25,14 @@ from django.utils.decorators import method_decorator
 from rest_framework.renderers import TemplateHTMLRenderer
 from rest_framework.permissions import IsAuthenticated
 from django.views.decorators.http import require_http_methods
-from folder.models import Folder
-from users.models import UserProfile
+from django.core.signing import Signer, BadSignature
+
+import logging
+
+signer = Signer()
+
+logger = logging.getLogger(__name__)
+
 
 @method_decorator(login_required, name='dispatch')
 class PartnerCompanyProfileView(APIView):
@@ -34,8 +40,14 @@ class PartnerCompanyProfileView(APIView):
     renderer_classes = [TemplateHTMLRenderer]
     template_name = 'companies/company_profile.html'
 
-    def get(self, request, partner_id):
-        partnership = get_object_or_404(Partnership, pk=partner_id)
+    def get(self, request, partner_uuid):
+        try:
+            # Unsign the partner UUID
+            unsigned_partner_uuid = signer.unsign(partner_uuid)
+        except BadSignature:
+            return Response({"detail": "Invalid partner ID."}, status=400)
+
+        partnership = get_object_or_404(Partnership, uuid=unsigned_partner_uuid)
 
         if request.user not in [partnership.partner1, partnership.partner2]:
             return Response({"detail": "You are not authorized to view this page."}, status=403)
@@ -43,21 +55,27 @@ class PartnerCompanyProfileView(APIView):
         # Determine the "other partner" based on the current user
         viewing_partner = partnership.partner2 if request.user == partnership.partner1 else partnership.partner1
 
-        # Get company profiles for both partners
-        company_profile = get_object_or_404(CompanyProfile, user_profile=viewing_partner.userprofile)
-        user_company_profile = get_object_or_404(CompanyProfile, user_profile=request.user.userprofile)
+        # Get the company profile for the viewing partner
+        company_profile = get_object_or_404(CompanyProfile, user_profiles__user=viewing_partner)
 
-        # Get folders for both company profiles
-        folders = [company_profile.partners_contract_folder, user_company_profile.partners_contract_folder]
-        documents = Document.objects.filter(folder__in=folders).distinct()
+        # Get the folder associated with the company profile
+        folder = company_profile.partners_contract_folder
+        documents = Document.objects.filter(folder=folder).distinct()
 
-        # Ensure context is compatible with template requirements
+        # Sign each document UUID
+        signed_documents = [{
+            'uuid': signer.sign(str(document.uuid)),
+            'original_filename': document.original_filename,
+            'comments': document.comments,
+            'uploaded_by': document.uploaded_by,
+        } for document in documents]
+
         return Response({
             'company_profile': company_profile,
-            'documents': documents,
-            'folder_id': company_profile.partners_contract_folder.id if company_profile.partners_contract_folder else None,
+            'documents': signed_documents,
+            'folder_id': signer.sign(str(folder.uuid)) if folder else None,
+            'is_partner_profile': True
         }, template_name=self.template_name)
-
 
 
 @method_decorator(login_required, name='dispatch')
@@ -107,22 +125,19 @@ class PartnerListView(APIView):
             partner_user = partnership.partner2 if partnership.partner1 == user else partnership.partner1
             partners.add(partner_user.email)
 
-        # Delete sent invitations if the user is already a partner with the recipient
-        #for invitation in sent_invitations:
-        #    if invitation.email in partners:
-        #        invitation.delete()
-
         for partnership in active_partnerships:
             partner_user = partnership.partner2 if partnership.partner1 == user else partnership.partner1
             try:
-                company_profile = CompanyProfile.objects.get(user_profile=partner_user.userprofile)
+                company_profile = CompanyProfile.objects.get(user_profiles=partner_user.userprofile)
                 should_add = False
                 if filter_type == 'company_name' and filter_value.lower() in company_profile.name.lower():
                     should_add = True
                 elif filter_type == 'email' and filter_value.lower() in company_profile.email.lower():
                     should_add = True
-                elif filter_type == 'role' and filter_value.lower() in company_profile.role.lower():
-                    should_add = True
+                elif filter_type == 'role':
+                    # Check if role is not None before calling lower()
+                    if company_profile.role and filter_value.lower() in company_profile.role.lower():
+                        should_add = True
                 elif not filter_type:
                     should_add = True
                 if should_add:
@@ -133,9 +148,9 @@ class PartnerListView(APIView):
         for partnership in filtered_partnerships:
             partner_user = partnership.partner2 if partnership.partner1 == user else partnership.partner1
             try:
-                company_profile = CompanyProfile.objects.get(user_profile=partner_user.userprofile)
+                company_profile = CompanyProfile.objects.get(user_profiles=partner_user.userprofile)
                 partner_info.append({
-                    'id': partnership.id,
+                    'id': signer.sign(str(partnership.uuid)),  # Use signed UUID
                     'email': partner_user.email,
                     'created_at': partnership.created_at.strftime('%Y-%m-%d'),
                     'company_name': company_profile.name,
@@ -144,7 +159,7 @@ class PartnerListView(APIView):
                 })
             except CompanyProfile.DoesNotExist:
                 partner_info.append({
-                    'id': partnership.id,
+                    'id': signer.sign(str(partnership.uuid)),  # Use signed UUID
                     'email': partner_user.email,
                     'created_at': partnership.created_at.strftime('%d-%b-%Y'),
                     'company_name': 'No company profile',
@@ -179,7 +194,7 @@ class PartnerListView(APIView):
         form = InvitationForm(request.POST, request=request)
         if form.is_valid():
             user_profile = request.user.userprofile
-            company_profile, created = CompanyProfile.objects.get_or_create(user_profile=user_profile)
+            company_profile, created = CompanyProfile.objects.get_or_create(user_profiles=user_profile)
 
             if not company_profile.name or not company_profile.role:
                 messages.error(request, "Please complete your company profile before adding partners.")
@@ -219,20 +234,20 @@ class PartnerListView(APIView):
         invitations = queryset[start:end]
         has_more = queryset.count() > end
         return invitations, has_more
+
     
-
-
-
 @login_required
-@require_http_methods(["POST", "DELETE"])  # Allow both POST and DELETE
-def delete_partner(request, partner_id):
+@require_http_methods(["POST", "DELETE"])
+def delete_partner(request, partner_uuid):
     try:
-        partner = get_object_or_404(Partnership, id=partner_id)
+        unsigned_partner_uuid = signer.unsign(partner_uuid)
+        partner = get_object_or_404(Partnership, uuid=unsigned_partner_uuid)
+        
         # Check if the current user is part of the partnership
         if request.user == partner.partner1 or request.user == partner.partner2:
             # Identify the other user in the partnership
             other_user = partner.partner2 if request.user == partner.partner1 else partner.partner1
-            
+
             # Delete the partnership
             partner.delete()
 
@@ -245,7 +260,10 @@ def delete_partner(request, partner_id):
             return JsonResponse({'message': 'Partner deleted'}, status=200)
         else:
             return JsonResponse({'error': 'You do not have permission to delete this partner'}, status=403)
+    except BadSignature:
+        raise Http404("Invalid partner UUID")
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
 
 

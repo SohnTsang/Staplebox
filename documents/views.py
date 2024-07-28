@@ -6,32 +6,24 @@ from folder.models import Folder
 from document_types.models import DocumentType
 from django.views.decorators.csrf import csrf_exempt
 from django.http import FileResponse
-from django.http import JsonResponse, HttpResponseNotAllowed
-from django.http import HttpResponse, Http404
+from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 import os, hashlib
-from django.contrib import messages
 from django.views.decorators.http import require_http_methods
 from django.core.files.storage import default_storage
-from django.core.files.base import ContentFile
-from django.http import HttpResponseForbidden
 from django.utils.html import escape  # Use escape to prevent XSS attacks
-from .forms import DocumentEditForm  # Assuming you will create this form
-from django.utils import timezone 
 from django.utils.timezone import localtime
 from folder.utils import handle_item_action, clean_bins
 from partners.models import Partnership
 from companies.models import CompanyProfile
 from django.db.models import Q
 from django.db import transaction
-from rest_framework.parsers import JSONParser
 from .serializers import DocumentSerializer, DocumentCommentSerializer, DocumentVersionCommentSerializer, DocumentUpdateSerializer
-from django.views.decorators.csrf import csrf_exempt
 from rest_framework.parsers import MultiPartParser
-from rest_framework.decorators import api_view, parser_classes
+from rest_framework.decorators import api_view
 import json
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
@@ -39,8 +31,12 @@ from rest_framework.response import Response
 from rest_framework import status
 import logging
 from django.http import Http404
-from rest_framework.parsers import MultiPartParser, FormParser
-from django.utils.decorators import method_decorator
+from rest_framework.parsers import MultiPartParser
+from django.core.signing import Signer, BadSignature
+from users.models import User
+
+signer = Signer()
+
 logger = logging.getLogger(__name__)
 
 #For checking file integrity
@@ -55,11 +51,27 @@ class DocumentUploadView(APIView):
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser]
 
-    def post(self, request, product_id, folder_id):
-        logger.debug("Received upload request for product_id: %s, folder_id: %s", product_id, folder_id)
+    def post(self, request, product_uuid, folder_uuid):
+        logger.debug("Received upload request for product_uuid: %s, folder_uuid: %s", product_uuid, folder_uuid)
 
-        product = get_object_or_404(Product, id=product_id)
-        folder = get_object_or_404(Folder, id=folder_id, product_id=product_id)
+        try:
+            unsigned_product_uuid = signer.unsign(product_uuid)
+            logger.debug("Unsigned product_uuid: %s", unsigned_product_uuid)
+            unsigned_folder_uuid = signer.unsign(folder_uuid)
+            logger.debug("Unsigned folder_uuid: %s", unsigned_folder_uuid)
+        except BadSignature:
+            logger.warning("Invalid UUID signature for product_uuid: %s or folder_uuid: %s", product_uuid, folder_uuid)
+            return Response({"detail": "Invalid UUID signature."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            product = get_object_or_404(Product, uuid=unsigned_product_uuid)
+            folder = get_object_or_404(Folder, uuid=unsigned_folder_uuid, product__uuid=unsigned_product_uuid)
+        except Product.DoesNotExist:
+            logger.error("Product not found with uuid: %s", unsigned_product_uuid)
+            return Response({"detail": "Product not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Folder.DoesNotExist:
+            logger.error("Folder not found with uuid: %s", unsigned_folder_uuid)
+            return Response({"detail": "Folder not found."}, status=status.HTTP_404_NOT_FOUND)
 
         if product.user != request.user:
             logger.warning("Unauthorized access attempt by user: %s", request.user)
@@ -78,7 +90,7 @@ class DocumentUploadView(APIView):
             doc_type = document_types[i] if i < len(document_types) else None
             comment = comments[i] if i < len(comments) else ''
             data = {
-                'folder': folder.id,
+                'folder': folder.uuid,
                 'original_filename': file.name,
                 'document_type': doc_type,
                 'file': file,
@@ -98,7 +110,7 @@ class DocumentUploadView(APIView):
             doc_type = document_types[i] if i < len(document_types) else None
             comment = comments[i] if i < len(comments) else ''
             data = {
-                'folder': folder.id,
+                'folder': folder.uuid,
                 'original_filename': file.name,
                 'document_type': doc_type,
                 'file': file,
@@ -110,43 +122,58 @@ class DocumentUploadView(APIView):
                 serializer.save()
                 logger.debug("File uploaded successfully: %s", file.name)
 
-        logger.info("All documents uploaded successfully for product_id: %s, folder_id: %s", product_id, folder_id)
+        logger.info("All documents uploaded successfully for product_uuid: %s, folder_uuid: %s", product_uuid, folder_uuid)
         return Response({'detail': 'Documents uploaded'}, status=status.HTTP_201_CREATED)
 
-
-
-
-
-
+    
 class UploadDocumentPartnerView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def post(self, request, folder_id):
-        print("UploadDocumentPartnerView")
-        folder = get_object_or_404(Folder, id=folder_id)
+    def post(self, request, folder_uuid):
+        logger.debug("UploadDocumentPartnerView: Starting document upload process")
+        try:
+            unsigned_folder_uuid = signer.unsign(folder_uuid)
+            logger.debug(f"Unsign successful: {unsigned_folder_uuid}")
+        except BadSignature:
+            logger.error("Invalid folder ID signature")
+            return Response({'error': 'Invalid folder ID.'}, status=400)
+
+        folder = get_object_or_404(Folder, uuid=unsigned_folder_uuid)
         company_profile = CompanyProfile.objects.filter(partners_contract_folder=folder).first()
+
+        if not company_profile:
+            logger.error("No company profile associated with this folder.")
+            return Response({'error': 'No company profile associated with this folder.'}, status=404)
+
+        company_profile_users = User.objects.filter(userprofile__in=company_profile.user_profiles.all())
         partnership = Partnership.objects.filter(
-            (Q(partner1=company_profile.user_profile.user) | Q(partner2=company_profile.user_profile.user)) &
+            (Q(partner1__in=company_profile_users) | Q(partner2__in=company_profile_users)) &
             (Q(partner1=request.user) | Q(partner2=request.user))
         ).first()
 
         if not partnership:
+            logger.error("No partnership associated with this company profile.")
             return Response({'error': 'No partnership associated with this company profile.'}, status=403)
-
-        if not company_profile:
-            return Response({'error': 'No company profile associated with this folder.'}, status=404)
 
         files = request.FILES.getlist('document_files')
         comments_list = request.POST.getlist('comments[]')
+        logger.debug(f"Number of files: {len(files)}, Number of comments: {len(comments_list)}")
+
+        if len(files) == 0:
+            logger.error("No files received.")
+            return Response({'error': 'No files received.'}, status=400)
 
         try:
             with transaction.atomic():
                 documents = []
-                for file, comment in zip(files, comments_list):
+                for i, file in enumerate(files):
+                    comment = comments_list[i] if i < len(comments_list) else ''  # Handle missing comments
+                    logger.debug(f"Processing file: {file.name}, Comment: {comment}")
                     hasher = hashlib.sha256()
                     for chunk in file.chunks():
                         hasher.update(chunk)
                     file_hash = hasher.hexdigest()
+                    logger.debug(f"File hash: {file_hash}")
 
                     document = Document.objects.create(
                         folder=folder,
@@ -156,51 +183,15 @@ class UploadDocumentPartnerView(APIView):
                         uploaded_by=request.user,
                         comments=comment,
                     )
+                    logger.debug(f"Document created: {document}")
                     documents.append(document)
 
-                # Serialize the documents for the response
                 serializer = DocumentSerializer(documents, many=True)
-                return Response({'message': 'Documents uploaded successfully.', 'documents': serializer.data}, status=201)
+                logger.debug("Documents uploaded successfully")
+                return Response({'message': 'Documents uploaded', 'documents': serializer.data}, status=201)
         except Exception as e:
+            logger.error(f"Failed to upload documents: {str(e)}")
             return Response({'error': f'Failed to upload documents. Error: {str(e)}'}, status=400)
-
-
-@login_required
-@require_POST
-@transaction.atomic
-def upload_document_to_partner_export(request, partner_export_id):
-    partner_export = get_object_or_404(PartnerExport, id=partner_export_id)
-    document_files = request.FILES.getlist('document_file')
-    comments_list = request.POST.getlist('comments[]')
-
-    if not partner_export.folder:
-        return JsonResponse({'success': False, 'error': 'Folder not found or not created.'}, status=400)
-    
-    if not document_files:
-        return JsonResponse({'success': False, 'error': 'No document files provided.'}, status=400)
-
-    documents = []
-    for file, comment in zip(document_files, comments_list):
-        hash_digest = file_hash(file)  # Make sure file_hash function is defined
-        document = Document.objects.create(
-            file=file,
-            uploaded_by=request.user,
-            comments=comment,
-            file_hash=hash_digest,
-            folder=partner_export.folder
-        )
-        ExportDocument.objects.create(
-            partner_export=partner_export,
-            document=document,
-            folder=partner_export.folder
-        )
-        documents.append(document.original_filename)
-
-    return JsonResponse({
-        'success': True,
-        'message': 'Documents uploaded successfully.',
-        'documents': documents
-    })
 
 
 def generate_new_filename(folder, original_filename):
@@ -218,8 +209,13 @@ def generate_new_filename(folder, original_filename):
 
 @login_required
 @api_view(['POST'])
-def edit_document(request, document_id):
-    document = get_object_or_404(Document, id=document_id)
+def edit_document(request, document_uuid):
+    try:
+        unsigned_document_uuid = signer.unsign(document_uuid)
+    except BadSignature:
+        return JsonResponse({'error': 'Invalid UUID'}, status=400)
+
+    document = get_object_or_404(Document, uuid=unsigned_document_uuid)
 
     if request.method == 'POST':
         serializer = DocumentSerializer(data=request.data, instance=document)
@@ -227,20 +223,22 @@ def edit_document(request, document_id):
             serializer.save()
             return JsonResponse({'success': True, 'message': 'Document updated'})
         else:
-            print(serializer.errors)
             return JsonResponse({'success': False, 'errors': serializer.errors}, status=400)
 
     return JsonResponse({'success': False, 'message': 'Invalid request method'}, status=400)
 
 
 @login_required
-def ajax_get_document_details(request, document_id):
-    document = get_object_or_404(Document, id=document_id)
-    document_types = DocumentType.objects.all().values('id', 'type_name')
+def ajax_get_document_details(request, document_uuid):
+    try:
+        unsigned_document_uuid = signer.unsign(document_uuid)
+    except BadSignature:
+        return JsonResponse({'error': 'Invalid UUID'}, status=400)
 
-    # Check if the document has any versions
+    document = get_object_or_404(Document, uuid=unsigned_document_uuid)
+    document_types = DocumentType.objects.all().values('uuid', 'type_name')
+
     if document.versions.exists():
-        # If it does, get the latest version
         latest_version = document.versions.latest('created_at')
         data = {
             'document_type_id': latest_version.document.document_type_id,
@@ -249,7 +247,6 @@ def ajax_get_document_details(request, document_id):
             'comments': latest_version.comments,
         }
     else:
-        # If it doesn't, use the original document data
         data = {
             'document_type_id': document.document_type_id,
             'document_types': list(document_types),
@@ -276,19 +273,19 @@ def document_versions(request, document_id):
 
 
 @login_required
-def ajax_document_versions(request, document_id):
-    original_document = get_object_or_404(Document, id=document_id)
+def ajax_document_versions(request, document_uuid):
+    try:
+        unsigned_document_uuid = signer.unsign(document_uuid)
+    except BadSignature:
+        return JsonResponse({'error': 'Invalid UUID'}, status=400)
+
+    original_document = get_object_or_404(Document, uuid=unsigned_document_uuid)
     user = request.user
 
-    # Determine if the user is the owner
     is_owner = original_document.uploaded_by == user
-
-    # Fetch all versions
     versions = DocumentVersion.objects.filter(document=original_document).order_by('-version')
 
-    # Filter versions based on access rights
     if not is_owner:
-        # Non-owners see only their updates and the owner's updates
         versions = versions.filter(uploaded_by__in=[user, original_document.uploaded_by])
 
     versions_data = [{
@@ -296,17 +293,16 @@ def ajax_document_versions(request, document_id):
         'filename': version.original_filename,
         'modified': localtime(version.created_at).strftime("%Y-%m-%d %H:%M"),
         'uploader': version.uploaded_by.username,
-        'download_url': reverse('documents:download_document', kwargs={'document_id': original_document.id, 'version_id': version.id})
+        'download_url': reverse('documents:download_document', kwargs={'document_uuid': document_uuid, 'version_id': signer.sign(str(version.uuid))})
     } for version in versions]
 
-    # Include the original document as Version 1, if not present
     if not versions or (versions and versions.last().version != 1):
         versions_data.append({
             'version': 1,
             'filename': original_document.original_filename,
             'modified': localtime(original_document.created_at).strftime("%Y-%m-%d %H:%M"),
             'uploader': original_document.uploaded_by.username,
-            'download_url': reverse('documents:download_document', kwargs={'document_id': original_document.id})
+            'download_url': reverse('documents:download_document', kwargs={'document_uuid': document_uuid})
         })
 
     data = {
@@ -320,8 +316,13 @@ def ajax_document_versions(request, document_id):
 class UpdateDocument(APIView):
     permission_classes = [IsAuthenticated]
 
-    def post(self, request, document_id):
-        document = get_object_or_404(Document, id=document_id)
+    def post(self, request, document_uuid):
+        try:
+            unsigned_document_uuid = signer.unsign(document_uuid)
+        except BadSignature:
+            return Response({"detail": "Invalid document ID."}, status=status.HTTP_400_BAD_REQUEST)
+
+        document = get_object_or_404(Document, uuid=unsigned_document_uuid)
         user = request.user
 
         # Check if the user is the owner or has access
@@ -334,9 +335,9 @@ class UpdateDocument(APIView):
         serializer = DocumentUpdateSerializer(document, data=request.data, context={'request': request})
         if serializer.is_valid():
             serializer.save()
-            return Response({'message': 'Document updated'}, status=200)
+            return Response({'message': 'Document updated'}, status=status.HTTP_200_OK)
         else:
-            return Response(serializer.errors, status=400)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @login_required
@@ -368,9 +369,18 @@ class DeleteDocumentView(APIView):
     permission_classes = [IsAuthenticated]
 
     def delete(self, request):
-        document_ids = request.data.get('document_ids', [])
+        signed_document_ids = request.data.get('document_ids', [])
+        document_ids = []
 
-        documents = Document.objects.filter(id__in=document_ids)
+        # Unsign the UUIDs
+        for signed_id in signed_document_ids:
+            try:
+                unsigned_id = signer.unsign(signed_id)
+                document_ids.append(unsigned_id)
+            except BadSignature:
+                return Response({"detail": "Invalid document ID."}, status=status.HTTP_400_BAD_REQUEST)
+
+        documents = Document.objects.filter(uuid__in=document_ids)
 
         if not documents.exists():
             return Response({"detail": "Documents not found."}, status=status.HTTP_404_NOT_FOUND)
@@ -385,35 +395,37 @@ class DeleteDocumentView(APIView):
         return Response({'detail': 'Items deleted'}, status=status.HTTP_200_OK)
 
 
-
-
 @login_required
 def move_to_bin_document(request, document_id):
     document = get_object_or_404(Document, id=document_id)
-    parent_id = document.folder.id
+    parent_id = document.folder.uuid
     bin_folder = Folder.objects.get_or_create(name="Bin", product=document.folder.product, is_bin=True)[0]
     handle_item_action("move_to_bin", document, bin_folder=bin_folder)
     clean_bins()
-    return redirect('products:product_explorer_folder', product_id=document.folder.product.id, folder_id=parent_id)
+    return redirect('products:product_explorer_folder', product_uuid=document.folder.product.uuid, folder_id=parent_id)
 
 
 @login_required
 def restore_document(request, document_id):
     document = get_object_or_404(Document, id=document_id)
     handle_item_action("restore", document)
-    return redirect('products:product_explorer_bin', product_id=document.folder.product.id)
-
+    return redirect('products:product_explorer_bin', product_uuid=document.folder.product.uuid)
 
 
 @login_required
-def download_document(request, document_id, version_id=None):
+def download_document(request, document_uuid, version_id=None):
+    try:
+        unsigned_document_uuid = signer.unsign(document_uuid)
+    except BadSignature:
+        raise Http404("Invalid document UUID")
+
     if version_id:
-        version = get_object_or_404(DocumentVersion, id=version_id)
+        version = get_object_or_404(DocumentVersion, version=version_id, document__uuid=unsigned_document_uuid)
         file_path = version.file.path
         document = version.document
         download_filename = f"{version.original_filename.split('.')[0]}.{version.original_filename.split('.')[-1]}"
     else:
-        document = get_object_or_404(Document, pk=document_id)
+        document = get_object_or_404(Document, uuid=unsigned_document_uuid)
         file_path = document.file.path
         original_filename = document.original_filename
         file_name, file_extension = os.path.splitext(original_filename)
@@ -444,8 +456,13 @@ def get_documents(request, product_id, folder_id):
 
 
 @login_required
-def comment_versions(request, document_id):
-    original_document = get_object_or_404(Document, id=document_id)
+def comment_versions(request, document_uuid):
+    try:
+        unsigned_document_uuid = signer.unsign(document_uuid)
+    except BadSignature:
+        return JsonResponse({'error': 'Invalid UUID'}, status=400)
+
+    original_document = get_object_or_404(Document, uuid=unsigned_document_uuid)
     versions = DocumentVersion.objects.filter(document=original_document).order_by('-version')
     return render(request, 'documents/comment_versions.html', {
         'original_document': original_document,
@@ -454,39 +471,37 @@ def comment_versions(request, document_id):
 
 
 @login_required
-def ajax_comments_versions(request, document_id):
-    document = get_object_or_404(Document, id=document_id)
+def ajax_comments_versions(request, document_uuid):
+    try:
+        unsigned_document_uuid = signer.unsign(document_uuid)
+    except BadSignature:
+        return JsonResponse({'error': 'Invalid UUID'}, status=400)
+
+    document = get_object_or_404(Document, uuid=unsigned_document_uuid)
     user = request.user
 
-    # Check if the user is the owner
     is_owner = document.uploaded_by == user
-
-    # Fetch all versions
     versions = DocumentVersion.objects.filter(document=document).order_by('-version')
 
-    # Filter versions based on access rights
     if not is_owner:
-        # Non-owners see only their updates and the owner's updates
         versions = versions.filter(uploaded_by__in=[user, document.uploaded_by])
     
     versions_data = [{
-        'id': version.id,
+        'id': signer.sign(str(version.uuid)),
         'version': version.version,
         'comment': version.comments or "No comment",
         'is_editable': version.uploaded_by == user or is_owner,
-        'modified': localtime(version.updated_at).strftime("%Y-%m-%d %H:%M"),  # Formatting date
+        'modified': localtime(version.updated_at).strftime("%Y-%m-%d %H:%M"),
         'uploader': version.uploaded_by.username,
     } for version in versions]
 
-
-    # Check if the initial comment is present in versions, if not, manually add the original document's comment
     if not versions or (versions and versions.last().version != 1):
         versions_data.append({
-            'id': document.id,
+            'id': document.uuid,
             'version': 1,
             'comment': document.comments or "No initial comment",
             'is_editable': is_owner,
-            'modified': localtime(document.updated_at).strftime("%Y-%m-%d %H:%M"),  # Formatting date
+            'modified': localtime(document.updated_at).strftime("%Y-%m-%d %H:%M"),
             'uploader': document.uploaded_by.username,
         })
 
@@ -499,19 +514,24 @@ def ajax_comments_versions(request, document_id):
 class EditComment(APIView):
     permission_classes = [IsAuthenticated]
 
-    def post(self, request, document_id, version_number=None):
-        logger.debug(f"Received request for document_id: {document_id} with version_number: {version_number}")
+    def post(self, request, document_uuid, version_number=None):
+        try:
+            unsigned_document_uuid = signer.unsign(document_uuid)
+        except BadSignature:
+            return Response({'error': 'Invalid UUID'}, status=status.HTTP_400_BAD_REQUEST)
+
+        logger.debug(f"Received request for document_uuid: {unsigned_document_uuid} with version_number: {version_number}")
 
         if version_number is not None:
             if version_number == 1:
-                instance = get_object_or_404(Document, id=document_id)
+                instance = get_object_or_404(Document, uuid=unsigned_document_uuid)
                 serializer_class = DocumentCommentSerializer
             else:
-                instance = get_object_or_404(DocumentVersion, document_id=document_id, version=version_number)
+                instance = get_object_or_404(DocumentVersion, document__uuid=unsigned_document_uuid, version=version_number)
                 serializer_class = DocumentVersionCommentSerializer
             logger.debug(f"Editing version instance: {instance}")
         else:
-            instance = get_object_or_404(Document, id=document_id)
+            instance = get_object_or_404(Document, uuid=unsigned_document_uuid)
             logger.debug(f"Editing document instance: {instance}")
             serializer_class = DocumentCommentSerializer
 

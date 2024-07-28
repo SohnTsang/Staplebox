@@ -1,11 +1,14 @@
 from django import forms
 from .models import UserProfile
 from companies.models import CompanyProfile
-from allauth.account.forms import SignupForm, LoginForm
+from allauth.account.forms import LoginForm
+from allauth.account.forms import SignupForm as AllauthSignupForm
+
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.password_validation import validate_password
+from django.db import transaction
 
 
 class CustomLoginForm(LoginForm):
@@ -17,31 +20,22 @@ class CustomLoginForm(LoginForm):
         self.fields['password'].error_messages = {'required': 'Please enter your password.'}
 
 
+class SignupForm(AllauthSignupForm):
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if User.objects.filter(email=email).exists():
+            raise ValidationError("A user with that email already exists.")
+        return email
 
-
-
-class SignupForm(SignupForm):
-
-    def save(self, user):
+    @transaction.atomic
+    def save(self, request):
         # Call the original save method to save the user and get the user object
-        user = super(SignupForm, self).save(user)
-
-        # Create or update the UserProfile instance
-        userProfile, created = UserProfile.objects.get_or_create(user=user)
-        companyProfile, company_created = CompanyProfile.objects.get_or_create(user_profile=userProfile)
-        
-        if company_created:
-            companyProfile.name = "Company Name"  # Example of setting a default value
-            companyProfile.save()
-            
-        userProfile.save()
-
+        user = super(SignupForm, self).save(request)
         return user
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['password1'].widget.attrs.update({'class': 'passwordinput form-control'})
-
 
 
 

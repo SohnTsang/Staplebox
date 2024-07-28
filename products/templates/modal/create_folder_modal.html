@@ -3,14 +3,14 @@
         <div class="modal-content">
             <div class="modal-title" id="createFolderModalLabel">New Folder</div>
             <div class="modal-body">
-                <form id="create-folder-form-modal" method="post" action="{% url 'products:folder_create' product_id=product.id %}">
+                <form id="create-folder-form-modal" method="post" action="{% url 'products:folder_create' product_uuid=signed_product_uuid %}">
                     {% csrf_token %}
                     <label for="folderNameModal" class="form-label">Folder Name:</label>
                     <input type="text" class="form-control" id="folderNameModal" name="name" placeholder="Enter folder name" required>
                     {% if current_folder %}
-                        <input type="hidden" id="parentFolderIdModal" name="parent_id" value="{{ current_folder.id }}">
+                        <input type="hidden" id="parentFolderIdModal" name="parent_id" value="{{ signed_current_folder_uuid }}">
                     {% else %}
-                        <input type="hidden" id="parentFolderIdModal" name="parent_id" value="{{ root_folder.id }}">
+                        <input type="hidden" id="parentFolderIdModal" name="parent_id" value="{{ signed_current_folder_uuid }}">
                     {% endif %}
                 </form>
             </div>

@@ -102,9 +102,9 @@ td {
 <!-- _folder_structure.html -->
 {% if folder %}
     <!-- Folder Row: Toggle Visibility for Associated Content -->
-    <tr class="folder-row no-select-on-dblclick" onmousedown="enableSelection(this)" tabindex="0" data-bs-target=".folderContent{{ folder.id }}" aria-expanded="false" data-depth="0">
+    <tr class="folder-row no-select-on-dblclick" onmousedown="enableSelection(this)" tabindex="0" data-bs-target=".folderContent{{ folder.uuid }}" aria-expanded="false" data-depth="0">
         <td class="lh-lg ps-3 py-2 small-custom">
-            <input class="form-check-input custom-checkbox" type="checkbox" name="folders" value="{{ folder.id }}">
+            <input class="form-check-input custom-checkbox" type="checkbox" name="folders" value="{{ folder.uuid }}">
             <span class="arrow-icon" style="display: inline-block;">
                 <svg class="arrow-icon" width="24" height="24" viewBox="0 0 24 26" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <g clip-path="url(#clip0_1426_57)">
@@ -128,7 +128,7 @@ td {
     {% if folder.documents.exists %}
         {% for document in folder.documents.all %}
             <!-- Document Row: Initially Hidden, Shown on Folder Expand -->
-            <tr class="folder-content collapse folderContent{{ folder.id }} expanded-level-folder no-select-on-dblclick" onmousedown="enableSelection(this)" tabindex="0">
+            <tr class="folder-content collapse folderContent{{ folder.uuid }} expanded-level-folder no-select-on-dblclick" onmousedown="enableSelection(this)" tabindex="0">
                 
                 <td class="document-name lh-lg ps-3 py-2 small-custom">
                     <input class="form-check-input custom-checkbox" type="checkbox" name="documents" value="{{ document.id }}">

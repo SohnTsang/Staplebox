@@ -4,9 +4,14 @@ from products.models import Product
 from folder.models import Folder
 from documents.models import Document
 from django.core.cache import cache
+import uuid
+from django.core.signing import Signer
 
+signer = Signer()
 
 class AccessPermission(models.Model):
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
+
     ACCESS_TYPES = [
         ('read_only', 'Read Only'),
         ('full', 'Full'),
@@ -22,6 +27,10 @@ class AccessPermission(models.Model):
     
     def __str__(self):
         return f"{self.partner1} grants {self.partner2} - Prod: {self.product}, Folder: {self.folder}, Doc: {self.document}"
+
+    def save(self, *args, **kwargs):
+         
+        super().save(*args, **kwargs)
 
     class Meta:
         unique_together = ('partner1', 'partner2', 'product', 'folder', 'document')
@@ -75,4 +84,3 @@ class AccessPermission(models.Model):
         if document:
             cache_key = f"doc_access_{partner2.id}_{document.id}"
             cache.delete(cache_key)
-

@@ -202,7 +202,7 @@
     }
 
     th:nth-child(2), td:nth-child(2) {
-        width: 30%;
+        width: 27%;
     }
 
     th:nth-child(3), td:nth-child(3) {
@@ -218,7 +218,7 @@
     }
 
     th:nth-child(6), td:nth-child(6) {
-        width: 5%;
+        width: 8%;
         text-align: center;
     }
 
@@ -228,8 +228,8 @@
 {% block content %}
 
 <main>
-    <div id="product-explorer" data-product-id="{{ product.id }}" data-root-folder-id="{{ root_folder_id }}" class="">
-        <input type="hidden" id="productId" value="{{ product.id }}">
+    <div id="product-explorer" data-product-id="{{ signed_product_uuid }}" data-root-folder-id="{{ root_folder_id }}" class="">
+        <input type="hidden" id="productId" value="{{ signed_product_uuid }}">
         <div class="background-overlay"></div>
         <div class="content-section">
             <div class="content-header-product-directory">
@@ -251,7 +251,7 @@
                                 <img src="{% static 'images/table_icon/arrow_drop_down_24dp_FILL0_wght400_GRAD0_opsz24_333333.png' %}" alt="Visibility" class="icon-bulk-action" id="bulkActionIcon"> 
                             </button>
                             <div class="bulk-action-dropdown" id="bulkActionDropdown">
-                                <a href="#" id="shareAccess" class="" data-product-id="{{ product.id }}">Share</a>
+                                <a href="#" id="shareAccess" class="" data-product-id="{{ signed_product_uuid }}">Share</a>
                                 <a href="#" id="deleteSelectedItems" class="bulk-action-delete text-danger">Delete</a>
                             </div>
                         </div>
@@ -263,7 +263,7 @@
                                 <a href="#" data-bs-toggle="modal" data-bs-target="#createFolderModal">New Folder</a>
                                 <a href="#" data-bs-toggle="modal" id="openUploadModaProductlBtn" data-bs-target="#uploadDocumentModal">New Document</a>
                             </div>
-                            <a href="{% url 'access_control:manage_access' product_id=product.id %}" class="button-8">Access</a>
+                            <a href="{% url 'access_control:manage_access' product_uuid=signed_product_uuid %}" class="button-8">Access</a>
                         </div>
                     </div>
                     {% endif %}
@@ -305,7 +305,7 @@
                             {% if forloop.last %}
                             <span class="p-2 h6 fw-bold">{{ breadcrumb.name }}</span>
                             {% else %}
-                            <a href="{% url 'products:product_explorer_folder' product_id=product.id folder_id=breadcrumb.id %}" class="breadcrumb-navigation">{{ breadcrumb.name }}</a>
+                            <a href="{% url 'products:product_explorer_folder' product_uuid=signed_product_uuid folder_uuid=breadcrumb.id %}" class="breadcrumb-navigation">{{ breadcrumb.name }}</a>
                             {% endif %}
                         </li>
                         {% endfor %}
@@ -329,7 +329,7 @@
                         {% if subfolders or documents %}
                             <!-- Folders -->
                             {% for folder in subfolders %}
-                            <tr class="clickable-td" data-href="{% url 'products:product_explorer_folder' product_id=product.id folder_id=folder.id %}" data-id="{{ folder.id }}" data-owner="{{ folder.created_by }}" data-name="{{ folder.name }}" data-modified="{{ folder.updated_at|date:"Y-m-d H:i" }}" data-created="{{ folder.created_at|date:"Y-m-d H:i" }}" data-type="folder">
+                            <tr class="clickable-td" data-href="{% url 'products:product_explorer_folder' product_uuid=signed_product_uuid folder_uuid=folder.uuid %}" data-type="folder" data-id="{{ folder.uuid }}">
                                 <td class="checkbox-cell" style="cursor: default;"><input class="folder-checkbox" type="checkbox"></td>
                                 <td class="name-cell">
                                     <img src="{% static 'images/table_icon/folder.png' %}" alt="File Icon" class="folder-icon">
@@ -344,14 +344,18 @@
                                             <img src="{% static 'images/table_icon/more_vert_24dp_FILL0_wght400_GRAD0_opsz24_333333.png' %}" alt="Actions">
                                         </button>
                                         <div class="action-button-dropdown dropdown-content" id="actionDropdown{{ forloop.counter }}">
-                                            <a href="#" data-bs-toggle="modal" data-bs-target="#accessControlModal" data-folder-id="{{ folder.id }}" data-product-id="{{ product.id }}">Share</a>
-                                            <a href="#" data-bs-toggle="modal" data-bs-target="#editFolderModal" data-folder-id="{{ folder.id }}" data-product-id="{{ product.id }}">Edit</a>
-                                            <a href="#" data-bs-toggle="modal" data-bs-target="#moveEntityModal" data-entity-type="folder" data-entity-id="{{ folder.id }}" data-product-id="{{ product.id }}" data-moving-folder-id="{{ folder.id }}" data-current-folder-id="{{ folder.parent.id }}" data-url="{% url 'products:move_entity' product_id=product.id entity_type='folder' entity_id=folder.id current_folder_id=folder.parent.id %}">Move</a>
+                                            <a href="#" data-bs-toggle="modal" data-bs-target="#accessControlModal" data-folder-id="{{ folder.uuid }}" data-product-id="{{ signed_product_uuid }}">Share</a>
+                                            <!--<a href="#" data-bs-toggle="modal" data-bs-target="#editFolderModal" data-folder-id="{{ folder.uuid }}" data-product-id="{{ signed_product_uuid }}">Edit</a>-->
+                                            <a href="#" data-bs-toggle="modal" data-bs-target="#editFolderModal" data-folder-id="{{ folder.uuid }}" data-product-id="{{ signed_product_uuid }}">Edit</a>
+
+                                            <a href="#" data-bs-toggle="modal" data-bs-target="#moveEntityModal" data-entity-type="folder" data-entity-id="{{ folder.uuid }}" data-product-id="{{ signed_product_uuid }}" data-moving-folder-id="{{ folder.uuid }}" data-current-folder-id="{{ folder.parent }}" data-url="{% url 'products:move_entity' product_uuid=signed_product_uuid entity_type='folder' entity_uuid=folder.uuid current_folder_uuid=folder.parent %}">Move</a>
+                                            
                                             <hr class="dropdown-divider">
-                                            <form class="delete-folder-form" data-id="{{ folder.id }}" method="post">
+                                            <form class="delete-folder-form" data-id="{{ folder.uuid }}" method="post">
                                                 {% csrf_token %}
                                                 <button type="submit" class="text-danger">Delete</button>
                                             </form>
+
                                         </div>
                                     </div>
                                 </td>
@@ -360,12 +364,12 @@
                             
                             <!-- Documents -->
                             {% for document in documents %}
-                            <tr class="non-clickable-tr" data-document-id="{{ document.id }}" data-id="{{ document.id }}" data-owner="{{ document.uploaded_by }}" data-version="{{ document.version }}" data-filetype="{{ document.file_type }}" data-name="{{ document.display_filename }}" data-modified="{{ document.updated_at|date:"Y-m-d H:i" }}" data-original="{{ document.original_filename }}" data-category="{{ document.document_type.type_name }}" data-created-by="{{ document.latest_uploaded_by }}" data-created="{{ document.created_at|date:"Y-m-d H:i" }}" data-latest-comment="{{ document.latest_comment }}" data-filesize="{{ document.latest_file_size }}" data-type="document">
+                            <tr class="non-clickable-tr" data-document-id="{{ document.uuid }}" data-id="{{ document.uuid }}" data-type="document">
                                 <td class="checkbox-cell" style="cursor: default;"><input class="document-checkbox" type="checkbox"></td>
                                 <td class="name-cell">
-                                    <img src="{{ document.original_filename|file_icon }}" alt="File Icon" class="file-icon">
+                                    <img src="{{ document.name|file_icon }}" alt="File Icon" class="file-icon">
                                     <span class="file-name-table" style="color: black !important">
-                                        {{ document.original_filename }}
+                                        {{ document.name }}
                                     </span>
                                 </td>
                                 <td class="text-muted-weight">{# document.document_type.type_name #}Document</td>
@@ -377,15 +381,15 @@
                                             <img src="{% static 'images/table_icon/more_vert_24dp_FILL0_wght400_GRAD0_opsz24_333333.png' %}" alt="Actions">
                                         </button>
                                         <div class="action-button-dropdown dropdown-content">
-                                            <a href="#" data-bs-toggle="modal" data-bs-target="#accessControlModal" data-document-id="{{ document.id }}" data-product-id="{{ product.id }}">Share</a>
-                                            <a href="#" data-bs-toggle="modal" data-bs-target="#editDocumentModal" data-document-id="{{ document.id }}">Edit</a>
-                                            <a href="#" data-bs-toggle="modal" data-bs-target="#commentModal" data-document-id="{{ document.id }}">Comment</a>
-                                            <a href="#" data-bs-toggle="modal" data-bs-target="#moveEntityModal" data-entity-type="document" data-entity-id="{{ document.id }}" data-product-id="{{ product.id }}" data-current-folder-id="{{ document.folder.id }}" data-url="{% url 'products:move_entity' product_id=product.id entity_type='document' entity_id=document.id current_folder_id=document.folder.id %}">Move</a>
-                                            <a href="#" data-bs-toggle="modal" data-bs-target="#updateDocumentModal" data-document-id="{{ document.id }}">Upload New Version</a>
-                                            <a href="#" data-bs-toggle="modal" data-bs-target="#documentVersionsModal" data-document-id="{{ document.id }}">Version History</a>
-                                            <a href="{% url 'documents:download_document' document.id %}">Download</a>
+                                            <a href="#" data-bs-toggle="modal" data-bs-target="#accessControlModal" data-document-id="{{ document.uuid }}" data-product-id="{{ signed_product_uuid }}">Share</a>
+                                            <a href="#" data-bs-toggle="modal" data-bs-target="#editDocumentModal" data-document-id="{{ document.uuid }}">Edit</a>
+                                            <a href="#" data-bs-toggle="modal" data-bs-target="#commentModal" data-document-id="{{ document.uuid }}">Comment</a>
+                                            <a href="#" data-bs-toggle="modal" data-bs-target="#moveEntityModal" data-entity-type="document" data-entity-id="{{ document.uuid }}" data-product-id="{{ signed_product_uuid }}" data-current-folder-id="{{ document.folder.uuid }}" data-url="{% url 'products:move_entity' product_uuid=signed_product_uuid entity_type='document' entity_uuid=document.uuid current_folder_uuid=document.folder %}">Move</a>
+                                            <a href="#" data-bs-toggle="modal" data-bs-target="#updateDocumentModal" data-document-id="{{ document.uuid }}">Upload New Version</a>
+                                            <a href="#" data-bs-toggle="modal" data-bs-target="#documentVersionsModal" data-document-id="{{ document.uuid }}">Version History</a>
+                                            <a href="{% url 'documents:download_document' document.uuid %}">Download</a>
                                             <hr class="dropdown-divider">
-                                            <form class="delete-document-form" data-id="{{ document.id }}" method="post">
+                                            <form class="delete-document-form" data-id="{{ document.uuid }}" method="post">
                                                 {% csrf_token %}
                                                 <button type="submit" class="text-danger">Delete</button>
                                             </form>                                            
@@ -417,21 +421,31 @@
 {% include "modal/move_entity_modal.html" %}
 {% include "modal/access_control_modal.html" %}
 
-
-
 {% block javascript %}
 
 <!--<script src="{% static 'products/js/product_explorer.js' %}"></script>-->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 
 <script>
-    const productId = '{{ product.id }}'; // Make sure this is rendered server-side or appropriately defined somewhere accessible
+    const productId = '{{ signed_product_uuid }}'; // Make sure this is rendered server-side or appropriately defined somewhere accessible
 </script>
 
 <script>
+
 document.addEventListener('DOMContentLoaded', function() {
+    function activateAllPartnersTab() {
+        // Find the tab with 'data-tab="AllPartners"'
+        var allPartnersTab = document.querySelector('div[data-tab="AllPartners"]');
+        // Add the 'active' class to the 'All Partners' tab
+        allPartnersTab.classList.add('active');
+    }
+
     document.getElementById('shareAccess').addEventListener('click', function(event) {
         event.preventDefault();
+
+        const modalSubTitle = document.getElementById('modalSubTitle'); 
+
+        
 
         const selectedFolders = Array.from(document.querySelectorAll('.folder-checkbox:checked')).map(cb => ({
             id: cb.closest('tr').dataset.id,
@@ -442,6 +456,8 @@ document.addEventListener('DOMContentLoaded', function() {
             id: cb.closest('tr').dataset.id,
             type: 'document'
         }));
+
+        
 
         const selectedItems = selectedFolders.concat(selectedDocuments);
         if (selectedItems.length === 0) {
@@ -457,7 +473,15 @@ document.addEventListener('DOMContentLoaded', function() {
         modal.querySelector('#item_id').value = itemIds;
         modal.querySelector('#item_type').value = itemTypes;
 
-        if (selectedItems.length > 0) {
+        if (selectedItems.length > 0 && event.target.id === 'shareAccess') {
+            activateAllPartnersTab();
+
+            if (selectedFolders.length > 0 || selectedDocuments.length > 0) {
+                modalSubTitle.textContent = `${selectedFolders.length + selectedDocuments.length} item(s) selected for bulk share`;
+            } else {
+                modalSubTitle.textContent = 'No items selected';
+            }
+
             // Hide the "Partners with Access" tab and content
             document.getElementById('partnersWithAccessTab').style.display = 'none';
             document.getElementById('PartnersWithAccess').style.display = 'none';
@@ -491,7 +515,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
 
                     // Hide loading spinner
-                    const allPartnersLoadingOverlay = document.querySelector('#partnersList .loading-overlay');
+                    const allPartnersLoadingOverlay = modal.querySelector('.tab-content-access .loading-overlay');
                     if (allPartnersLoadingOverlay) {
                         allPartnersLoadingOverlay.style.display = 'none';
                     }
@@ -499,7 +523,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 .catch(error => {
                     console.error('Error loading partner data:', error);
                     // Hide loading spinner in case of error
-                    const allPartnersLoadingOverlay = document.querySelector('#partnersList .loading-overlay');
+                    const allPartnersLoadingOverlay = modal.querySelector('.tab-content-access .loading-overlay');
                     if (allPartnersLoadingOverlay) {
                         allPartnersLoadingOverlay.style.display = 'none';
                     }
@@ -576,7 +600,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     };
 
-    deleteSelectedItems.addEventListener('click', function () {
+    deleteSelectedItems.addEventListener('click', async function () {
         if (bulkActionButton.disabled) {
             return;
         }
@@ -584,12 +608,14 @@ document.addEventListener('DOMContentLoaded', function () {
         const selectedFolders = Array.from(checkboxes)
             .filter(checkbox => checkbox.checked && checkbox.closest('tr').getAttribute('data-type') === 'folder')
             .map(checkbox => checkbox.closest('tr').getAttribute('data-id'));
-
+        console.log(selectedFolders)
         const selectedDocuments = Array.from(checkboxes)
             .filter(checkbox => checkbox.checked && checkbox.closest('tr').getAttribute('data-type') === 'document')
             .map(checkbox => checkbox.closest('tr').getAttribute('data-id'));
 
-        if (confirm('Are you sure you want to delete the selected items?')) {
+        const confirmation = await showRemoveModal('Are you sure you want to delete the selected items?');
+
+        if (confirmation) {
             if (selectedFolders.length > 0) {
                 fetch(`/folder/delete_folders/`, {
                     method: 'DELETE',
@@ -638,9 +664,11 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     document.querySelectorAll('.delete-folder-form').forEach(form => {
-        form.addEventListener('submit', function (event) {
+        form.addEventListener('submit', async function (event) {
             event.preventDefault();
-            if (confirm('Are you sure you want to delete this folder?')) {
+            const confirmation = await showRemoveModal('Are you sure you want to delete the folder?');
+
+            if (confirmation) {
                 fetch(`/folder/delete_folders/`, {
                     method: 'DELETE',
                     headers: {
@@ -656,9 +684,11 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     document.querySelectorAll('.delete-document-form').forEach(form => {
-        form.addEventListener('submit', function (event) {
+        form.addEventListener('submit', async function (event) {
             event.preventDefault();
-            if (confirm('Are you sure you want to delete this document?')) {
+            const confirmation = await showRemoveModal('Are you sure you want to delete the document?');
+
+            if (confirmation) {
                 fetch(`/documents/delete_documents/`, {
                     method: 'DELETE',
                     headers: {
@@ -705,13 +735,6 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 
-
-document.addEventListener('DOMContentLoaded', function() {
-    
-});
-
-
-
 </script>
 
 <!-- Upload Document Modal -->
@@ -727,8 +750,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const cancelBtn = document.getElementById('cancelUploadBtn');
     const uploadBtn = document.getElementById('uploadBtn');
     const openUploadModaProductlBtn = document.getElementById('openUploadModaProductlBtn');
-    const productId = "{{ product.id }}";
-    const folderId = "{{ current_folder.id }}";
+    const productId = "{{ signed_product_uuid }}";
+    const folderId = "{{ signed_current_folder_uuid }}";
 
     function updateUploadButtonState() {
         uploadBtn.disabled = invalidFileCount > 0 || validFilesMap.size === 0;
@@ -998,25 +1021,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             },
             error: function(xhr) {
-                // Check if the error details are provided in a predictable structure
-                if (xhr.responseJSON && xhr.responseJSON.errors) {
-                    var errorMessage = '';
-                    if (Array.isArray(xhr.responseJSON.errors)) {
-                        errorMessage = xhr.responseJSON.errors.join('<br>'); // For array of errors
-                    } else if (typeof xhr.responseJSON.errors === 'object') {
-                        // For object type errors, we iterate over the keys and display each error
-                        Object.keys(xhr.responseJSON.errors).forEach(function(key) {
-                            errorMessage += xhr.responseJSON.errors[key];
+                var errorMessage = 'Failed to move due to a network error.';
+                if (xhr.responseJSON && xhr.responseJSON.error) {
+                    errorMessage = xhr.responseJSON.error;
+                } else if (xhr.responseJSON && xhr.responseJSON.errors) {
+                    var errors = xhr.responseJSON.errors;
+                    errorMessage = '';
+                    if (Array.isArray(errors)) {
+                        errorMessage = errors.join('<br>');
+                    } else if (typeof errors === 'object') {
+                        Object.keys(errors).forEach(function(key) {
+                            errorMessage += errors[key] + '<br>';
                         });
                     } else {
-                        // If it's neither an array nor an object, directly show the error
-                        errorMessage = xhr.responseJSON.errors;
+                        errorMessage = errors;
                     }
-                    showMessage(errorMessage, 'error');
-                } else {
-                    // Fallback error message if responseJSON does not exist or has no error key
-                    showMessage('Failed to move due to a network error.', 'error');
                 }
+                showMessage(errorMessage, 'error');
             }
         });
     });
@@ -1103,7 +1124,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <td id="modified-time-${version.version}" class="">${version.modified}</td>
                             <td class="">${version.uploader}</td>
                             <td id="comment-text-${version.version}" class="text-start align-middle">${version.comment}</td>
-                            <td id="" class="">${version.is_editable ? `<button class="btn-edit-save" onclick="editComment(${documentId}, ${version.version})">Edit</button>` : ''}</td>
+                            <td id="" class="" style="text-align:center;" >${version.is_editable ? `<button class="btn-edit-save" onclick="editComment('${documentId}', ${version.version})">Edit</button>` : ''}</td>
                         `;
                         tableBody.appendChild(row); // Append the row to the table body
                     });
@@ -1118,9 +1139,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const buttonCell = commentCell.nextElementSibling; // Assuming the button is next to the comment cell
         const originalHeight = commentCell.offsetHeight; // Get the original height of the comment cell
 
-
         commentCell.innerHTML = `<textarea class="form-control-comment form-control-sm">${originalComment}</textarea>`;
-        buttonCell.innerHTML = `<button class="btn-edit-save" onclick="saveComment(${documentId}, ${versionNumber})">Save</button>`;
+        buttonCell.innerHTML = `<button class="btn-edit-save" onclick="saveComment('${documentId}', ${versionNumber})">Save</button>`;
     }
 
     function saveComment(documentId, versionNumber) {
@@ -1139,13 +1159,12 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json()) // Ensure server sends back JSON
         .then(data => {
             if (data.success) {
-
                 commentCell.innerHTML = newText; // Update the comment cell with new text
                 const buttonCell = commentCell.nextElementSibling; // Get the cell containing the button
                 const modifiedTimeCell = document.querySelector(`#modified-time-${versionNumber}`);
                 modifiedTimeCell.innerText = data.modified;
 
-                buttonCell.innerHTML = `<button class="btn-edit-save" onclick="editComment(${documentId}, ${versionNumber})">Edit</button>`;
+                buttonCell.innerHTML = `<button class="btn-edit-save" onclick="editComment('${documentId}', ${versionNumber})">Edit</button>`;
             } else {
                 console.error(data.error || 'Failed to update comment. Please try again.');
                 showMessage('Failed to update comment. Please try again.', 'error');
@@ -1155,6 +1174,7 @@ document.addEventListener('DOMContentLoaded', function() {
             showMessage(error, 'error');
         });
     }
+
 </script>
 
 <!-- Update Document modal -->
@@ -1223,7 +1243,13 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <td class="text-start align-middle">${version.filename}</td>
                                 <td class="text-center align-middle">${version.modified}</td>
                                 <td class="text-center align-middle">${version.uploader}</td>
-                                <td class="text-center align-middle"><a href="${version.download_url}" class="badge bg-primary-custom rounded-pill p-2 text-white align-middle">Download</a></td>
+                                <td class="" style="text-align:center;">
+                                    <a href="${version.download_url}" class="badge bg-primary-custom rounded-pill p-2 text-white align-middle">
+                                    <button class="action-button">
+                                        <img src="{% static 'images/table_icon/download_333333.png' %}" alt="Actions">
+                                    </button>
+                                    </a>
+                                </td>
                             `;
                             versionList.appendChild(row);
                         });
@@ -1381,20 +1407,31 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('DOMContentLoaded', function () {
         const editModal = document.getElementById('editFolderModal');
         editModal.addEventListener('show.bs.modal', function (event) {
-            var button = event.relatedTarget;
+            var button = event.relatedTarget; // Button that triggered the modal
             var folderId = button.getAttribute('data-folder-id');
             var productId = button.getAttribute('data-product-id');
             var form = document.getElementById('editFolderForm');
 
-            form.action = `/folder/${productId}/explorer/${folderId}/edit_folder/`;
-
-            fetch(`/folder/ajax/${productId}/${folderId}/`)
+            fetch(`/folder/get_folder_data/?folder_id=${folderId}&product_id=${productId}`)
                 .then(response => response.json())
                 .then(data => {
-                    document.getElementById('id_name').value = data.name;
-                    document.getElementById('id_parent').value = data.parent_id;
+                    if (data.folder_id && data.product_id) {
+                        form.action = `/folder/${data.product_id}/explorer/${data.folder_id}/edit_folder/`;
+
+                        fetch(`/folder/ajax/${data.product_id}/${data.folder_id}/`)
+                            .then(response => response.json())
+                            .then(data => {
+                                const nameInput = document.getElementById('id_name');
+                                nameInput.value = data.name;
+                                nameInput.select();
+                                document.getElementById('id_parent').value = data.parent_id;
+                            })
+                            .catch(error => console.error('Error loading folder data:', error));
+                    } else {
+                        console.error('Folder ID or Product ID is null');
+                    }
                 })
-                .catch(error => console.error('Error loading folder data:', error));
+                .catch(error => console.error('Error fetching folder data:', error));
 
             form.addEventListener('submit', function(e) {
                 e.preventDefault();

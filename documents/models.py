@@ -9,6 +9,10 @@ from django.conf import settings
 from django.core.files.storage import default_storage
 import logging
 from django.core.exceptions import ValidationError
+import uuid
+from django.core.signing import Signer
+
+signer = Signer()
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +24,9 @@ def validate_file_size(file):
 
 
 class Document(models.Model):
-    
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
+     
+
     folder = models.ForeignKey(Folder, on_delete=models.CASCADE, related_name='documents')
     original_filename = models.CharField(max_length=255)
     document_type = models.ForeignKey(DocumentType, on_delete=models.SET_NULL, null=True, blank=True)
@@ -35,6 +41,7 @@ class Document(models.Model):
     bin_expires_at = models.DateTimeField(null=True, blank=True)
 
     def save(self, *args, **kwargs):
+         
         validate_file_size(self.file)
         super().save(*args, **kwargs)
         
@@ -84,8 +91,10 @@ class Document(models.Model):
         self.save()
     
     
-    
 class DocumentVersion(models.Model):
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
+     
+
     document = models.ForeignKey(Document, related_name='versions', on_delete=models.CASCADE)
     file = models.FileField(upload_to='document_versions/%Y/%m/%d/')
     version = models.IntegerField()
@@ -112,6 +121,10 @@ class DocumentVersion(models.Model):
     @property
     def formatted_modified_date(self):
         return localtime(self.updated_at).strftime("%Y-%m-%d %H:%M")
+    
+    def save(self, *args, **kwargs):
+         
+        super().save(*args, **kwargs)
 
 def format_file_size(size_in_bytes):
     """

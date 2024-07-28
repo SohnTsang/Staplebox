@@ -93,7 +93,7 @@
                 </thead>
                 <tbody id="partnerTableBody">
                     {% for partner in partner_info %}
-                    <tr class="non-clickable-tr">
+                    <tr class="clickable-td" data-url="{% url 'partners:partner_company_profile' partner.id %}">
 						<td></td>
                         <td>{{ partner.company_name }}</td>
                         <td>{{ partner.company_role }}</td>
@@ -106,7 +106,7 @@
                                     <img src="{% static 'images/table_icon/more_vert_24dp_FILL0_wght400_GRAD0_opsz24_333333.png' %}" alt="Actions">
                                 </button>
                                 <div class="action-button-dropdown">
-                                    <a href="#" id="delete-partner" data-partner-id="{{ partner.id }}">Delete</a>
+                                    <a href="#" class="text-danger" id="delete-partner">Remove Partner</a>
                                 </div>
                             </div>
                         </td>
@@ -126,8 +126,23 @@
 {% include "modal/invitation_list_modal.html" %}
 
 {% block javascript %}
-
 <script>
+    const partnerId = "{{ partner.id }}";
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Select all rows with the class 'clickable-td'
+        const clickableRows = document.querySelectorAll('.clickable-td');
+
+        clickableRows.forEach(row => {
+            row.addEventListener('click', function () {
+                // Get the URL from the data-url attribute
+                const url = this.getAttribute('data-url');
+                // Redirect to the URL
+                window.location.href = url;
+            });
+        });
+    });
     // Function to delete a partner
     document.addEventListener('DOMContentLoaded', () => {
         const deleteLinks = document.querySelectorAll('#delete-partner');
@@ -135,7 +150,6 @@
         deleteLinks.forEach(link => {
             link.addEventListener('click', function(event) {
                 event.preventDefault();
-                const partnerId = this.getAttribute('data-partner-id');
 
                 if (confirm('Are you sure you want to delete this partner?')) {
                     fetch(`/partners/delete/${partnerId}/`, {
@@ -170,11 +184,6 @@
     function openModal(modalId) {
         document.getElementById(modalId).style.display = 'block';
     }
-
-    function closeModal(modalId) {
-        document.getElementById(modalId).style.display = 'none';
-    }
-
     function showModal() {
         document.getElementById('invitationListModal').style.display = 'block';
     }

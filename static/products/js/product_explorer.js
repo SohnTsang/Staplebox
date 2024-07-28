@@ -100,8 +100,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const folderElement = document.createElement('div');
             folderElement.className = 'folder-item';
             folderElement.innerHTML = `
-                <a href="#" class="folder-link" data-folder-id="${folder.id}">${folder.name}</a>
-                <button class="btn btn-danger btn-sm delete-folder-btn" data-folder-id="${folder.id}">Delete</button>
+                <a href="#" class="folder-link" data-folder-id="${folder.uuid}">${folder.name}</a>
+                <button class="btn btn-danger btn-sm delete-folder-btn" data-folder-id="${folder.uuid}">Delete</button>
             `;
             folderContainer.appendChild(folderElement);
         });

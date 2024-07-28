@@ -26,7 +26,7 @@
                 <input type="email" class="" id="email" name="email" placeholder="Enter Partner's Email">
             </div>            
             <div class="modal-footer">
-                <button type="button" onclick="closeModal('sendInvitationModal')" class="cancel-btn">Close</button>
+                <button type="button" class="cancel-btn">Close</button>
                 <button type="submit" class="add-btn">Send</button>
             </div>
         </form>
@@ -36,6 +36,7 @@
 {% block javascript %}
 
 <script>
+
     document.getElementById('send-invitation-form').addEventListener('submit', function(event) {
         event.preventDefault();
         const formData = new FormData(this);
@@ -67,6 +68,7 @@
             showMessage('There was an error processing your request.', 'error');
         });
     });
+
 </script>
 
 {% endblock %}

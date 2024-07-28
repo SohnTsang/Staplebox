@@ -27,7 +27,9 @@
 }
 
 .create-export {
-    height: 60vh; /* Adjust height as needed */
+    max-height: 65vh; /* Adjust height as needed */
+    height: 65vh;
+    max-width: 600px;
 }
 
 .close {
@@ -165,14 +167,14 @@
 
 .modal-footer {
     display: flex;
-    padding: 10px 5px 0px 5px;
+    padding: 10px 5px 3px 5px;
     justify-content: flex-end;
     border-top: 2px solid #ddd;
     margin-top: 10px;
 }
 
 .modal-footer button {
-    padding: 10px 20px;
+    padding: 8px 16px;
     margin-left: 10px;
     border: none;
     border-radius: 5px;
@@ -265,7 +267,7 @@
     display: flex;
     flex-direction: column;
     gap: 5px;
-    padding: 5px 5px 10px 5px;
+    padding: 5px 5px 5px 5px;
     background-color: #ffffff;
     border-radius: 8px;
 }
@@ -366,3 +368,4 @@
     color: #555;
     text-align: right; /* Counter text alignment */
 }
+

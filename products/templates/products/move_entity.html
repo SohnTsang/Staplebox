@@ -75,7 +75,7 @@
         {% for folder in folders %}
             <div class="content-item">
                 <strong>Folder:</strong> <span class="fw-less-bold">{{ folder.name }}</span>
-                <a href="{% url 'products:move_entity' product_id=product.id entity_type=entity_type entity_id=entity.id current_folder_id=folder.id %}" class="text-primary-custom">Open</a>
+                <a href="{% url 'products:move_entity' product_id=signed_product_uuid entity_type=entity_type entity_id=entity.uuid current_folder_id=folder.uuid %}" class="text-primary-custom">Open</a>
             </div>
         {% endfor %}
         {% for document in documents %}
@@ -84,10 +84,10 @@
             </div>
         {% endfor %}
     </div>
-    <form method="post" action="{% url 'products:move_entity' product_id=product.id entity_type=entity_type entity_id=entity.id current_folder_id=current_folder.id %}" class="action-form">
+    <form method="post" action="{% url 'products:move_entity' product_id=signed_product_uuid entity_type=entity_type entity_id=entity.uuid current_folder_id=current_folder.uuid %}" class="action-form">
         {% csrf_token %}
-        <input type="hidden" name="target_folder_id" value="{{ current_folder.id }}">
-        <button type="submit" class="btn btn-primary">Move Here</button>
+        <input type="hidden" name="target_folder_id" value="{{ current_folder.uuid }}">
+        <button type="submit" class="btn btn-primary">Move</button>
     </form>
 </div>
 {% endblock %}

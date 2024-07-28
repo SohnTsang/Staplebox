@@ -17,6 +17,157 @@
     
 }
 
+.profile-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.profile-card {
+    background-color: #fff;
+    padding: 40px;
+    border-radius: 5px;
+    box-shadow: rgba(9, 30, 66, 0.13) 0px 0px 1px 1px;
+    max-width: 800px;
+    width: 100%;
+    text-align: center;
+}
+
+.profile-image {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 20px;
+}
+
+.profile-name {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.profile-role {
+    color: #777;
+    margin-bottom: 20px;
+}
+
+.profile-actions a {
+    margin: 5px;
+    text-decoration: none;
+    font-size: 14px;
+    color: #007bff;
+    transition: color 0.2s;
+}
+
+.profile-actions a:hover {
+    color: #0056b3;
+}
+
+.profile-details {
+    text-align: left;
+    margin-top: 20px;
+}
+
+.profile-details h5 {
+    margin-bottom: 10px;
+    font-size: 18px;
+}
+
+.profile-details p {
+    margin: 5px 0;
+    color: #555;
+    line-height: 1.5;
+}
+
+.contact-info {
+    margin-top: 20px;
+}
+
+.contact-info .info-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-size: 16px;
+}
+
+.contact-info .label {
+    font-weight: bold;
+    color: #333;
+}
+
+.contact-info .value {
+    color: #555;
+}
+
+.partner-documents {
+    margin-top: 30px;
+}
+
+.partner-documents h4 {
+    font-size: 20px;
+    font-weight: bold;
+    color: #007bff;
+    margin-bottom: 10px;
+}
+
+.document-list p, .document-list a {
+    font-size: 14px;
+    color: #555;
+}
+
+.asteriskField {
+    display: inline;
+}
+
+.profile-image {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 20px;
+}
+
+.form-group {
+    text-align: left;
+    margin-top: 20px;
+}
+
+.form-group label {
+    font-weight: bold;
+    color: #333;
+}
+
+.form-group input, .form-group textarea, .form-group select {
+    width: 100%;
+    padding: 10px;
+    margin-top: 5px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.form-group textarea {
+    resize: none;
+}
+
+.submit-btn {
+    margin-top: 30px;
+}
+
+.submit-btn button {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.submit-btn button:hover {
+    background-color: #0056b3;
+}
+
 
 @media (max-width: 464px) {
     .iti__country-list {
@@ -24,32 +175,4 @@
     }
 }
 
-.profile-card {
-    background: white;
-    border-radius: 16px;
-    overflow: hidden;
-    border: 1px #E6DDDD solid;
-}
 
-.fw-medium {
-    font-weight: 600;
-}
-.info-item {
-    display: flex;
-    align-items: flex-start; /* Align items at the start, accommodating wrapped text */
-    gap: 8px; /* Space between label and value */
-}
-
-.label {
-    min-width: 80px; /* Adjust based on the widest label you have */
-    flex-shrink: 0; /* Prevent the label from shrinking */
-    white-space: nowrap; /* Keep the label on a single line */
-}
-
-.value {
-    flex-grow: 1; /* Allow the value to take up the remaining space */
-    word-break: break-word; /* Ensure long words can break and wrap to the next line */
-}
-.text-custom{
-    color: #295893 !important;
-}

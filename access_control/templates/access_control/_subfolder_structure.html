@@ -6,9 +6,9 @@
 
 <!-- _subfolder_structure.html -->
 <!-- Subfolder Row: Initially Hidden, Shown on Parent Folder Expand -->
-<tr class="folder-row collapse folderContent{{ folder.parent_id }} no-select-on-dblclick" onmousedown="enableSelection(this)" tabindex="0" data-bs-target=".folderContent{{ folder.id }}" aria-expanded="false">
+<tr class="folder-row collapse folderContent{{ folder.parent_id }} no-select-on-dblclick" onmousedown="enableSelection(this)" tabindex="0" data-bs-target=".folderContent{{ folder.uuid }}" aria-expanded="false">
     <td class="lh-lg ps-3 py-2 small-custom">
-        <input class="form-check-input custom-checkbox" type="checkbox" name="folders" value="{{ folder.id }}">
+        <input class="form-check-input custom-checkbox" type="checkbox" name="folders" value="{{ folder.uuid }}">
         <span class="arrow-icon" style="display: inline-block;">
             <svg class="arrow-icon" width="24" height="24" viewBox="0 0 24 26" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <g clip-path="url(#clip0_1426_57)">
@@ -36,7 +36,7 @@
 
 <!-- Documents under Subfolder -->
 {% for document in documents %}
-    <tr class="folder-content collapse folderContent{{ folder.id }} no-select-on-dblclick" onmousedown="enableSelection(this)" tabindex="0">
+    <tr class="folder-content collapse folderContent{{ folder.uuid }} no-select-on-dblclick" onmousedown="enableSelection(this)" tabindex="0">
         <td class="document-name lh-lg ps-3 py-2 small-custom">
             <input class="form-check-input custom-checkbox" type="checkbox" name="documents" value="{{ document.id }}">
             <svg width="24" height="20" viewBox="2 -0.5 19 26" fill="none" xmlns="http://www.w3.org/2000/svg">

@@ -12,6 +12,8 @@
 .tabs {
     overflow: hidden;
     border-bottom: 1px solid #ccc;
+    margin-bottom: 8px;
+    
 }
 
 .tablinks {
@@ -64,13 +66,17 @@
     position: relative; /* Ensure the loading overlay is positioned correctly */
 }
 
+
+
+
+
 </style>
 
 <!-- Access Control Modal -->
 <div class="modal fade" id="accessControlModal">
     <div class="modal-dialog">
         <div class="modal-content modal-content-access">
-            <div class="modal-title" id="accessControlModalLabel">Access Control</div>
+            <div class="modal-title" id="accessControlModalLabel">Access Control <br><small id="modalSubTitle" style="font-size: 12px;"></small></div>
             <div class="tabs">
                 <div class="tab active" data-tab="AllPartners">All Partners</div>
                 <div class="tab" data-tab="PartnersWithAccess" id="partnersWithAccessTab">Granted</div>
@@ -78,13 +84,12 @@
             <div class="modal-body-access">
                 <form method="post" id="accessControlForm">
                     <div class="tab-content-access">
-                        
+                        <div class="loading-overlay">
+                            <div class="loading-spinner"></div>
+                        </div>
                         <div id="AllPartners" class="tabcontent">
                             <strong>All Partners</strong>
                             <ul class="partners-list" id="partnersList">
-                                <div class="loading-overlay">
-                                    <div class="loading-spinner"></div>
-                                </div>
                                 <div class="partners-content">
                                     <!-- Partners will be dynamically populated here -->
                                 </div>
@@ -94,9 +99,6 @@
                         <div id="PartnersWithAccess" class="tabcontent">
                             <strong>Partners with Access</strong>
                             <ul class="partners-list" id="partnersWithAccessList">
-                                <div class="loading-overlay">
-                                    <div class="loading-spinner"></div>
-                                </div>
                                 <div class="partners-content">
                                     <!-- List to be populated dynamically -->
                                 </div>
@@ -122,9 +124,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const modal = document.getElementById('accessControlModal');
     const partnersList = modal.querySelector('#partnersList .partners-content');
     const partnersWithAccessList = modal.querySelector('#partnersWithAccessList .partners-content');
-    const allPartnersLoadingOverlay = modal.querySelector('#partnersList .loading-overlay');
-    const partnersWithAccessLoadingOverlay = modal.querySelector('#partnersWithAccessList .loading-overlay');
+    const allPartnersLoadingOverlay = modal.querySelector('.tab-content-access .loading-overlay');
+    const partnersWithAccessLoadingOverlay = modal.querySelector('.tab-content-access .loading-overlay');
 
+    
     // Clear modal data when it is hidden
     modal.addEventListener('hidden.bs.modal', function() {
         partnersList.innerHTML = ''; // Clear All Partners list
@@ -141,12 +144,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.querySelectorAll('[data-bs-toggle="modal"][data-bs-target="#accessControlModal"]').forEach(element => {
         element.addEventListener('click', function() {
+            document.getElementById('partnersWithAccessTab').style.display = 'block';
+            modalSubTitle.textContent = null;
             const productId = this.getAttribute('data-product-id');
             const folderId = this.getAttribute('data-folder-id');
             const documentId = this.getAttribute('data-document-id');
             const itemType = folderId ? 'folder' : 'document';
             const itemId = folderId || documentId;
-
+            
             // Set the item_id and item_type values in the form
             modal.querySelector('#item_id').value = itemId;
             modal.querySelector('#item_type').value = itemType;
@@ -253,7 +258,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Fetch partners without access
             let urlWithoutAccess = `/access_control/get_partners_without_access/${productId}/${itemId}/${itemType}/`;
-            console.log(urlWithoutAccess);
             fetch(urlWithoutAccess)
                 .then(response => response.json())
                 .then(data => {
@@ -319,7 +323,7 @@ document.addEventListener('DOMContentLoaded', function() {
         event.preventDefault(); // Prevent the default form submission
 
         const formData = new FormData(this);
-        const productId = "{{ product.id }}"; // Dynamically set the productId using Django's template language
+        const productId = "{{ signed_product_uuid }}"; // Dynamically set the productId using Django's template language
 
         formData.append('item_id', document.getElementById('item_id').value);
         formData.append('item_type', document.getElementById('item_type').value);
@@ -345,7 +349,7 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(data => {
             if (data.success) {
-                setSessionMessage('Access granted', 'success');
+                setSessionMessage(data.success, 'success');
                 location.reload(); // Reload the page to reflect changes
             } else {
                 showMessage('Error granting access: ' + Object.values(data.errors).join(', '), 'error');

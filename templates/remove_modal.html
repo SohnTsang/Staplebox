@@ -1,0 +1,73 @@
+{% load static %}
+
+<link rel="stylesheet" type="text/css" href="{% static 'css/remove_modal.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'css/btn.css' %}">
+
+<style>
+    
+</style>
+
+<!-- Custom Confirmation Modal -->
+<div id="customConfirmModal" class="modal fade" style="display:none;">
+    
+    <div class="modal-content" style="padding-top: 10px;">
+        <span class=""><button onclick="closeModal()" class='custom-modal-close' style="border:none; background:none;">&times;</button></span>
+        <div class="modal-body">
+            <p id="customConfirmMessage">Are you sure you want to perform this action?</p>
+        </div>
+        <div class="modal-footer" style="border:0;">
+            <button id="cancelBtn" class="cancel-btn" onclick="resolveModal(false)">Cancel</button>
+            <button id="confirmBtn" class="remove-btn" onclick="resolveModal(true)">Confirm</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const modal = document.getElementById("customConfirmModal");
+    
+        // Function to show the modal with a message
+        function showModal(message) {
+            document.getElementById("customConfirmMessage").textContent = message;
+            modal.style.display = "block";
+            return new Promise((resolve) => {
+                window.modalPromiseResolve = resolve;
+            });
+        }
+    
+        // Set up global functions to resolve the modal
+        window.showRemoveModal = showModal;
+        window.resolveModal = function(result) {
+            modal.style.display = "none";
+            if (window.modalPromiseResolve) {
+                window.modalPromiseResolve(result);
+                window.modalPromiseResolve = null; // Ensure no unresolved promises
+            }
+        };
+    
+        window.closeModal = function() {
+            if (window.modalPromiseResolve) {
+                window.modalPromiseResolve(false);
+                window.modalPromiseResolve = null;
+            }
+            modal.style.display = "none";
+        };
+    
+        // Handle clicks outside of the modal content
+        window.onclick = function(event) {
+            if (event.target === modal) {
+                closeModal();
+            }
+        };
+    
+        // Close modal when clicking on the close icon or outside the modal content
+        modal.querySelector('.custom-modal-close').onclick = function() {
+            closeModal();
+        };
+    
+        // Cancel button also closes the modal
+        document.getElementById("cancelBtn").onclick = function() {
+            closeModal();
+        };
+    });
+</script>

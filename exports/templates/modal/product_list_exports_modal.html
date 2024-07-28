@@ -62,7 +62,6 @@
 
     function addSelectedProducts() {
         const selectedProductIds = Array.from(document.querySelectorAll('.product-checkbox:checked')).map(cb => cb.value);
-        const exportId = document.getElementById('exportId').value; // Make sure you have this value correctly set in your HTML
 
         if (!selectedProductIds.length) {
             showMessage('No products selected.', 'error');
@@ -126,7 +125,7 @@
             tableBody.innerHTML = '';  // Clear existing entries
             products.forEach(product => {
                 const row = `<tr>
-                                <td><input type="checkbox" value="${product.id}" class="product-checkbox"></td>
+                                <td><input type="checkbox" value="${product.uuid}" class="product-checkbox"></td>
                                 <td>${product.product_code}</td>
                                 <td style="">${product.product_name}</td>
                             </tr>`;

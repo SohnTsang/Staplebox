@@ -22,3 +22,13 @@ class CompanyProfileForm(forms.ModelForm):
         self.fields['email'].required = False
         self.fields['name'].label = 'Company Name'
         self.fields['description'].label = 'About Us'
+
+
+class CompanySelectionForm(forms.Form):
+    new_company_name = forms.CharField(max_length=255, required=True, label='Create a new company')
+
+    def clean_new_company_name(self):
+        new_company_name = self.cleaned_data.get('new_company_name')
+        if not new_company_name:
+            raise forms.ValidationError("You must enter a new company name.")
+        return new_company_name

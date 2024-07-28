@@ -9,8 +9,8 @@ def get_partner_info(user, filter_value='', sort_by='created_at', search_query='
 
     # Apply search criteria if provided
     if search_query:
-        query &= (Q(partner2__userprofile__companyprofile__name__icontains=search_query) |
-                  Q(partner1__userprofile__companyprofile__name__icontains=search_query) |
+        query &= (Q(partner2__userprofile__company_profiles__name__icontains=search_query) |
+                  Q(partner1__userprofile__company_profiles__name__icontains=search_query) |
                   Q(partner2__email__icontains=search_query) |
                   Q(partner1__email__icontains=search_query))
 
@@ -19,7 +19,7 @@ def get_partner_info(user, filter_value='', sort_by='created_at', search_query='
     for partnership in partnerships:
         partner = partnership.partner2 if partnership.partner1 == user else partnership.partner1
         try:
-            profile = CompanyProfile.objects.get(user_profile=partner.userprofile)
+            profile = CompanyProfile.objects.get(user_profiles=partner.userprofile)
             partner_dict = {
                 'company_name': profile.name,
                 'company_role': profile.role,
@@ -35,7 +35,6 @@ def get_partner_info(user, filter_value='', sort_by='created_at', search_query='
     # Apply filtering after collecting data if a filter value is provided
     if filter_value:
         partner_info = [info for info in partner_info if filter_value.lower() in info['company_name'].lower()]
-
     # Sorting
     if sort_by == 'company_name':
         # Sort the partner_info list by 'company_name'. This is Python-side sorting.

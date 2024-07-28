@@ -10,15 +10,15 @@ class AccessPermissionForm(forms.Form):
     
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
-        product_id = kwargs.pop('product_id', None)
+        product_uuid = kwargs.pop('product_uuid', None)
         super().__init__(*args, **kwargs)
 
         if user:
             partner_users = User.objects.filter(Q(partnership_as_partner1__partner2=user) | Q(partnership_as_partner2__partner1=user), is_staff=False, is_active=True).distinct()
             self.fields['partners'].queryset = partner_users
         
-        if product_id:
-            self.fields['remove_permissions'].queryset = AccessPermission.objects.filter(product_id=product_id, partner1=user).select_related('partner2', 'folder', 'document')
+        if product_uuid:
+            self.fields['remove_permissions'].queryset = AccessPermission.objects.filter(product_id=product_uuid, partner1=user).select_related('partner2', 'folder', 'document')
             
             def custom_label_from_instance(obj):
                 label = f"{obj.partner2.username} - Prod: {obj.product.product_name}"

@@ -50,9 +50,9 @@
                     </div>
                     <div>
                         {% if not invitation.accepted %}
-                        <button class="btn btn-success" onclick="acceptInvitation('{{ invitation.token }}')">Accept</button>
+                            <button class="add-btn" onclick="acceptInvitation('{{ invitation.token }}')" style="font-size:13px;">Accept</button>
                         {% else %}
-                        <span class="badge badge-success">Accepted</span>
+                            <span class="badge badge-success">Accepted</span>
                         {% endif %}
                     </div>
                 </li>
@@ -81,80 +81,82 @@
             </ul>
         </div>
         <div class="modal-footer">
-            <button class="cancel-btn" onclick="document.getElementById('invitationListModal').style.display='none'">Close</button>
+            <button class="cancel-btn">Close</button>
         </div>
     </div>
 </div>
 
 {% block javascript %}
 <script>
-    function openTab(evt, tabName) {
-        var i, tabcontent, tablinks;
-        tabcontent = document.getElementsByClassName("tab-content");
-        for (i = 0; i < tabcontent.length; i++) {
-            tabcontent[i].style.display = "none";
-        }
-        tablinks = document.getElementsByClassName("tab");
-        for (i = 0; i < tablinks.length; i++) {
-            tablinks[i].className = tablinks[i].className.replace(" active", "");
-        }
-        document.getElementById(tabName).style.display = "block";
-        evt.currentTarget.className += " active";
-    }
 
-    function acceptInvitation(token) {
-        fetch(`/invitations/accept/${token}/`, {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json'
-            },
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`Network response was not ok: ${response.statusText}`);
-            }
-            return response.json(); // Parse as JSON
-        })
-        .then(data => {
-            if (data.error) {
-                showMessage(data.error, 'error');
-            } else {
-                setSessionMessage(data.message, 'success');
-                location.reload(); // Reload the page to reflect changes
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showMessage('There was an error processing your request.', 'error');
-        });
+function openTab(evt, tabName) {
+    var i, tabcontent, tablinks;
+    tabcontent = document.getElementsByClassName("tab-content");
+    for (i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].style.display = "none";
     }
+    tablinks = document.getElementsByClassName("tab");
+    for (i = 0; i < tablinks.length; i++) {
+        tablinks[i].className = tablinks[i].className.replace(" active", "");
+    }
+    document.getElementById(tabName).style.display = "block";
+    evt.currentTarget.className += " active";
+}
 
-    function deleteInvitation(invitationId) {
-        fetch(`/invitations/delete/${invitationId}/`, {
-            method: 'DELETE',
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken'),
-                'Content-Type': 'application/json'
-            },
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`Network response was not ok: ${response.statusText}`);
-            }
-            return response.json(); // Always parse as JSON because the backend is set to always return JSON
-        })
-        .then(data => {
-            if (data.error) {
-                showMessage(data.error, 'error');
-            } else {
-                setSessionMessage(data.message, 'success');
-                location.reload(); // Reload the page to reflect changes
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showMessage('There was an error processing your request.', 'error');
-        });
-    }
+function acceptInvitation(token) {
+    fetch(`/invitations/accept/${token}/`, {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json'
+        },
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`Network response was not ok: ${response.statusText}`);
+        }
+        return response.json(); // Parse as JSON
+    })
+    .then(data => {
+        if (data.error) {
+            showMessage(data.error, 'error');
+        } else {
+            setSessionMessage(data.message, 'success');
+            location.reload(); // Reload the page to reflect changes
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showMessage('There was an error processing your request.', 'error');
+    });
+}
+
+function deleteInvitation(invitationId) {
+    fetch(`/invitations/delete/${invitationId}/`, {
+        method: 'DELETE',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json'
+        },
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`Network response was not ok: ${response.statusText}`);
+        }
+        return response.json(); // Always parse as JSON because the backend is set to always return JSON
+    })
+    .then(data => {
+        if (data.error) {
+            showMessage(data.error, 'error');
+        } else {
+            setSessionMessage(data.message, 'success');
+            location.reload(); // Reload the page to reflect changes
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showMessage('There was an error processing your request.', 'error');
+    });
+}
+
 </script>
 {% endblock %}

@@ -1,9 +1,9 @@
 <div class="mb-2">
-    <input type="checkbox" name="folders" value="{{ folder.id }}" id="folder{{ folder.id }}">
-    <label class="btn btn-outline-primary" data-bs-toggle="collapse" href="#collapseFolder{{ folder.id }}" role="button" aria-expanded="false" aria-controls="collapseFolder{{ folder.id }}">
+    <input type="checkbox" name="folders" value="{{ folder.uuid }}" id="folder{{ folder.uuid }}">
+    <label class="btn btn-outline-primary" data-bs-toggle="collapse" href="#collapseFolder{{ folder.uuid }}" role="button" aria-expanded="false" aria-controls="collapseFolder{{ folder.uuid }}">
         {{ folder.name }}
     </label>
-    <div class="collapse" id="collapseFolder{{ folder.id }}">
+    <div class="collapse" id="collapseFolder{{ folder.uuid }}">
         <div class="card card-body">
             {% for subfolder in folder.subfolders.all %}
                 {% include 'access_control/folder_structure.html' with folder=subfolder %}

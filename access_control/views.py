@@ -1,6 +1,5 @@
 # views.py
 import json, os
-from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
@@ -13,7 +12,7 @@ from .forms import AccessPermissionForm
 from django.db import transaction
 from partners.utils import get_partner_info
 from access_control.utils import get_partners_with_access
-from django.http import JsonResponse
+from django.http import JsonResponse, Http404
 from django.db.models import Q
 from users.models import UserProfile
 from .utils import grant_product_access, grant_folder_or_document_access
@@ -32,6 +31,10 @@ import logging
 from rest_framework.decorators import api_view, permission_classes
 from partners.models import Partnership
 from companies.models import CompanyProfile
+from django.core.signing import Signer, BadSignature
+from utils.utils import sign_uuid, unsign_uuid
+
+signer = Signer()
 
 logger = logging.getLogger(__name__)
 
@@ -41,9 +44,14 @@ class ManageAccessView(APIView):
     renderer_classes = [TemplateHTMLRenderer]
     template_name = 'access_control/manage_access.html'
 
-    def get(self, request, product_id):
+    def get(self, request, product_uuid):
+        try:
+            unsigned_product_uuid = signer.unsign(product_uuid)
+        except BadSignature:
+            return Response({'error': 'Invalid product UUID'}, status=400)
+
         user = request.user
-        product = get_object_or_404(Product, id=product_id)
+        product = get_object_or_404(Product, uuid=unsigned_product_uuid)
         
         if product.user != user:
             return Response({'error': 'Unauthorized'}, status=403)
@@ -51,7 +59,7 @@ class ManageAccessView(APIView):
         partner_info = get_partner_info(user)
         partners_with_access = get_partners_with_access(product)
         
-        form = AccessPermissionForm(user=user, product_id=product_id)
+        form = AccessPermissionForm(user=user, product_uuid=product.uuid)
         
         root_folders = Folder.objects.filter(product=product, parent__isnull=True)
         documents = Document.objects.filter(folder__in=root_folders)
@@ -80,12 +88,17 @@ class ManageAccessView(APIView):
         }
         return Response(context)
 
-    def post(self, request, product_id):
-        product = get_object_or_404(Product, id=product_id)
+    def post(self, request, product_uuid):
+        try:
+            unsigned_product_uuid = signer.unsign(product_uuid)
+        except BadSignature:
+            return Response({'error': 'Invalid product UUID'}, status=400)
+
+        product = get_object_or_404(Product, uuid=unsigned_product_uuid)
         if product.user != request.user:
             return Response({'error': 'Unauthorized'}, status=403)
 
-        form = AccessPermissionForm(request.POST, user=request.user, product_id=product_id)
+        form = AccessPermissionForm(request.POST, user=request.user, product_uuid=product.uuid)
         if form.is_valid():
             action = request.POST.get('action')
             partners = form.cleaned_data['partners']
@@ -99,10 +112,10 @@ class ManageAccessView(APIView):
                     self.update_access(request.user, partners, product, folder_ids, document_ids)
 
             messages.success(request, "Access updated successfully.")
-            return redirect('access_control:manage_access', product_id=product_id)
+            return redirect('access_control:manage_access', product_uuid=product_uuid)
         else:
             messages.error(request, "Invalid form submission.")
-            return self.get(request, product_id)
+            return self.get(request, product_uuid)
 
     def grant_access(self, user, partners, product, folder_ids, document_ids):
         logger.debug("Granting access...")
@@ -148,40 +161,60 @@ class ManageAccessView(APIView):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
-def access_control_modal(request, product_id):
+def access_control_modal(request, product_uuid):
+    try:
+        unsigned_product_uuid = signer.unsign(product_uuid)
+    except BadSignature:
+        raise Http404("Invalid product UUID")
+
+    print(request.data)  # Debugging line to print the entire incoming data
+
     item_ids = request.data.get('item_id').split(',')
     item_types = request.data.get('item_type').split(',')
-    partner_ids = request.data.getlist('partners')
+    signed_partner_ids = request.data.getlist('partners')
 
     if len(item_ids) != len(item_types):
         return Response({'error': 'Mismatched item_ids and item_types'}, status=status.HTTP_400_BAD_REQUEST)
 
-    logger.debug(f'Received data: item_ids={item_ids}, item_types={item_types}, partner_ids={partner_ids}')
+    logger.debug(f'Received data: item_ids={item_ids}, item_types={item_types}, signed_partner_ids={signed_partner_ids}')
 
     user = request.user
-    product = get_object_or_404(Product, id=product_id)
+    product = get_object_or_404(Product, uuid=unsigned_product_uuid)
+
+    # Unsign the partner IDs
+    try:
+        partner_ids = [signer.unsign(partner_id) for partner_id in signed_partner_ids]
+    except BadSignature:
+        return Response({'error': 'Invalid partner ID'}, status=status.HTTP_400_BAD_REQUEST)
 
     selected_partners = User.objects.filter(id__in=partner_ids)
     for item_id, item_type in zip(item_ids, item_types):
+        try:
+            unsigned_item_id = signer.unsign(item_id)
+        except BadSignature:
+            raise Http404("Invalid item UUID")
+
         if item_type == 'folder':
-            item = get_object_or_404(Folder, id=item_id)
+            item = get_object_or_404(Folder, uuid=unsigned_item_id)
             for partner in selected_partners:
                 grant_folder_or_document_access(user, partner, product, folder=item)
         elif item_type == 'document':
-            item = get_object_or_404(Document, id=item_id)
+            item = get_object_or_404(Document, uuid=unsigned_item_id)
             for partner in selected_partners:
                 grant_folder_or_document_access(user, partner, product, document=item)
         else:
             return Response({'error': 'Invalid item type'}, status=status.HTTP_400_BAD_REQUEST)
 
-    return Response({'success': 'Access granted'}, status=status.HTTP_200_OK)
+    success_message = 'Access granted'
+    if len(partner_ids) > 1:
+        success_message = 'Access granted to all selected partners'
+    return Response({'success': success_message}, status=status.HTTP_200_OK)
 
 
 @login_required
 def get_all_partners(request):
     user = request.user
 
-    # Get partnerships for the request user
     query = Q(partner1=user) | Q(partner2=user)
     query &= Q(is_active=True)
     partnerships = Partnership.objects.filter(query).distinct()
@@ -190,35 +223,38 @@ def get_all_partners(request):
     for partnership in partnerships:
         partner = partnership.partner2 if partnership.partner1 == user else partnership.partner1
         try:
-            profile = CompanyProfile.objects.get(user_profile=partner.userprofile)
-            # Exclude partners who already have access
+            profile = CompanyProfile.objects.get(user_profiles=partner.userprofile)
             partners_data.append({
-                'partner_id': partner.id,
+                'partner_id': signer.sign(str(partner.id)),
                 'company_name': profile.name,
-                'company_role': profile.role.capitalize(),
+                'company_role': profile.role.capitalize() if profile.role else None,
             })
         except CompanyProfile.DoesNotExist:
-            # Skip if the partner does not have a CompanyProfile
             continue
 
     return JsonResponse(partners_data, safe=False)
 
 
 @login_required
-def get_partners_without_access(request, product_id, item_id, item_type):
+def get_partners_without_access(request, product_uuid, item_uuid, item_type):
+    try:
+        unsigned_product_uuid = signer.unsign(product_uuid)
+        unsigned_item_uuid = signer.unsign(item_uuid)
+    except BadSignature:
+        raise Http404("Invalid UUID")
+
     user = request.user
-    product = get_object_or_404(Product, id=product_id)
-    
+    product = get_object_or_404(Product, uuid=unsigned_product_uuid)
+
     if item_type == 'folder':
-        item = get_object_or_404(Folder, id=item_id)
+        item = get_object_or_404(Folder, uuid=unsigned_item_uuid)
         granted_partners = AccessPermission.objects.filter(folder=item).values_list('partner2', flat=True)
     elif item_type == 'document':
-        item = get_object_or_404(Document, id=item_id)
+        item = get_object_or_404(Document, uuid=unsigned_item_uuid)
         granted_partners = AccessPermission.objects.filter(document=item).values_list('partner2', flat=True)
     else:
         return JsonResponse({'error': 'Invalid item type'}, status=400)
 
-    # Get partnerships for the request user
     query = Q(partner1=user) | Q(partner2=user)
     query &= Q(is_active=True)
     partnerships = Partnership.objects.filter(query).distinct()
@@ -227,19 +263,65 @@ def get_partners_without_access(request, product_id, item_id, item_type):
     for partnership in partnerships:
         partner = partnership.partner2 if partnership.partner1 == user else partnership.partner1
         try:
-            profile = CompanyProfile.objects.get(user_profile=partner.userprofile)
-            # Exclude partners who already have access
+            profile = CompanyProfile.objects.get(user_profiles=partner.userprofile)
             if partner.id not in granted_partners:
                 partners_data.append({
-                    'partner_id': partner.id,
+                    'partner_id': signer.sign(str(partner.id)),
                     'company_name': profile.name,
-                    'company_role': profile.role.capitalize(),
+                    'company_role': profile.role.capitalize() if profile.role else None,
                 })
         except CompanyProfile.DoesNotExist:
-            # Skip if the partner does not have a CompanyProfile
             continue
 
     return JsonResponse(partners_data, safe=False)
+
+
+
+from django.db.models import Prefetch
+from django.http import JsonResponse
+
+@login_required
+def get_partners_with_access_json(request, item_uuid=None, item_type=None):
+    if item_type not in ['document', 'folder']:
+        return JsonResponse({'error': 'Invalid item type'}, status=400)
+
+    try:
+        unsigned_item_uuid = signer.unsign(item_uuid)
+    except BadSignature:
+        raise Http404("Invalid item UUID")
+
+    item_model = Document if item_type == "document" else Folder
+    item = get_object_or_404(item_model, uuid=unsigned_item_uuid)
+
+    if item_type == "folder":
+        product_condition = Q(product=item.product)
+    elif item_type == "document":
+        product_condition = Q(product=item.folder.product)
+
+    permissions = AccessPermission.objects.filter(
+        Q(**{item_type: item}) | product_condition & Q(folder__isnull=True, document__isnull=True)
+    ).distinct().select_related('partner2').prefetch_related(
+        Prefetch('partner2__userprofile__company_profiles', to_attr='fetched_company_profiles')
+    )
+
+    partners_data = []
+    for permission in permissions:
+        user_profile = getattr(permission.partner2, 'userprofile', None)
+        if user_profile:
+            company_profile = user_profile.fetched_company_profiles[0] if user_profile.fetched_company_profiles else None
+        else:
+            company_profile = None
+
+        partners_data.append({
+            'partner2_id': signer.sign(str(permission.partner2.id)),
+            'company_name': getattr(company_profile, 'name', 'N/A'),
+            'company_role': getattr(company_profile, 'role', 'N/A') if company_profile and company_profile.role else 'N/A',
+            'access_detail': 'Full Access'
+        })
+
+    return JsonResponse(partners_data, safe=False)
+
+
 
 
 @login_required
@@ -269,41 +351,6 @@ def fetch_partner_access_details(request, product_id, partner_id):
 
 
 
-@login_required
-def get_partners_with_access_json(request, item_id=None, item_type=None):
-    if item_type not in ['document', 'folder']:
-        return JsonResponse({'error': 'Invalid item type'}, status=400)
-    
-    item_model = Document if item_type == "document" else Folder
-    item = get_object_or_404(item_model, pk=item_id)
-
-    if item_type == "folder":
-        item = get_object_or_404(Folder, pk=item_id)
-        product_condition = Q(product=item.product)
-    elif item_type == "document":
-        item = get_object_or_404(Document, pk=item_id)
-        product_condition = Q(product=item.folder.product)  # Assuming Document is related to Folder which in turn is related to Product
-
-    # Filter for specific item or product-level permissions
-    permissions = AccessPermission.objects.filter(
-        Q(**{item_type: item}) | product_condition & Q(folder__isnull=True, document__isnull=True)
-    ).distinct().select_related('partner2').prefetch_related(
-        Prefetch('partner2__userprofile', queryset=UserProfile.objects.select_related('companyprofile'))
-    )
-
-    partners_data = []
-    for permission in permissions:
-        user_profile = getattr(permission.partner2, 'userprofile', None)
-        company_profile = getattr(user_profile, 'companyprofile', None) if user_profile else None
-        partners_data.append({
-            'partner2_id': permission.partner2.id,
-            'company_name': getattr(company_profile, 'name', 'N/A'),
-            'company_role': getattr(company_profile, 'role', 'N/A').capitalize(),
-            'access_detail': 'Full Access'
-        })
-
-    return JsonResponse(partners_data, safe=False)
-
 
 @login_required
 @require_POST
@@ -322,17 +369,36 @@ def remove_access(request, product_id, partner_id):
 
 @login_required
 @require_POST
-def remove_specific_access(request, product_id, entity_type, entity_id):
-    product = get_object_or_404(Product, pk=product_id)
+def remove_specific_access(request, product_uuid, entity_type, entity_uuid):
+    try:
+        # Unsign the product UUID and entity UUID
+        unsigned_product_uuid = signer.unsign(product_uuid)
+        unsigned_entity_uuid = signer.unsign(entity_uuid)
+    except BadSignature:
+        return JsonResponse({'success': False, 'error': 'Invalid UUID'}, status=400)
+
+    # Get the product and check user authorization
+    product = get_object_or_404(Product, uuid=unsigned_product_uuid)
     if product.user != request.user:
         return JsonResponse({'success': False, 'error': 'Unauthorized'}, status=403)
 
-    partner_id = json.loads(request.body).get('partner_id')
-    entity_model = Document if entity_type == "document" else Folder
-    entity = get_object_or_404(entity_model, pk=entity_id)
+    # Parse the partner UUID from the request body and unsign it
+    try:
+        partner_id = json.loads(request.body).get('partner_id')
+        unsigned_partner_id = signer.unsign(partner_id)
+    except (json.JSONDecodeError, BadSignature):
+        return JsonResponse({'success': False, 'error': 'Invalid partner ID'}, status=400)
 
-    if AccessPermission.objects.filter(product=product, partner2_id=partner_id, **{entity_type: entity}).exists():
-        AccessPermission.objects.filter(product=product, partner2_id=partner_id, **{entity_type: entity}).delete()
+    # Determine the model based on the entity type and get the entity
+    entity_model = Document if entity_type == "document" else Folder
+    entity = get_object_or_404(entity_model, uuid=unsigned_entity_uuid)
+
+    # Remove the access permission if it exists
+    access_permission = AccessPermission.objects.filter(
+        product=product, partner2_id=unsigned_partner_id, **{entity_type: entity}
+    )
+    if access_permission.exists():
+        access_permission.delete()
         return JsonResponse({'success': True})
     
     return JsonResponse({'success': False, 'error': 'Not Found'}, status=404)
@@ -366,7 +432,7 @@ def manage_access(request, product_id):
         with transaction.atomic():
             if action == 'update_access':
                 request.session['last_active_tab'] = 'current'
-                update_access(request, product.id)
+                update_access(request, product.uuid)
             elif action == 'grant_access':
                 # Extracting selected partner IDs, folder IDs, and document IDs from form.cleaned_data
                 request.session['last_active_tab'] = 'all'

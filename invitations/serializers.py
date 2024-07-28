@@ -33,7 +33,7 @@ class InvitationSerializer(serializers.ModelSerializer):
         try:
             recipient = User.objects.get(email=value)
         except User.DoesNotExist:
-            raise serializers.ValidationError("No user found with this email address")
+            raise serializers.ValidationError("No company found with this email address")
 
         # Check if there is already an existing partnership
         if Partnership.objects.filter(
@@ -41,7 +41,7 @@ class InvitationSerializer(serializers.ModelSerializer):
             (Q(partner2=user) & Q(partner1=recipient)),
             is_active=True
         ).exists():
-            raise serializers.ValidationError("Partnership already exists with this user")
+            raise serializers.ValidationError("Partnership already exists with this company")
 
         return value
 

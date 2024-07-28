@@ -10,6 +10,11 @@ from .serializers import CompanyProfileSerializer
 from rest_framework import status
 from django.utils.decorators import method_decorator
 from django.contrib import messages
+from .forms import CompanySelectionForm
+from django.db import transaction
+from django.core.signing import Signer, BadSignature
+
+signer = Signer()
 
 
 class CompanyProfileView(APIView):
@@ -19,19 +24,25 @@ class CompanyProfileView(APIView):
 
     def get(self, request):
         user_profile = request.user.userprofile
-        try:
-            company_profile = CompanyProfile.objects.get(user_profile=user_profile)
-            own_profile = True  # Since the company profile corresponds to the logged-in user
-        except CompanyProfile.DoesNotExist:
-            context = {'company_profile': None}
-            return Response(context, template_name=self.template_name, status=404)
+        company_profile = user_profile.company_profiles.first()
+        
+        if company_profile:
+            own_profile = True
+            serializer = CompanyProfileSerializer(company_profile)
+            context = {
+                'company_profile': serializer.data,
+                'active_page': 'Company',
+                'own_profile': own_profile,
+                'is_partner_profile': False  # Not a partner profile since it's the user's own profile
+            }
+        else:
+            context = {
+                'company_profile': None,
+                'active_page': 'Company',
+                'own_profile': False,
+                'is_partner_profile': False
+            }
 
-        serializer = CompanyProfileSerializer(company_profile)
-        context = {
-            'company_profile': serializer.data,
-            'active_page': 'Company',
-            'own_profile': own_profile
-        }
         return Response(context, template_name=self.template_name)
 
 
@@ -42,17 +53,46 @@ class EditCompanyProfileView(APIView):
 
     def get(self, request):
         user_profile = request.user.userprofile
-        company_profile, created = CompanyProfile.objects.get_or_create(user_profile=user_profile)
-        form = CompanyProfileForm(instance=company_profile)  # Use the form for rendering
-        return Response({'form': form}, template_name=self.template_name)
+        company_profile = user_profile.company_profiles.first()
+        form = CompanyProfileForm(instance=company_profile)
+        return Response({'form': form, 'company_profile': company_profile}, template_name=self.template_name)
 
     def post(self, request):
         user_profile = request.user.userprofile
-        company_profile, created = CompanyProfile.objects.get_or_create(user_profile=user_profile)
+        company_profile = user_profile.company_profiles.first() if user_profile.company_profiles.exists() else None
         form = CompanyProfileForm(request.POST, instance=company_profile)
+
         if form.is_valid():
-            form.save()
-            messages.success(request, 'Company profile updated')
+            company_profile = form.save(commit=False)
+            if not user_profile.company_profiles.exists():
+                # New profile
+                company_profile.save()
+                user_profile.company_profiles.add(company_profile)
+                print("Adding new profile")
+            else:
+                # Existing profile
+                company_profile.save()
+                print("Updating existing profile")
+            messages.success(request, 'Company profile updated successfully.')
             return redirect('companies:company_profile_view')
         else:
-            return Response({'form': form}, template_name=self.template_name)
+            return Response({'form': form, 'company_profile': company_profile}, template_name=self.template_name)
+        
+
+@login_required
+def create_company_profile(request):
+    user_profile = request.user.userprofile
+    if request.method == 'POST':
+        form = CompanySelectionForm(request.POST)
+        if form.is_valid():
+            new_company_name = form.cleaned_data.get('new_company_name')
+            with transaction.atomic():
+                # Create a new company
+                company = CompanyProfile.objects.create(name=new_company_name)
+                company.user_profiles.add(user_profile)
+                messages.success(request, 'Company profile created successfully.')
+                return redirect('companies:company_profile_view', company_id=company.id)
+    else:
+        form = CompanySelectionForm()
+
+    return render(request, 'companies/create_company.html', {'form': form})

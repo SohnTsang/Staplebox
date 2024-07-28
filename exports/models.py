@@ -4,8 +4,14 @@ from products.models import Product
 from documents.models import Document
 from partners.models import Partnership
 from folder.models import Folder
+import uuid
+from django.core.signing import Signer
+
+signer = Signer()
 
 class Export(models.Model):
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
+     
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_exports')
     reference_number = models.CharField(max_length=100, unique=True, null=True, blank=True, verbose_name="Reference Number")
     label = models.CharField(max_length=255, blank=True, null=True, verbose_name="Label")
@@ -19,11 +25,12 @@ class Export(models.Model):
     def __str__(self):
         label_display = f" - {self.label}" if self.label else ""
         return f"{self.reference_number}{label_display} by {self.created_by.username}" if self.reference_number else f"Pending export by {self.created_by.username}"
-
+    
     def save(self, *args, **kwargs):
         # Automatically create a folder for the export if not already set
         if not self.folder_id:
             self.folder = Folder.objects.create(name=f"Folder for {self.partner} on {self.export_date}")
+         
         super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
@@ -37,3 +44,5 @@ class Export(models.Model):
             print(self.documents.all())
             self.documents.all().delete()
         super().delete(*args, **kwargs)
+        
+    

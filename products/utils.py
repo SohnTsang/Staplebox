@@ -1,6 +1,6 @@
 def get_breadcrumbs(folder, product):
     # Initialize with the root breadcrumb
-    breadcrumbs = [{'id': product.id, 'name': product.product_name, 'is_root': True}]
+    breadcrumbs = [{'id': product.uuid, 'name': product.product_name, 'is_root': True}]
     if folder.is_root:
         return breadcrumbs
 

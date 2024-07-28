@@ -45,7 +45,7 @@
                 </thead>
                 <tbody id="exportTableBody">
                     {% for partner in all_partners %}
-                    <tr data-export-id="{{ partner.export_id }}"> <!-- Add the export ID here -->
+                    <tr data-export-id="{{ partner.export_uuid }}"> <!-- Add the export ID here -->
                         <td><input type="checkbox"></td>
                         <td>{{ partner.reference_number }}</td>
                         <td>{{ partner.partner_name }}</td>
@@ -56,7 +56,7 @@
                             </div>
                         </td> <!-- Display the document count -->
                         <td>
-                            <a href="{% url 'exports:export_detail' export_id=partner.export_id %}">
+                            <a href="{% url 'exports:export_detail' export_uuid=partner.export_id %}">
                                 <img src="{% static 'images/table_icon/visibility_24dp_FILL0_wght400_GRAD0_opsz24.png' %}" alt="View" class="icon-view">
                             </a>
                         </td>
