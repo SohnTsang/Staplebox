@@ -178,16 +178,17 @@ def access_control_modal(request, product_uuid):
 
     logger.debug(f'Received data: item_ids={item_ids}, item_types={item_types}, signed_partner_ids={signed_partner_ids}')
 
-    user = request.user
+    user_company_profile = request.user.userprofile.company_profiles.first()
     product = get_object_or_404(Product, uuid=unsigned_product_uuid)
 
-    # Unsign the partner IDs
+    # Unsign the partner IDs and fetch the CompanyProfile instances
     try:
         partner_ids = [signer.unsign(partner_id) for partner_id in signed_partner_ids]
     except BadSignature:
         return Response({'error': 'Invalid partner ID'}, status=status.HTTP_400_BAD_REQUEST)
 
-    selected_partners = User.objects.filter(id__in=partner_ids)
+    selected_partners = CompanyProfile.objects.filter(uuid__in=partner_ids)
+
     for item_id, item_type in zip(item_ids, item_types):
         try:
             unsigned_item_id = signer.unsign(item_id)
@@ -197,11 +198,11 @@ def access_control_modal(request, product_uuid):
         if item_type == 'folder':
             item = get_object_or_404(Folder, uuid=unsigned_item_id)
             for partner in selected_partners:
-                grant_folder_or_document_access(user, partner, product, folder=item)
+                grant_folder_or_document_access(user_company_profile, partner, product, folder=item)
         elif item_type == 'document':
             item = get_object_or_404(Document, uuid=unsigned_item_id)
             for partner in selected_partners:
-                grant_folder_or_document_access(user, partner, product, document=item)
+                grant_folder_or_document_access(user_company_profile, partner, product, document=item)
         else:
             return Response({'error': 'Invalid item type'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -255,23 +256,26 @@ def get_partners_without_access(request, product_uuid, item_uuid, item_type):
     else:
         return JsonResponse({'error': 'Invalid item type'}, status=400)
 
-    query = Q(partner1=user) | Q(partner2=user)
+    # Get the user's company profiles
+    user_company_profiles = CompanyProfile.objects.filter(user_profiles__user=user)
+
+    if not user_company_profiles.exists():
+        return JsonResponse([], safe=False)
+
+    # Construct the query to filter partnerships where the user's company profile is either partner1 or partner2
+    query = Q(partner1__in=user_company_profiles) | Q(partner2__in=user_company_profiles)
     query &= Q(is_active=True)
     partnerships = Partnership.objects.filter(query).distinct()
 
     partners_data = []
     for partnership in partnerships:
-        partner = partnership.partner2 if partnership.partner1 == user else partnership.partner1
-        try:
-            profile = CompanyProfile.objects.get(user_profiles=partner.userprofile)
-            if partner.id not in granted_partners:
-                partners_data.append({
-                    'partner_id': signer.sign(str(partner.id)),
-                    'company_name': profile.name,
-                    'company_role': profile.role.capitalize() if profile.role else None,
-                })
-        except CompanyProfile.DoesNotExist:
-            continue
+        partner = partnership.partner2 if partnership.partner1 in user_company_profiles else partnership.partner1
+        if partner.uuid not in granted_partners:
+            partners_data.append({
+                'partner_id': signer.sign(str(partner.uuid)),
+                'company_name': partner.name,
+                'company_role': partner.role.capitalize() if partner.role else None,
+            })
 
     return JsonResponse(partners_data, safe=False)
 
@@ -393,15 +397,32 @@ def remove_specific_access(request, product_uuid, entity_type, entity_uuid):
     entity_model = Document if entity_type == "document" else Folder
     entity = get_object_or_404(entity_model, uuid=unsigned_entity_uuid)
 
-    # Remove the access permission if it exists
-    access_permission = AccessPermission.objects.filter(
-        product=product, partner2_id=unsigned_partner_id, **{entity_type: entity}
-    )
-    if access_permission.exists():
-        access_permission.delete()
-        return JsonResponse({'success': True})
-    
-    return JsonResponse({'success': False, 'error': 'Not Found'}, status=404)
+    # Remove the access permission for the entity and all sub-entities
+    def remove_access_recursively(folder):
+        # Remove access for the folder itself
+        AccessPermission.objects.filter(
+            product=product, partner2_id=unsigned_partner_id, folder=folder
+        ).delete()
+
+        # Remove access for all documents in this folder
+        AccessPermission.objects.filter(
+            product=product, partner2_id=unsigned_partner_id, document__folder=folder
+        ).delete()
+
+        # Recursively remove access for all subfolders and their contents
+        for subfolder in folder.subfolders.all():
+            remove_access_recursively(subfolder)
+
+    if entity_type == "folder":
+        remove_access_recursively(entity)
+    elif entity_type == "document":
+        AccessPermission.objects.filter(
+            product=product, partner2_id=unsigned_partner_id, document=entity
+        ).delete()
+    else:
+        return JsonResponse({'success': False, 'error': 'Invalid entity type'}, status=400)
+
+    return JsonResponse({'success': True})
 
 
 

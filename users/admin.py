@@ -20,7 +20,7 @@ class UserAdmin(BaseUserAdmin):
 
     def company_name(self, obj):
         """Retrieve company name from the CompanyProfile model."""
-        profile = CompanyProfile.objects.filter(user_profile__user=obj).first()
+        profile = CompanyProfile.objects.filter(user_profiles__user=obj).first()
         return profile.name if profile else None
 
     company_name.short_description = "Company Name"  # Optional: Sets column name

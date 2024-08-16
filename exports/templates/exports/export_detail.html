@@ -76,16 +76,17 @@
     }
 
     .product-table th:nth-child(2), .product-table td:nth-child(2) {
-        width: 15%;
+        width: 12% !important;
+        text-align: left;
     }
 
     .product-table th:nth-child(3), .product-table td:nth-child(3) {
-        width: 20%;
+        width: 18%;
         text-align: left;
     }
 
     .product-table th:nth-child(4), .product-table td:nth-child(4) {
-        width: 15%;
+        width: 20%;
         
     }
 
@@ -95,11 +96,15 @@
     }
 
     .document-talbe th:nth-child(2), .document-talbe td:nth-child(2) {
-        width: 22% !important;
+        width: 25% !important;
     }
 
     .document-talbe th:nth-child(3), .document-talbe td:nth-child(3) {
         width: 18% !important;
+    }
+
+    .document-talbe th:nth-child(4), .document-talbe td:nth-child(4) {
+        width: 10% !important;
     }
 
     .document-talbe th:nth-child(5), .document-talbe td:nth-child(5) {
@@ -166,7 +171,7 @@
                     <div><strong>Export Date:</strong> {{ export.export_date }}</div>
                 </div>
             </div>
-            {% if not export.completed and export.created_by_id == signed_user_id %}
+            {% if not export.completed and export.created_by_company_profile_id == signed_user_company_profile_id %}
             <div class="button-group">
                 <div class="action-button-container">
                     <button class="button-8 action-button-title" data-dropdown-target="ActionDropdown">
@@ -191,7 +196,7 @@
             <div class="detail-subsection" style="width: 35%;">
                 <div class="header-with-buttons">
                     <h4>Products ({{ export.products|length }})</h4>
-                    {% if not export.completed and export.created_by_id == signed_user_id %}
+                    {% if not export.completed and export.created_by_company_profile_id == signed_user_company_profile_id %}
                     <div class="buttons" style="padding-bottom: 10px;">
                         <button class="button-7" id="addProduct">Add</button>
                         <button class="button-7-delete" id="deleteProduct">Delete</button>
@@ -203,11 +208,13 @@
                     <table class="product-table">
                         <thead>
                             <tr>
-                                {% if export.created_by_id == signed_user_id %}
+                                {% if export.created_by_company_profile_id == signed_user_company_profile_id %}
                                 <th style="overflow:hidden;"><input type="checkbox" id="selectAllProducts"></th>
                                 {% else %}
+                                <th style="overflow:hidden; width:0.5%;"></th>
                                 {% endif %}
-                                <th style="width: 13%; text-align: left; padding-left:30px;">Product Code</th>
+                                
+                                <th style="width: 13%; text-align: left;">Product Code</th>
                                 <th>Product Name</th>
                                 <th>Owner</th>
                             </tr>
@@ -215,11 +222,13 @@
                         <tbody>
                             {% for product in export.products %}
                                 <tr>
-                                    {% if export.created_by_id == signed_user_id %}
+                                    {% if export.created_by_company_profile_id == signed_user_company_profile_id %}
                                     <td><input type="checkbox" class="product-checkbox" value="{{ product.id }}"></td>
                                     {% else %}
+                                    <td style="overflow:hidden; width:0.5%;"></td>
                                     {% endif %}
-                                    <td style="width: 13%; text-align: left; padding-left:30px;">{{ product.product_code }}</td>
+                                    
+                                    <td>{{ product.product_code }}</td>
                                     <td>{{ product.product_name }}</td>
                                     <td>{{ product.owner }}</td>
                                 </tr>
@@ -235,7 +244,7 @@
             <div class="detail-subsection" style="width: 63%;">
                 <div class="header-with-buttons">
                     <h4>Documents ({{ export.documents|length }})</h4>
-                    {% if not export.completed and export.created_by_id == signed_user_id %}
+                    {% if not export.completed and export.created_by_company_profile_id == signed_user_company_profile_id %}
                     <div class="buttons" style="padding-bottom: 10px;">
                         <button class="button-7" id="openUploadModalBtn">Upload</button>
                         <button class="button-7-delete disabled" id="deleteDocument">Delete</button>
@@ -247,11 +256,13 @@
                     <table class="document-talbe">
                         <thead>
                             <tr>
-                                {% if export.created_by_id == signed_user_id %}
+                                {% if export.created_by_company_profile_id == signed_user_company_profile_id %}
                                 <th><input type="checkbox" id="selectAllDocuments"></th>
                                 {% else %}
+                                <th style="overflow:hidden; width:0.5%;"></th>
                                 {% endif %}
-                                <th style="width: 35%; text-align: left; padding-left:30px;">File Name</th>
+                                
+                                <th style="width: 35%; text-align: left;">File Name</th>
                                 <th style="width: 28% !important;">Owner</th>
                                 <th>Size</th>
                                 <th>Uploaded At</th>
@@ -261,11 +272,13 @@
                         <tbody>
                             {% for document in export.documents %}
                                 <tr data-document-id="{{ document.document_id }}" class="non-clickable-tr">
-                                    {% if export.created_by_id == signed_user_id %}
+                                    {% if export.created_by_company_profile_id == signed_user_company_profile_id %}
                                     <td><input type="checkbox" class="document-checkbox"></td>
                                     {% else %}
+                                    <td style="overflow:hidden; width:0.5%"></td>
                                     {% endif %}
-                                    <td style="width: 35%; text-align: left; padding-left:30px;">
+                                    
+                                    <td style="width: 35%; text-align: left;">
                                         <span class="file-name-table">{{ document.file_name }}</span>
                                     </td>
                                     <td style="width: 28% !important;">
@@ -282,7 +295,7 @@
                                             <div class="action-button-dropdown dropdown-content" id="actionDropdown{{ forloop.counter }}">
                                                 <a href="#" class="view-action">View</a>
                                                 <a href="{% url 'exports:download_document' document_uuid=document.document_id %}" class="download-action">Download</a>
-                                                {% if export.created_by_id == signed_user_id %}
+                                                {% if export.created_by_company_profile_id == signed_user_company_profile_id %}
                                                 <a href="#" class="delete-action" data-document-id="{{ document.document_id }}">Delete</a>
                                                 {% endif %}
                                             </div>
@@ -376,7 +389,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const formMessages = document.getElementById('formMessages');
     const referenceNumberInput = document.getElementById('referenceNumber');
     const exportDateInput = document.getElementById('exportDate');
-    const partnerSelect = document.getElementById('partner');
 
     function closeEditModal() {
         editExportModal.style.display = 'none';
@@ -393,8 +405,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
             referenceNumberInput.value = data.reference_number;
             exportDateInput.value = data.export_date;
-            partnerSelect.innerHTML = `<option value="${data.partner.id}">${data.partner.name}</option>`;
-            partnerSelect.disabled = true;
+            // Removed partner field handling
             editExportModal.style.display = 'block';
         })
         .catch(error => {
@@ -406,14 +417,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     editExportButton.addEventListener('click', openEditModal);
 
-    document.querySelector('#CloseEditExport').addEventListener('click', closeEditModal);
-
     document.querySelector('#SubmitEditExport').addEventListener('click', function(event) {
         event.preventDefault();
         const formData = {
             reference_number: referenceNumberInput.value,
             export_date: exportDateInput.value,
-            partner: { id: parseInt(partnerSelect.value) }
         };
 
         fetch(`/exports/${exportId}/edit/`, {
@@ -431,11 +439,12 @@ document.addEventListener('DOMContentLoaded', function() {
             return response.json();
         })
         .then(data => {
+            console.log(data);
             if (data.error) {
                 formMessages.innerText = data.error;
                 formMessages.style.display = 'block';
             } else {
-                closeEditModal();
+                setSessionMessage("Export updated", 'success');
                 location.reload(); // Reload to see the updated details
             }
         })
@@ -842,14 +851,15 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    'delete_export'
+    //delete_export
     document.addEventListener('DOMContentLoaded', function () {
         const deleteButton = document.getElementById('delete_export');
 
         if (deleteButton) {
             deleteButton.addEventListener('click', function () {
+
                 if (confirm('Are you sure you want to delete this export?')) {
-                    fetch(`/exports/delete/`, {
+                    fetch('/exports/delete/', {
                         method: 'DELETE',
                         headers: {
                             'X-CSRFToken': getCookie('csrftoken'),

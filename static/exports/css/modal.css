@@ -24,6 +24,8 @@
     display: flex;
     flex-direction: column;
     max-width: 500px; /* Maximum width to ensure it does not get too large on bigger screens */
+    box-shadow:0 2px 8px rgba(0,0,0,0.3);
+
 }
 
 .create-export {
@@ -88,7 +90,7 @@
 .tab-content {
     display: none; /* Hide by default */
     flex: 1; /* Allow tab-content to grow and shrink */
-    padding: 10px 0 5px 0;
+    padding: 10px 0 10px 0;
 }
 
 .tab-content.active {
@@ -292,6 +294,8 @@
     border: 1px solid #ccc;
     outline: none;
 }
+
+
 
 /* Apply focus styles to inputs, selects, and textareas within forms where the ID contains "Form" or "form" */
 [id*="Form"]:not(#filterSortForm):not(#formMessages):not(button[id*="Form"]) input:focus, 

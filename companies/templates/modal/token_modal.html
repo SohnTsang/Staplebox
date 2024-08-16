@@ -1,0 +1,31 @@
+<!-- token_modal.html -->
+<div id="tokenModal" class="modal" style="display: none;">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" style="margin: 0; font-size: 1.25rem; font-weight: 400; border:0;">{{ company_profile.name }} Profile Token
+                    <small style="display:block; font-size:0.8rem;">
+                        Token uses: {{ token_uses }} / {{ max_token_uses }}
+                    </small>
+                </h5>
+                
+            </div>
+            <div class="modal-body">
+                <div id="loadingOverlay" class="loading-overlay">
+                    <div class="loading-spinner"></div>
+                </div>
+                <button id="copyTokenBtn" style="display: none; margin-top: 10px; margin-left: 10px;">Copy Token</button>
+
+                <p id="tokenText" style="display: none; padding:0 10px 0 10px; font-weight:500; word-wrap: break-word;"></p>
+
+                <div style="margin-top: 20px; font-size: 0.8rem; color: #555; padding-left:10px;">
+                    <p style="margin: 0;">Other users can add the profile to their account using the token.</p>
+                    <p style="margin: 5px 0 0; color:#b33b3b;">Please do not share with unintended users.</p>
+                </div>
+            </div>
+            <div class="modal-footer" style="border:0">
+                <button type="button" class="cancel-btn">Close</button>
+            </div>
+        </div>
+    </div>
+</div>

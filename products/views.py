@@ -15,7 +15,6 @@ from django.core.paginator import Paginator
 from documents.models import Document
 from django.template.loader import render_to_string
 from django.db import transaction
-from django.views.decorators.http import require_http_methods
 from partners.utils import get_partner_info
 from folder.utils import clean_bins
 from access_control.utils import user_has_access_to
@@ -34,6 +33,9 @@ from rest_framework import status
 from rest_framework.response import Response
 from access_control.models import AccessPermission
 from django.core.signing import Signer, BadSignature
+from access_control.utils import AccessControlMixin
+from companies.models import CompanyProfile
+from rest_framework.exceptions import ValidationError
 
 import logging
 
@@ -48,13 +50,17 @@ class ProductListView(APIView):
     template_name = 'products/product_list.html'
     
     def get(self, request, *args, **kwargs):
-        user = request.user
+        user_company_profile = request.user.userprofile.company_profiles.first()
+        if not user_company_profile:
+            logger.error(f"No company profile found for the user {request.user}.")
+            return redirect('companies:company_profile_view')  # Redirect to company profile view
+
         current_sort = request.query_params.get('sort', 'updated_at')
         current_direction = request.query_params.get('direction', 'desc')
         filter_type = request.query_params.get('filter_type', 'product_code')
         filter_value = request.query_params.get('filter_value', '')
 
-        combined_filter = Q(user=user) | Q(accesspermission__partner2=user)
+        combined_filter = Q(company=user_company_profile) | Q(accesspermission__partner2=user_company_profile)
         if filter_value:
             combined_filter &= Q(**{f'{filter_type}__icontains': filter_value})
 
@@ -63,17 +69,21 @@ class ProductListView(APIView):
 
         product_count = products.count()
 
-        # Convert queryset to list of dicts to preserve pagination and other features
-        products_with_root = [{
-            'product': product,
-            'signed_product_uuid': signer.sign(str(product.uuid)),  # Sign the product UUID
-            'signed_root_folder_uuid': signer.sign(str(Folder.objects.filter(product=product, name='Root').first().uuid)) if Folder.objects.filter(product=product, name='Root').exists() else None
-        } for product in products]
+        products_with_details = []
+        for product in products:
+            company_profile = product.company
+            products_with_details.append({
+                'product': product,
+                'company_name': company_profile.name if company_profile else 'No Company',
+                'signed_product_uuid': signer.sign(str(product.uuid)),
+                'signed_root_folder_uuid': signer.sign(str(Folder.objects.filter(product=product, name='Root').first().uuid)) if Folder.objects.filter(product=product, name='Root').exists() else None,
+                'is_owner': product.company == user_company_profile
+            })
 
-        paginator = Paginator(products_with_root, 18)  # Adjust the count as needed
+        paginator = Paginator(products_with_details, 18)
         page_obj = paginator.get_page(request.query_params.get('page', 1))
 
-        form = ProductForm()  # Initialize the create product form
+        form = ProductForm()
         
         context = {
             'page_obj': page_obj,
@@ -81,7 +91,7 @@ class ProductListView(APIView):
             'current_direction': current_direction,
             'filter_value': filter_value,
             'filter_type': filter_type,
-            'product_count': product_count,
+            'product_count': product_count if product_count > 0 else 0,
             'form': form,
         }
         return Response(context)
@@ -108,6 +118,14 @@ class CreateProductView(APIView):
         if form.is_valid():
             product = form.save(commit=False)
             product.user = request.user
+            try:
+                user_profile = request.user.userprofile
+                company_profile = user_profile.company_profiles.first()
+                if not company_profile:
+                    raise ValidationError('No company profile associated with the user.')
+                product.company = company_profile
+            except:
+                return Response({'error': 'Error occurred. Please try again later.'}, status=status.HTTP_400_BAD_REQUEST)
             product.save()
             uuid = signer.sign(str(product.uuid))
             return Response({'message': 'Product created', 'uuid': uuid}, status=status.HTTP_201_CREATED)
@@ -117,38 +135,48 @@ class CreateProductView(APIView):
             return Response({'errors': errors}, status=status.HTTP_400_BAD_REQUEST)
 
 
-class EditProductView(APIView):
+
+class EditProductView(AccessControlMixin, APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, product_uuid, format=None):
+    def get_object_to_check(self, request, *args, **kwargs):
         try:
-            # Unsign the product UUID
-            unsigned_product_uuid = signer.unsign(product_uuid)
-            product = get_object_or_404(Product, uuid=unsigned_product_uuid, user=request.user)
-            serializer = ProductSerializer(product)
-            product_types = Product.PRODUCT_TYPES
-            return Response({'product': serializer.data, 'product_types': product_types})
-        except (Product.DoesNotExist, BadSignature):
+            unsigned_product_uuid = signer.unsign(kwargs.get('product_uuid'))
+            product = get_object_or_404(Product, uuid=unsigned_product_uuid)
+            return product
+        except BadSignature:
+            return None
+        
+    def has_access(self, user, obj):
+        # Only allow access if the user is the owner of the product
+        return obj.user == user
+        
+    def get(self, request, product_uuid, format=None):
+        product = self.get_object_to_check(request, product_uuid=product_uuid)
+        if not product:
             return Response({'error': 'Product not found or invalid UUID'}, status=status.HTTP_404_NOT_FOUND)
 
+        serializer = ProductSerializer(product)
+        product_types = Product.PRODUCT_TYPES
+        return Response({'product': serializer.data, 'product_types': product_types})
+
     def put(self, request, product_uuid, format=None):
-        try:
-            # Unsign the product UUID
-            unsigned_product_uuid = signer.unsign(product_uuid)
-            product = get_object_or_404(Product, uuid=unsigned_product_uuid, user=request.user)
-            serializer = ProductSerializer(product, data=request.data, partial=True)
-            if serializer.is_valid():
-                try:
-                    serializer.save()
-                    return Response({"message": "Product updated"}, status=status.HTTP_200_OK)
-                except IntegrityError as e:
-                    error_msg = str(e)
-                    if "product_user_id_product_code_53834cce_uniq" in error_msg:
-                        return Response({'errors': {'product_code': ['This product code is already in use.']}}, status=status.HTTP_400_BAD_REQUEST)
-                    return Response({'errors': {'non_field_errors': [error_msg]}}, status=status.HTTP_400_BAD_REQUEST)
-            return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-        except (Product.DoesNotExist, BadSignature):
+        product = self.get_object_to_check(request, product_uuid=product_uuid)
+        if not product:
             return Response({'error': 'Product not found or invalid UUID'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = ProductSerializer(product, data=request.data, partial=True)
+        if serializer.is_valid():
+            try:
+                serializer.save()
+                return Response({"message": "Product updated"}, status=status.HTTP_200_OK)
+            except IntegrityError as e:
+                error_msg = str(e)
+                if "product_user_id_product_code_53834cce_uniq" in error_msg:
+                    return Response({'errors': {'product_code': ['This product code is already in use.']}}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'errors': {'non_field_errors': [error_msg]}}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 class ProductExplorerView(APIView):
@@ -168,7 +196,6 @@ class ProductExplorerView(APIView):
             else:
                 current_folder = root_folder
 
-
             exclude_partner_ids = []
             if item_type and item_id:
                 item_model = Document if item_type == "document" else Folder
@@ -179,20 +206,44 @@ class ProductExplorerView(APIView):
 
             partner_info = get_partner_info(request.user, exclude_partner_ids)
 
+            if user_has_access_to(request.user, current_folder):
+                subfolders = Folder.objects.filter(parent=current_folder).order_by('name')
+                documents = Document.objects.filter(folder=current_folder).order_by('original_filename')
+            else:
+                subfolders = Folder.objects.none()
+                documents = Document.objects.none()
+
+            document_types = DocumentType.objects.all()
+
+            accessible_folders = [folder for folder in subfolders if user_has_access_to(request.user, folder)]
+            accessible_documents = [document for document in documents if user_has_access_to(request.user, document)]
+
             breadcrumbs = [{'id': signer.sign(str(root_folder.uuid)), 'name': product.product_name}]
             if current_folder != root_folder:
                 folder_ancestors = list(current_folder.get_ancestors(include_self=True))
                 breadcrumbs.extend([{'id': signer.sign(str(folder.uuid)), 'name': folder.name} for folder in folder_ancestors[1:]])
 
-            subfolders = Folder.objects.filter(parent=current_folder).order_by('name')
-            documents = Document.objects.filter(folder=current_folder).order_by('original_filename')
-            document_types = DocumentType.objects.all()
-            
-            signed_subfolders = [{'uuid': signer.sign(str(folder.uuid)), 'name': folder.name, 'parent': signer.sign(str(folder.parent.uuid)) if folder.parent else '', 'updated_at': folder.updated_at} for folder in subfolders]
-            signed_documents = [{'uuid': signer.sign(str(document.uuid)), 'name': document.original_filename, 'folder': signer.sign(str(document.folder.uuid)), 'updated_at': document.updated_at, 'version': document.version} for document in documents]
-            
+            signed_subfolders = [{'uuid': signer.sign(str(folder.uuid)), 'name': folder.name, 'parent': signer.sign(str(folder.parent.uuid)) if folder.parent else '', 'updated_at': folder.updated_at} for folder in accessible_folders]
+            signed_documents = [{'uuid': signer.sign(str(document.uuid)), 'name': document.original_filename, 'folder': signer.sign(str(document.folder.uuid)), 'updated_at': document.updated_at, 'version': document.version} for document in accessible_documents]
+
+            accessible_folders = [folder for folder in subfolders if user_has_access_to(request.user, folder)]
+            accessible_documents = [document for document in documents if user_has_access_to(request.user, document)]
+
             total_folder_count = Folder.objects.filter(product=product).count() - 2
             total_document_count = Document.objects.filter(folder__product=product).count()
+            
+            accessible_folder_count = sum(1 for folder in Folder.objects.filter(product=product) if user_has_access_to(request.user, folder)) - 1
+            accessible_document_count = sum(1 for document in Document.objects.filter(folder__product=product) if user_has_access_to(request.user, document))
+
+            if request.user == product.user:
+                folder_count = total_folder_count
+                document_count = total_document_count
+            else:
+                folder_count = accessible_folder_count
+                document_count = accessible_document_count
+
+
+
             context = {
                 'partners': partner_info,
                 'product': product,
@@ -203,8 +254,8 @@ class ProductExplorerView(APIView):
                 'document_types': DocumentTypeSerializer(document_types, many=True).data,
                 'breadcrumbs': breadcrumbs,
                 'is_owner': product.user == request.user,
-                'total_folder_count': total_folder_count,
-                'total_document_count': total_document_count,
+                'total_folder_count': folder_count,
+                'total_document_count': document_count,
                 'signed_product_uuid': signer.sign(str(product.uuid)),
                 'signed_current_folder_uuid': signer.sign(str(current_folder.uuid)),
             }
@@ -216,7 +267,6 @@ class ProductExplorerView(APIView):
 
         except (Product.DoesNotExist, BadSignature):
             return Response({'error': 'Product not found or invalid UUID'}, status=status.HTTP_404_NOT_FOUND)
-
 
 
 
@@ -247,24 +297,28 @@ def product_explorer_bin(request, product_id):
     return render(request, 'products/product_explorer.html', context)
 
 
-class DeleteProductView(APIView):
+class DeleteProductView(AccessControlMixin, APIView):
     permission_classes = [IsAuthenticated]
 
-    def delete(self, request, product_uuid, format=None):
+    def get_object_to_check(self, request, *args, **kwargs):
         try:
-            # Unsign the product UUID
-            unsigned_product_uuid = signer.unsign(product_uuid)
-            product = get_object_or_404(Product, uuid=unsigned_product_uuid, user=request.user)
+            unsigned_product_uuid = signer.unsign(kwargs.get('product_uuid'))
+            return get_object_or_404(Product, uuid=unsigned_product_uuid)
+        except BadSignature:
+            return None
 
-            # Handle related objects (like folders) here if needed
-            Folder.objects.filter(product=product).delete()  # Adjust as necessary
+    def has_access(self, user, obj):
+        return obj.user == user
 
+    def delete(self, request, product_uuid, format=None):
+        product = self.get_object_to_check(request, product_uuid=product_uuid)
+        if not product:
+            return self.handle_permission_denied(request)
+
+        try:
+            Folder.objects.filter(product=product).delete()
             product.delete()
             return Response({"message": "Product deleted"}, status=status.HTTP_204_NO_CONTENT)
-
-        except (Product.DoesNotExist, BadSignature):
-            return Response({"error": "Product not found or invalid UUID"}, status=status.HTTP_404_NOT_FOUND)
-
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -420,8 +474,6 @@ class MoveEntitiesView(APIView):
             breadcrumbs.extend([{'id': signer.sign(str(ancestor.uuid)), 'name': ancestor.name} for ancestor in ancestors])
         return breadcrumbs
 
-
-    
 
 class FolderContentView(APIView):
 

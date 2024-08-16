@@ -22,13 +22,14 @@ urlpatterns = [
     path('list_partners/', views.list_partners, name='list_partners'),
     path('create/', CreateExportView.as_view(), name='create_export'),
     path('completed/', CompletedExportListView.as_view(), name='completed_export_list'),
+    path('delete/', DeleteExport.as_view(), name='delete_exports'),
 
     # export
     path('', ExportListView.as_view(), name='export_list'),
     path('<str:export_uuid>/', ExportDetailView.as_view(), name='export_detail'),
     path('<str:pk>/api/', ExportDetailAPIView.as_view(), name='export_api_detail'),
 
-    path('<str:pk>/edit/', EditExportView.as_view(), name='edit_export'),
+    path('<str:export_uuid>/edit/', EditExportView.as_view(), name='edit_export'),
 
     path('<str:export_uuid>/complete/', CompleteExportView.as_view(), name='complete_export'),
 
@@ -41,7 +42,6 @@ urlpatterns = [
     path('download/<str:document_uuid>/', DownloadDocumentView.as_view(), name='download_document'),
 
     # delete
-    path('delete/', DeleteExport.as_view(), name='delete_exports'),  # Modified to handle deletes generally
     path('<str:export_uuid>/delete-documents/', DeleteDocumentsView.as_view(), name='delete_documents'),
     path('<str:export_uuid>/remove_products/', RemoveProductsFromExportView.as_view(), name='remove_products_from_export'),
 ]

@@ -41,41 +41,56 @@ class PartnerCompanyProfileView(APIView):
     template_name = 'companies/company_profile.html'
 
     def get(self, request, partner_uuid):
+        logger.debug(f"Received partner_uuid: {partner_uuid}")
         try:
-            # Unsign the partner UUID
             unsigned_partner_uuid = signer.unsign(partner_uuid)
+            logger.debug(f"Unsigned partner_uuid: {unsigned_partner_uuid}")
         except BadSignature:
+            logger.error("Invalid partner ID signature")
             return Response({"detail": "Invalid partner ID."}, status=400)
 
         partnership = get_object_or_404(Partnership, uuid=unsigned_partner_uuid)
+        logger.debug(f"Partnership found: {partnership.partner1.name} - {partnership.partner2.name}")
 
-        if request.user not in [partnership.partner1, partnership.partner2]:
+        user_company_profiles = request.user.userprofile.company_profiles.all()
+        if not any(profile in user_company_profiles for profile in [partnership.partner1, partnership.partner2]):
+            logger.warning(f"User {request.user.username} is not authorized to view this page.")
             return Response({"detail": "You are not authorized to view this page."}, status=403)
 
-        # Determine the "other partner" based on the current user
-        viewing_partner = partnership.partner2 if request.user == partnership.partner1 else partnership.partner1
+        viewing_partner = partnership.partner2 if partnership.partner1 in user_company_profiles else partnership.partner1
+        logger.debug(f"Viewing partner: {viewing_partner.name}")
 
-        # Get the company profile for the viewing partner
-        company_profile = get_object_or_404(CompanyProfile, user_profiles__user=viewing_partner)
+        company_profile = get_object_or_404(CompanyProfile, uuid=viewing_partner.uuid)
+        logger.debug(f"CompanyProfile found: {company_profile.name}")
 
-        # Get the folder associated with the company profile
-        folder = company_profile.partners_contract_folder
+        # Log the profile image URL
+        if company_profile.profile_image:
+            logger.debug(f"Partner's profile image URL: {company_profile.profile_image.url}")
+        else:
+            logger.debug("Partner's profile image not found. Using default image.")
+
+        folder = partnership.shared_folder
+        if not folder:
+            logger.error("No shared folder found for this partnership.")
+            return Response({"detail": "No shared folder found for this partnership."}, status=404)
+
         documents = Document.objects.filter(folder=folder).distinct()
-
-        # Sign each document UUID
         signed_documents = [{
             'uuid': signer.sign(str(document.uuid)),
             'original_filename': document.original_filename,
             'comments': document.comments,
-            'uploaded_by': document.uploaded_by,
+            'uploaded_by': document.uploaded_by.username,
         } for document in documents]
 
+        logger.info(f"User {request.user.username} viewed partner company profile for {company_profile.name}.")
         return Response({
             'company_profile': company_profile,
             'documents': signed_documents,
             'folder_id': signer.sign(str(folder.uuid)) if folder else None,
             'is_partner_profile': True
         }, template_name=self.template_name)
+
+
 
 
 @method_decorator(login_required, name='dispatch')
@@ -85,21 +100,30 @@ class PartnerListView(APIView):
 
     def get(self, request):
         user = request.user
+        user_profile = user.userprofile
+        user_company_profiles = user_profile.company_profiles.all()
+        company_email = user_company_profiles.first().email if user_company_profiles.exists() else None
+
+        # Get all user emails associated with the company profile
+        user_emails = list(User.objects.filter(userprofile__company_profiles__in=user_company_profiles).values_list('email', flat=True))
 
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             type = request.GET.get('type', None)  # 'received' or 'sent'
             start = int(request.GET.get('start', 0))
             limit = 5
 
-            if type == 'received':
-                invitations_query = Invitation.objects.filter(email=user.email).order_by('-created_at')
-            elif type == 'sent':
-                invitations_query = Invitation.objects.filter(sender=user).order_by('-created_at')
+            if type == 'received' and company_email:
+                invitations_query = Invitation.objects.filter(
+                    Q(email__in=user_emails) | Q(email=company_email)
+                ).order_by('-created_at')
+            elif type == 'sent' and user_company_profiles.exists():
+                invitations_query = Invitation.objects.filter(
+                    sender__in=user_company_profiles
+                ).order_by('-created_at')
             else:
                 return Response({'error': 'Invalid type specified'}, status=status.HTTP_400_BAD_REQUEST)
 
             invitations, has_more = self.get_invitations(invitations_query, start, limit)
-
             data = InvitationSerializer(invitations, many=True).data
 
             return Response({
@@ -113,64 +137,62 @@ class PartnerListView(APIView):
         filter_value = request.GET.get('filter_value', '')
         filter_type = request.GET.get('filter_type', 'company_name')
 
-        active_partnerships = Partnership.objects.filter(Q(partner1=user) | Q(partner2=user), is_active=True).distinct()
+        if user_company_profiles.exists():
+            company_email = user_company_profiles.first().email
+            active_partnerships = Partnership.objects.filter(
+                (Q(partner1__in=user_company_profiles) | Q(partner2__in=user_company_profiles)),
+                is_active=True
+            ).distinct()
+        else:
+            active_partnerships = Partnership.objects.none()
+
         partner_info = []
         filtered_partnerships = []
 
-        received_invitations = Invitation.objects.filter(email=user.email).order_by('-created_at')[:5]
+        received_invitations = Invitation.objects.filter(
+            Q(email__in=user_emails) | Q(email=company_email)
+        ).order_by('-created_at')[:5] if company_email else []
+
         sent_invitations = Invitation.objects.filter(sender=user).order_by('-created_at')[:5]
 
-        partners = set()
-        for partnership in active_partnerships:
-            partner_user = partnership.partner2 if partnership.partner1 == user else partnership.partner1
-            partners.add(partner_user.email)
 
         for partnership in active_partnerships:
-            partner_user = partnership.partner2 if partnership.partner1 == user else partnership.partner1
-            try:
-                company_profile = CompanyProfile.objects.get(user_profiles=partner_user.userprofile)
-                should_add = False
-                if filter_type == 'company_name' and filter_value.lower() in company_profile.name.lower():
-                    should_add = True
-                elif filter_type == 'email' and filter_value.lower() in company_profile.email.lower():
-                    should_add = True
-                elif filter_type == 'role':
-                    # Check if role is not None before calling lower()
-                    if company_profile.role and filter_value.lower() in company_profile.role.lower():
-                        should_add = True
-                elif not filter_type:
-                    should_add = True
-                if should_add:
-                    filtered_partnerships.append(partnership)
-            except CompanyProfile.DoesNotExist:
-                continue
+            partner_profile = partnership.partner2 if partnership.partner1 in user_company_profiles else partnership.partner1
+            should_add = False
+            if filter_type == 'company_name' and filter_value.lower() in partner_profile.name.lower():
+                should_add = True
+            elif filter_type == 'email' and filter_value.lower() in partner_profile.email.lower():
+                should_add = True
+            elif filter_type == 'role' and partner_profile.role and filter_value.lower() in partner_profile.role.lower():
+                should_add = True
+            elif not filter_type:
+                should_add = True
+            if should_add:
+                filtered_partnerships.append(partnership)
 
         for partnership in filtered_partnerships:
-            partner_user = partnership.partner2 if partnership.partner1 == user else partnership.partner1
-            try:
-                company_profile = CompanyProfile.objects.get(user_profiles=partner_user.userprofile)
-                partner_info.append({
-                    'id': signer.sign(str(partnership.uuid)),  # Use signed UUID
-                    'email': partner_user.email,
-                    'created_at': partnership.created_at.strftime('%Y-%m-%d'),
-                    'company_name': company_profile.name,
-                    'company_email': company_profile.email,
-                    'company_role': company_profile.role,
-                })
-            except CompanyProfile.DoesNotExist:
-                partner_info.append({
-                    'id': signer.sign(str(partnership.uuid)),  # Use signed UUID
-                    'email': partner_user.email,
-                    'created_at': partnership.created_at.strftime('%d-%b-%Y'),
-                    'company_name': 'No company profile',
-                    'company_email': '',
-                    'company_role': '',
-                })
+            partner_profile = partnership.partner2 if partnership.partner1 in user_company_profiles else partnership.partner1
+            partner_info.append({
+                'id': signer.sign(str(partnership.uuid)),  # Use signed UUID
+                'email': partner_profile.email,
+                'created_at': partnership.created_at.strftime('%Y-%m-%d'),
+                'company_name': partner_profile.name,
+                'company_email': partner_profile.email,
+                'company_role': partner_profile.role,
+            })
 
-        has_received_pending_invitations = Invitation.objects.filter(email=user.email, accepted=False)
-        has_more_received_pending_invitations = Invitation.objects.filter(email=user.email, accepted=False).count() > 5
+        has_received_pending_invitations = Invitation.objects.filter(
+            Q(email__in=user_emails) | Q(email=company_email), accepted=False
+        ) if company_email else []
+        
+        has_more_received_pending_invitations = Invitation.objects.filter(
+            Q(email__in=user_emails) | Q(email=company_email), accepted=False
+        ).count() > 5 if company_email else False
+        
         has_more_sent_invitations = Invitation.objects.filter(sender=user).count() > 5
-        unaccepted_invitations_count = Invitation.objects.filter(email=user.email, accepted=False).count()
+        unaccepted_invitations_count = Invitation.objects.filter(
+            Q(email__in=user_emails) | Q(email=company_email), accepted=False
+        ).count() if company_email else 0
 
         context = {
             'form': form.as_p(),  # Convert form to HTML
@@ -187,7 +209,8 @@ class PartnerListView(APIView):
             'partner_count': len(partner_info),  # Add the count of partners
             'unaccepted_invitations_count': unaccepted_invitations_count,  # Pass the count to the template
         }
-        
+
+
         return Response(context, template_name=self.template_name)
 
     def post(self, request):
@@ -214,6 +237,7 @@ class PartnerListView(APIView):
 
             invitation = form.save(commit=False)
             invitation.sender = request.user
+            invitation.token = signer.sign(str(invitation.token))
             invitation.save()
             send_mail(
                 'You are invited!',

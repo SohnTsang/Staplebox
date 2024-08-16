@@ -14,118 +14,159 @@
 .iti__country-list {
     min-width: 400px !important;
     z-index: 9999 !important;
-    
 }
 
 .profile-container {
     display: flex;
-    justify-content: center;
+    flex-direction: column;
     align-items: center;
 }
 
-.profile-card {
+.profile-section {
+    width: 90%;
+    max-width: 1440px;
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    padding: 20px;
     background-color: #fff;
-    padding: 40px;
-    border-radius: 5px;
     box-shadow: rgba(9, 30, 66, 0.13) 0px 0px 1px 1px;
-    max-width: 800px;
-    width: 100%;
-    text-align: center;
+    border-radius: 5px 5px 0 0;
+}
+
+.profile-left, .profile-right, .contact-left, .documents-right {
+    flex: 1;
+    margin: 0 10px; /* Adjust spacing between left and right sections */
+}
+
+.profile-left {
+    max-width: 33%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.profile-right {
+    max-width: 65%; /* Right side takes the remaining space */
 }
 
 .profile-image {
-    width: 120px;
-    height: 120px;
+    width: 150px;
+    height: 150px;
     border-radius: 50%;
     object-fit: cover;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
 }
 
 .profile-name {
-    font-size: 24px;
+    margin-top: 10px;
+    font-size: 18px;
     font-weight: bold;
-    margin-bottom: 10px;
+    text-align: center;
+    margin-bottom: 5px;
 }
 
 .profile-role {
     color: #777;
-    margin-bottom: 20px;
-}
-
-.profile-actions a {
-    margin: 5px;
-    text-decoration: none;
-    font-size: 14px;
-    color: #007bff;
-    transition: color 0.2s;
-}
-
-.profile-actions a:hover {
-    color: #0056b3;
-}
-
-.profile-details {
-    text-align: left;
-    margin-top: 20px;
-}
-
-.profile-details h5 {
+    text-align: center;
     margin-bottom: 10px;
-    font-size: 18px;
 }
 
-.profile-details p {
-    margin: 5px 0;
-    color: #555;
+.about-us {
+    text-align: left;
+}
+
+.about-us h5 {
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+
+.about-us p {
     line-height: 1.5;
 }
 
 .contact-info {
-    margin-top: 20px;
+    text-align: left;
 }
 
 .contact-info .info-item {
-    display: flex;
-    justify-content: space-between;
     margin-bottom: 10px;
-    font-size: 16px;
 }
 
-.contact-info .label {
-    font-weight: bold;
-    color: #333;
-}
-
-.contact-info .value {
-    color: #555;
-}
-
-.partner-documents {
-    margin-top: 30px;
+.info-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
 }
 
 .partner-documents h4 {
-    font-size: 20px;
-    font-weight: bold;
-    color: #007bff;
     margin-bottom: 10px;
+    color: #007bff;
 }
 
-.document-list p, .document-list a {
-    font-size: 14px;
-    color: #555;
+.documents-right {
+    border-radius: 8px;
+    padding: 20px;
+    width: 90%;
+}
+
+.table-wrapper {
+    overflow-x: auto;
+}
+
+.document-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    border: 1px solid #ddd;
+}
+
+.document-table th, .document-table td {
+    padding: 12px 15px;
+    text-align: left;
+}
+
+
+
+.document-table tr:nth-child(even) {
+    background-color: white;
+}
+
+.document-table tr:hover {
+    background-color: #ddd;
+}
+
+.document-table th, .document-table td {
+    min-width: 150px;
+}
+
+.document-table th:last-child, .document-table td:last-child {
+    text-align: center;
+}
+
+
+.document-table th:nth-child(1),
+.document-table td:nth-child(1) {
+    width: 40%; /* Filename column */
+}
+
+.document-table th:nth-child(2),
+.document-table td:nth-child(2) {
+    width: 30%; /* Comments column */
+}
+
+.document-table th:nth-child(3),
+.document-table td:nth-child(3) {
+    width: 20%; /* Uploaded By column */
+}
+
+.document-table th:nth-child(4),
+.document-table td:nth-child(4) {
+    width: 10%; /* Actions column */
 }
 
 .asteriskField {
     display: inline;
-}
-
-.profile-image {
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    object-fit: cover;
-    margin-bottom: 20px;
 }
 
 .form-group {
@@ -150,29 +191,521 @@
     resize: none;
 }
 
-.submit-btn {
-    margin-top: 30px;
+.company-contact-info {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
 }
 
-.submit-btn button {
-    padding: 10px 20px;
-    background-color: #007bff;
-    color: white;
-    border: none;
+.company-info, .contact-info {
+    flex: 1;
+}
+
+.label {
+    display: inline-block;
+    width: 80px; /* Adjust the width as needed */
+    font-weight: bold;
+}
+
+.label2 {
+    display: inline-block;
+    width: 166px; /* Adjust the width as needed */
+    font-weight: bold;
+}
+
+.about-us-section {
+    min-height: 13vh; /* Adjust as needed */
+    margin-bottom: 20px;
+}
+
+
+.social-icons {
+    display: flex;
+    gap: 20px;
+    margin-top: 1em;
+}
+
+.social-icon img {
+    width: 24px; /* Adjust the size as needed */
+    height: 24px; /* Adjust the size as needed */
+}
+
+/* lower section for own profile */
+.overall-info {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    width: 90%;
+    max-width: 1440px;
+    box-shadow: rgba(9, 30, 66, 0.25) 0px 1px 1px, rgba(9, 30, 66, 0.13) 0px 0px 1px 1px;
+    padding: 0 20px;
+    border-radius: 0 0 5px 5px;
+}
+
+.info-section {
+    flex: 1;
+    position: relative;
+    width: 33%;
+}
+
+.content-wrapper {
+    padding: 20px 20px 20px 0;
+    height: 37.5vh;
+    max-height: 37.5vh;
+}
+
+.info-section:first-child .content-wrapper {
+    padding-left: 0;
+}
+
+.info-section:last-child .content-wrapper {
+    padding-right: 0;
+}
+
+.info-section:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 100%;
+    width: 1px;
+    background-color: #ddd;
+}
+
+.info-section:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 100%;
+    width: 1px;
+    background-color: #ddd;
+}
+
+
+.info-section h3 {
+    margin-bottom: 10px;
+    text-decoration: underline;
+}
+
+.info-section p {
+    font-size: 13px;
+    color: #555;
+    margin-bottom: 10px;
+}
+
+.info-section ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+.info-section ul li {
+    margin-bottom: 3px;
+}
+
+.info-section ul li a {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;  /* Aligns all child elements vertically in the middle */
+    text-decoration: none;
+    color: #39739d;
+    padding: 5px 0;
     border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
+    position: relative; /* Make the anchor element a positioned ancestor */
 }
 
-.submit-btn button:hover {
-    background-color: #0056b3;
+
+.tooltip {
+    position: absolute;
+    bottom: 100%; /* Position above the span */
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    padding: 5px 10px;
+    border-radius: 5px;
+    opacity: 0;
+    visibility: hidden;
+    font-size: 14px;
+    white-space: nowrap;
+    z-index: 9999; /* Ensure tooltip is on top */
+    pointer-events: none;
+    box-shadow: 0px 2px 5px rgba(0,0,0,0.3); /* Add shadow for visibility */
 }
 
+.tooltip-active:hover .tooltip {
+    opacity: 1;
+    visibility: visible;
+}
+
+
+/* Show the tooltip on span hover */
+.item-name:hover .tooltip,
+.item-code:hover .tooltip,
+.item-date:hover .tooltip,
+.item-exports:hover .tooltip {
+    opacity: 1;
+    visibility: visible;
+}
+
+.info-section ul li a:hover {
+    background-color: #f1f1f1;
+    color: #1e5d90;
+}
+
+.item-name,
+.item-code,
+.item-date,
+.item-exports {
+    position: relative; /* Make span the reference point for the tooltip */
+    display: inline-block; /* Ensure it can accommodate the tooltip */
+}
+
+.text-content {
+    overflow: hidden; /* Hide overflow content */
+    text-overflow: ellipsis; /* Add ellipsis for overflow */
+    white-space: nowrap; /* Prevent text wrapping */
+    display: inline-block; /* Ensure it stays inline */
+    max-width: 100%; /* Make sure it doesn’t exceed the span’s width */
+    vertical-align: middle;
+}
+
+
+.item-name {
+    font-weight: bold;
+    flex: 1 1 35%; /* Allow flexible width, but prioritize space for the name */
+    max-width: 35%; /* Ensure it does not exceed 40% of the container */
+}
+
+.item-date {
+    text-align: right; /* Keep the date aligned to the right */
+    flex: 0 1 auto;
+}
+
+.item-date,
+.item-exports {
+    text-align: right; /* Right-align the date and exports */
+    flex: 0 1 20%; /* Allow flexible width, but ensure space for the date/exports */
+    max-width: 20%; /* Ensure it does not exceed 20% of the container */
+}
+
+.item-code {
+    text-align: left; /* Ensure the text is aligned to the left */
+    flex: 1 1 35%; /* Allow flexible width, but keep it balanced */
+    max-width: 35%; /* Ensure it does not exceed 30% of the container */
+}
+
+h5 {
+    margin-top: 10px;
+}
+
+/* General alert styles */
+.alert {
+    padding: 15px;
+    margin-bottom: 20px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    position: relative;
+}
+
+/* Warning alert specific styles */
+.alert-warning {
+    color: #5a4404;
+    background-color: #fff3cd;
+    border-color: #ffeeba;
+}
+
+/* Strong text inside alert */
+.alert-warning strong {
+    font-weight: bold;
+}
+
+h3 {
+    margin-top: 10px;
+}
 
 @media (max-width: 464px) {
     .iti__country-list {
         min-width: 300px !important;
     }
+
+    .section-bottom {
+        flex-direction: column;
+    }
+
+    .section-left, .section-right {
+        width: 100%;
+        margin-bottom: 20px;
+    }
+}
+
+@media (max-width: 768px) {
+
+    .documents-right {
+        padding: 0;
+    }
+
+    .document-table thead {
+        display: none;
+    }
+
+    .document-table, .document-table tbody, .document-table tr, .document-table td {
+        display: block;
+        width: 98%;
+    }
+
+    .document-table tr {
+        margin-bottom: 15px;
+    }
+
+    .document-table td {
+        text-align: right;
+        padding-left: 50%;
+        position: relative;
+    }
+
+    .document-table td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 0;
+        width: 50%;
+        padding-left: 15px;
+        font-weight: bold;
+        text-align: left;
+    }
+
+    .document-table td a {
+        word-break: break-all;
+    }
 }
 
 
+/* Media queries for responsive design */
+@media (max-width: 1024px) {
+    .profile-container{
+        padding-left: 30px;
+        padding-right: 40px;
+    }
+
+    .overall-info {
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .info-section {
+        margin-bottom: 20px;
+    }
+
+    .info-section:not(:last-child)::after {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 1px;
+        background-color: #ddd;
+        right: auto;
+        top: auto;
+    }
+
+    .item-name {
+        flex: 1 1 50%; /* Adjusts for smaller screens */
+        max-width: 50%;
+    }
+
+    .item-code {
+        flex: 1 1 30%; /* Adjusts for smaller screens */
+        max-width: 30%;
+    }
+
+    .item-date,
+    .item-exports {
+        flex: 0 1 20%; /* Adjusts for smaller screens */
+        max-width: 20%;
+    }
+
+    
+}
+
+@media (max-width: 768px) {
+    td {
+        border: none;
+    }
+    .document-table th, .document-table td {
+        min-width: 100%;
+    }
+    .document-table {
+        border: none;
+    }
+    .profile-container{
+        padding-left: 30px;
+        padding-right: 40px;
+    }
+    .info-section h3 {
+        font-size: 20px;
+    }
+
+    .info-section p {
+        font-size: 12px;
+    }
+
+    .info-section ul li a {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .info-section ul li a span {
+        margin-bottom: 5px;
+    }
+
+    .document-table, 
+    .document-table thead, 
+    .document-table tbody, 
+    .document-table th, 
+    .document-table td, 
+    .document-table tr {
+        display: block;
+        width: 98%;
+    }
+
+    .document-table thead {
+        display: none; /* Hide table headers */
+    }
+
+    .document-table tr {
+        margin-bottom: 0px; /* Add spacing between rows */
+        border-radius: 5px;
+        background-color: #f9f9f9;
+        padding: 10px;
+    }
+
+    .document-table td {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px;
+        text-align: left;
+        position: relative;
+    }
+
+    .document-table td:last-child {
+        border-bottom: none;
+    }
+
+    .document-table td::before {
+        content: attr(data-label); /* Add labels using data-label attribute */
+        font-weight: bold;
+        flex-basis: 40%; /* Allocate space for labels */
+        padding-right: 10px;
+        text-align: left;
+    }
+
+    .document-table td a {
+        word-break: break-word;
+    }
+
+    .document-table td span {
+        flex-basis: 60%; /* Allocate space for content */
+        text-align: right;
+    }
+
+    .item-name, .item-code, .item-date, .item-exports {
+        flex: none;
+        text-align: left;
+        width: 100%;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .item-date, .item-exports {
+        text-align: left; /* Align text to the left on smaller screens */
+    }
+
+}
+
+@media (max-width: 480px) {
+    .profile-container{
+        padding-left: 30px;
+        padding-right: 40px;
+    }
+    .info-section {
+        padding: 15px;
+    }
+
+    .info-section h3 {
+        font-size: 18px;
+    }
+
+    .info-section p {
+        font-size: 11px;
+    }
+
+    .info-section ul {
+        overflow-x: auto;
+    }
+
+    .info-section ul li {
+        display: inline-block;
+        width: 100%;
+    }
+
+    .info-section ul li a {
+        display: block;
+        white-space: normal; /* Allow wrapping if necessary */
+    }
+
+    .info-section ul li a span {
+        margin-bottom: 5px;
+    }
+
+    .document-table, 
+    .document-table thead, 
+    .document-table tbody, 
+    .document-table th, 
+    .document-table td, 
+    .document-table tr {
+        display: block;
+        width: 98%;
+    }
+
+    .document-table thead {
+        display: none; /* Hide table headers */
+    }
+
+    .document-table tr {
+        margin-bottom: 15px;
+        border-radius: 5px;
+        background-color: #f9f9f9;
+        padding: 10px;
+    }
+
+    .document-table td {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 5px;
+        text-align: left;
+        position: relative;
+        font-size: 14px; /* Slightly smaller font size */
+    }
+
+    .document-table td:last-child {
+        border-bottom: none;
+    }
+
+    .document-table td::before {
+        content: attr(data-label); /* Add labels using data-label attribute */
+        font-weight: bold;
+        flex-basis: 40%; /* Allocate space for labels */
+        padding-right: 10px;
+        text-align: left;
+    }
+
+    .document-table td span {
+        flex-basis: 60%; /* Allocate space for content */
+        text-align: right;
+    }
+
+    .document-table td a {
+        word-break: break-word;
+    }
+}

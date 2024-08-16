@@ -12,15 +12,12 @@ from django.utils.encoding import force_bytes, force_str
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.urls import reverse_lazy
-from django.contrib.auth.views import PasswordResetView, PasswordResetConfirmView, PasswordResetCompleteView
-from django.contrib.auth import views as auth_views
-from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.views import PasswordResetCompleteView
 from .forms import CustomLoginForm, SignupForm
-from allauth.account.utils import perform_login, send_email_confirmation
-from allauth.account.views import ConfirmEmailView
-from allauth.account.models import EmailConfirmationHMAC, EmailConfirmation
-from django.http import Http404
+from allauth.account.utils import send_email_confirmation
+import logging
 
+logger = logging.getLogger(__name__)
 
 def home(request):
     return render(request, 'home.html')
@@ -31,6 +28,7 @@ def login_signup_view(request):
     signup_form = SignupForm()
 
     if request.user.is_authenticated:
+        logger.info("User is already authenticated. Redirecting to home.")
         return redirect('home')
 
     # Determine the default form to show based on the request path
@@ -38,25 +36,33 @@ def login_signup_view(request):
 
     if request.method == "POST":
         if 'action' in request.POST and request.POST['action'] == 'login':
+            logger.debug("Login form submitted.")
             login_form = CustomLoginForm(request.POST)
             if login_form.is_valid():
                 login_form.login(request)
+                logger.info(f"User {request.user.email} logged in successfully.")
                 return redirect('home')
             else:
                 messages.error(request, 'Invalid email or password.', extra_tags='invalid_user')
+                logger.warning("Invalid login attempt.")
             signup_form = SignupForm()  # Reinitialize to clear previous data
             default_form = 'login'
         elif 'action' in request.POST and request.POST['action'] == 'signup':
+            logger.debug("Signup form submitted.")
             signup_form = SignupForm(request.POST)
             if signup_form.is_valid():
                 user = signup_form.save(request)
                 user.backend = 'django.contrib.auth.backends.ModelBackend'
                 send_email_confirmation(request, user, signup=True)
+                logger.info(f"New user {user.email} signed up successfully.")
                 return redirect('account_email_verification_sent')
+            else:
+                logger.warning("Signup form validation failed.")
             login_form = CustomLoginForm()  # Reinitialize to clear previous data
             default_form = 'signup'
     else:
         # Use the default form determined by the URL path
+        logger.debug("GET request received. Showing default form.")
         login_form = CustomLoginForm()
         signup_form = SignupForm()
 

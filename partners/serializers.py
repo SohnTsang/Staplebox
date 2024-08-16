@@ -26,28 +26,22 @@ class InvitationSerializer(serializers.ModelSerializer):
         model = Invitation
         fields = '__all__'
 
+
 class PartnerSerializer(serializers.ModelSerializer):
     name = serializers.SerializerMethodField()
 
     class Meta:
         model = Partnership
-        fields = ['id', 'name']
+        fields = ['uuid', 'name']
 
     def get_name(self, obj):
         # Check if request is available in context
-        request_user = self.context.get('request', None)
-        if request_user:
-            request_user = request_user.user
-        else:
-            # Fallback to some default behavior or handle it as needed
-            return 'Unknown Partner'
-
+        request_user = self.context.get('request').user
         try:
-            if obj.partner1 == request_user:
-                # Assuming you have a related_name `userprofile` for User to UserProfile linkage
-                return obj.partner2.userprofile.companyprofile.name if hasattr(obj.partner2, 'userprofile') else 'No Company Profile'
+            if obj.partner1.user_profiles.filter(user=request_user).exists():
+                return obj.partner2.name
             else:
-                return obj.partner1.userprofile.companyprofile.name if hasattr(obj.partner1, 'userprofile') else 'No Company Profile'
+                return obj.partner1.name
         except AttributeError as e:
             return str(e)  # Return the error message or handle it as you see fit
 

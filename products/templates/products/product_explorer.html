@@ -255,7 +255,7 @@
                                 <a href="#" id="deleteSelectedItems" class="bulk-action-delete text-danger">Delete</a>
                             </div>
                         </div>
-                        <div class="action-button-container">
+                        <div class="action-button-container button-group" style="gap:6px;">
                             <button class="button-8 action-button-title" data-dropdown-target="ActionDropdown">
                                 New
                             </button>
@@ -263,6 +263,8 @@
                                 <a href="#" data-bs-toggle="modal" data-bs-target="#createFolderModal">New Folder</a>
                                 <a href="#" data-bs-toggle="modal" id="openUploadModaProductlBtn" data-bs-target="#uploadDocumentModal">New Document</a>
                             </div>
+                            <a href="{% url 'access_control:manage_access' product_uuid=signed_product_uuid %}" class="button-8">Edit</a>
+
                             <a href="{% url 'access_control:manage_access' product_uuid=signed_product_uuid %}" class="button-8">Access</a>
                         </div>
                     </div>
@@ -336,7 +338,7 @@
                                     <span class="">{{ folder.name }}</span>
                                 </td>
                                 <td class="text-muted-weight">Folder</td>
-                                <td class="text-muted-weight">{{ folder.updated_at|date:"Y-m-d H:i" }}</td>
+                                <td class="text-muted-weight">{{ folder.updated_at|date:"M d, Y H:i" }}</td>
                                 <td class="text-muted-weight ps-4">—</td>
                                 <td class="actions">
                                     <div class="action-button-container">
@@ -440,106 +442,109 @@ document.addEventListener('DOMContentLoaded', function() {
         allPartnersTab.classList.add('active');
     }
 
-    document.getElementById('shareAccess').addEventListener('click', function(event) {
-        event.preventDefault();
+    const shareAccessButton = document.getElementById('shareAccess');
+    if (shareAccessButton) {
+        shareAccessButton.addEventListener('click', function(event) {
+            event.preventDefault();
 
-        const modalSubTitle = document.getElementById('modalSubTitle'); 
+            const modalSubTitle = document.getElementById('modalSubTitle'); 
 
-        
+            
 
-        const selectedFolders = Array.from(document.querySelectorAll('.folder-checkbox:checked')).map(cb => ({
-            id: cb.closest('tr').dataset.id,
-            type: 'folder'
-        }));
+            const selectedFolders = Array.from(document.querySelectorAll('.folder-checkbox:checked')).map(cb => ({
+                id: cb.closest('tr').dataset.id,
+                type: 'folder'
+            }));
 
-        const selectedDocuments = Array.from(document.querySelectorAll('.document-checkbox:checked')).map(cb => ({
-            id: cb.closest('tr').dataset.id,
-            type: 'document'
-        }));
+            const selectedDocuments = Array.from(document.querySelectorAll('.document-checkbox:checked')).map(cb => ({
+                id: cb.closest('tr').dataset.id,
+                type: 'document'
+            }));
 
-        
+            
 
-        const selectedItems = selectedFolders.concat(selectedDocuments);
-        if (selectedItems.length === 0) {
-            showMessage('Please select at least one item to share.', 'error');
-            return;
-        }
-
-        const itemIds = selectedItems.map(item => item.id).join(',');
-        const itemTypes = selectedItems.map(item => item.type).join(',');
-
-        // Set the item_ids and item_types values in the modal
-        const modal = document.getElementById('accessControlModal');
-        modal.querySelector('#item_id').value = itemIds;
-        modal.querySelector('#item_type').value = itemTypes;
-
-        if (selectedItems.length > 0 && event.target.id === 'shareAccess') {
-            activateAllPartnersTab();
-
-            if (selectedFolders.length > 0 || selectedDocuments.length > 0) {
-                modalSubTitle.textContent = `${selectedFolders.length + selectedDocuments.length} item(s) selected for bulk share`;
-            } else {
-                modalSubTitle.textContent = 'No items selected';
+            const selectedItems = selectedFolders.concat(selectedDocuments);
+            if (selectedItems.length === 0) {
+                showMessage('Please select at least one item to share.', 'error');
+                return;
             }
 
-            // Hide the "Partners with Access" tab and content
-            document.getElementById('partnersWithAccessTab').style.display = 'none';
-            document.getElementById('PartnersWithAccess').style.display = 'none';
+            const itemIds = selectedItems.map(item => item.id).join(',');
+            const itemTypes = selectedItems.map(item => item.type).join(',');
 
-            // Fetch and display all partners in the "All Partners" tab
-            fetch(`/access_control/get_all_partners/`)
-                .then(response => response.json())
-                .then(data => {
-                    const partnersList = document.getElementById('partnersList').querySelector('.partners-content');
-                    partnersList.innerHTML = ''; // Clear previous entries
+            // Set the item_ids and item_types values in the modal
+            const modal = document.getElementById('accessControlModal');
+            modal.querySelector('#item_id').value = itemIds;
+            modal.querySelector('#item_type').value = itemTypes;
 
-                    if (Array.isArray(data) && data.length === 0) {
-                        partnersList.innerHTML = '<small>No partners available</small>';
-                    } else if (Array.isArray(data)) {
-                        data.forEach(partner => {
-                            const li = document.createElement('li');
-                            li.className = 'partner-info';
-                            li.setAttribute('data-partner-id', partner.partner_id);
-                            li.innerHTML = `
-                                <div class="partner-name">${partner.company_name}</div>
-                                <div class="partner-role">${partner.company_role}</div>
-                            `;
-                            partnersList.appendChild(li);
+            if (selectedItems.length > 0 && event.target.id === 'shareAccess') {
+                activateAllPartnersTab();
 
-                            li.addEventListener('click', function() {
-                                this.classList.toggle('selected');
+                if (selectedFolders.length > 0 || selectedDocuments.length > 0) {
+                    modalSubTitle.textContent = `${selectedFolders.length + selectedDocuments.length} item(s) selected for bulk share`;
+                } else {
+                    modalSubTitle.textContent = 'No items selected';
+                }
+
+                // Hide the "Partners with Access" tab and content
+                document.getElementById('partnersWithAccessTab').style.display = 'none';
+                document.getElementById('PartnersWithAccess').style.display = 'none';
+
+                // Fetch and display all partners in the "All Partners" tab
+                fetch(`/access_control/get_all_partners/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const partnersList = document.getElementById('partnersList').querySelector('.partners-content');
+                        partnersList.innerHTML = ''; // Clear previous entries
+
+                        if (Array.isArray(data) && data.length === 0) {
+                            partnersList.innerHTML = '<small>No partners available</small>';
+                        } else if (Array.isArray(data)) {
+                            data.forEach(partner => {
+                                const li = document.createElement('li');
+                                li.className = 'partner-info';
+                                li.setAttribute('data-partner-id', partner.partner_id);
+                                li.innerHTML = `
+                                    <div class="partner-name">${partner.company_name}</div>
+                                    <div class="partner-role">${partner.company_role}</div>
+                                `;
+                                partnersList.appendChild(li);
+
+                                li.addEventListener('click', function() {
+                                    this.classList.toggle('selected');
+                                });
                             });
-                        });
-                    } else {
-                        console.error('Unexpected data format:', data);
-                    }
+                        } else {
+                            console.error('Unexpected data format:', data);
+                        }
 
-                    // Hide loading spinner
-                    const allPartnersLoadingOverlay = modal.querySelector('.tab-content-access .loading-overlay');
-                    if (allPartnersLoadingOverlay) {
-                        allPartnersLoadingOverlay.style.display = 'none';
-                    }
-                })
-                .catch(error => {
-                    console.error('Error loading partner data:', error);
-                    // Hide loading spinner in case of error
-                    const allPartnersLoadingOverlay = modal.querySelector('.tab-content-access .loading-overlay');
-                    if (allPartnersLoadingOverlay) {
-                        allPartnersLoadingOverlay.style.display = 'none';
-                    }
-                });
-            }
-            modal.style.display = 'block';
-        });
-        // Close the modal when clicking the cancel button or outside the modal
-        document.querySelectorAll('.cancel-btn, .modal').forEach(element => {
-            element.addEventListener('click', function(event) {
+                        // Hide loading spinner
+                        const allPartnersLoadingOverlay = modal.querySelector('.tab-content-access .loading-overlay');
+                        if (allPartnersLoadingOverlay) {
+                            allPartnersLoadingOverlay.style.display = 'none';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error loading partner data:', error);
+                        // Hide loading spinner in case of error
+                        const allPartnersLoadingOverlay = modal.querySelector('.tab-content-access .loading-overlay');
+                        if (allPartnersLoadingOverlay) {
+                            allPartnersLoadingOverlay.style.display = 'none';
+                        }
+                    });
+                }
+                modal.style.display = 'block';
+            });
+            // Close the modal when clicking the cancel button or outside the modal
+            document.querySelectorAll('.cancel-btn, .modal').forEach(element => {
+                element.addEventListener('click', function(event) {
                 if (event.target.classList.contains('cancel-btn') || event.target.classList.contains('modal')) {
                     document.getElementById('accessControlModal').style.display = 'none';
                 }
             });
         });
-    });
+    }
+});
 
 </script>
     
@@ -566,30 +571,34 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     function toggleBulkActionButton() {
-        const anyChecked = Array.from(checkboxes).some(c => c.checked);
-        bulkActionButton.disabled = !anyChecked;
-        if (anyChecked) {
-            bulkActionButton.classList.add('enabled');
-            bulkActionButton.style.cursor = 'pointer';
-        } else {
-            bulkActionButton.classList.remove('enabled');
-            bulkActionButton.style.cursor = 'initial';
+        if (bulkActionButton) {
+            const anyChecked = Array.from(checkboxes).some(c => c.checked);
+            bulkActionButton.disabled = !anyChecked;
+            if (anyChecked) {
+                bulkActionButton.classList.add('enabled');
+                bulkActionButton.style.cursor = 'pointer';
+            } else {
+                bulkActionButton.classList.remove('enabled');
+                bulkActionButton.style.cursor = 'initial';
+            }
         }
     }
 
     toggleBulkActionButton();
 
-    bulkActionButton.addEventListener('click', function (event) {
-        event.preventDefault();
-        if (!bulkActionButton.disabled) {
-            bulkActionDropdown.classList.toggle('show');
-            if (bulkActionDropdown.classList.contains('show')) {
-                bulkActionIcon.src = '/static/images/table_icon/arrow_drop_up_24dp_FILL0_wght400_GRAD0_opsz24_333333.png';
-            } else {
-                bulkActionIcon.src = '/static/images/table_icon/arrow_drop_down_24dp_FILL0_wght400_GRAD0_opsz24_333333.png';
+    if (bulkActionButton) {
+        bulkActionButton.addEventListener('click', function (event) {
+            event.preventDefault();
+            if (!bulkActionButton.disabled) {
+                bulkActionDropdown.classList.toggle('show');
+                if (bulkActionDropdown.classList.contains('show')) {
+                    bulkActionIcon.src = '/static/images/table_icon/arrow_drop_up_24dp_FILL0_wght400_GRAD0_opsz24_333333.png';
+                } else {
+                    bulkActionIcon.src = '/static/images/table_icon/arrow_drop_down_24dp_FILL0_wght400_GRAD0_opsz24_333333.png';
+                }
             }
-        }
-    });
+        });
+    }
 
     window.onclick = function (event) {
         if (!event.target.matches('.button-bulk-action') && !event.target.closest('.bulk-action-wrapper')) {
@@ -600,49 +609,51 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     };
 
-    deleteSelectedItems.addEventListener('click', async function () {
-        if (bulkActionButton.disabled) {
-            return;
-        }
-
-        const selectedFolders = Array.from(checkboxes)
-            .filter(checkbox => checkbox.checked && checkbox.closest('tr').getAttribute('data-type') === 'folder')
-            .map(checkbox => checkbox.closest('tr').getAttribute('data-id'));
-        console.log(selectedFolders)
-        const selectedDocuments = Array.from(checkboxes)
-            .filter(checkbox => checkbox.checked && checkbox.closest('tr').getAttribute('data-type') === 'document')
-            .map(checkbox => checkbox.closest('tr').getAttribute('data-id'));
-
-        const confirmation = await showRemoveModal('Are you sure you want to delete the selected items?');
-
-        if (confirmation) {
-            if (selectedFolders.length > 0) {
-                fetch(`/folder/delete_folders/`, {
-                    method: 'DELETE',
-                    headers: {
-                        'X-CSRFToken': getCookie('csrftoken'),
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ folder_ids: selectedFolders })
-                })
-                .then(handleResponse)
-                .catch(handleError);
+    if (deleteSelectedItems) {
+        deleteSelectedItems.addEventListener('click', async function () {
+            if (bulkActionButton.disabled) {
+                return;
             }
 
-            if (selectedDocuments.length > 0) {
-                fetch(`/documents/delete_documents/`, {
-                    method: 'DELETE',
-                    headers: {
-                        'X-CSRFToken': getCookie('csrftoken'),
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ document_ids: selectedDocuments })
-                })
-                .then(handleResponse)
-                .catch(handleError);
+            const selectedFolders = Array.from(checkboxes)
+                .filter(checkbox => checkbox.checked && checkbox.closest('tr').getAttribute('data-type') === 'folder')
+                .map(checkbox => checkbox.closest('tr').getAttribute('data-id'));
+            console.log(selectedFolders)
+            const selectedDocuments = Array.from(checkboxes)
+                .filter(checkbox => checkbox.checked && checkbox.closest('tr').getAttribute('data-type') === 'document')
+                .map(checkbox => checkbox.closest('tr').getAttribute('data-id'));
+
+            const confirmation = await showRemoveModal('Are you sure you want to delete the selected items?');
+
+            if (confirmation) {
+                if (selectedFolders.length > 0) {
+                    fetch(`/folder/delete_folders/`, {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRFToken': getCookie('csrftoken'),
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ folder_ids: selectedFolders })
+                    })
+                    .then(handleResponse)
+                    .catch(handleError);
+                }
+
+                if (selectedDocuments.length > 0) {
+                    fetch(`/documents/delete_documents/`, {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRFToken': getCookie('csrftoken'),
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ document_ids: selectedDocuments })
+                    })
+                    .then(handleResponse)
+                    .catch(handleError);
+                }
             }
-        }
-    });
+        });
+    }
 
     function handleResponse(response) {
         if (response.ok) {
@@ -706,8 +717,10 @@ document.addEventListener('DOMContentLoaded', function () {
     // Function to handle row clicks except on the action button and actions cell
     document.querySelectorAll('.clickable-td').forEach(row => {
         row.addEventListener('click', function(event) {
+            console.log('Row clicked'); // Log to check if this code runs
             // Check if the click was within the checkbox, dropdown button, or actions cell
             if (!event.target.closest('.actions, .actions *, .action-button, .action-button *, input[type="checkbox"]')) {
+                console.log('Navigating to:', this.getAttribute('data-href')); // Log the navigation URL
                 window.location.href = this.getAttribute('data-href');
             }
         });
@@ -858,14 +871,15 @@ document.addEventListener('DOMContentLoaded', function () {
             handleFiles(e.dataTransfer.files);
         });
     }
-
-    openUploadModaProductlBtn.addEventListener('click', function () {
-        var myModal = new bootstrap.Modal(modal);
-        myModal.show();
-        validFilesMap.clear();
-        invalidFileCount = 0;
-        updateUploadButtonState();
-    });
+    if (openUploadModaProductlBtn) {
+        openUploadModaProductlBtn.addEventListener('click', function () {
+            var myModal = new bootstrap.Modal(modal);
+            myModal.show();
+            validFilesMap.clear();
+            invalidFileCount = 0;
+            updateUploadButtonState();
+        });
+    }
 
     cancelBtn.addEventListener('click', function () {
         var myModal = new bootstrap.Modal(modal);

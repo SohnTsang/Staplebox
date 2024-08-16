@@ -268,7 +268,7 @@ LOGGING = {
             'handlers': ['console'],
             'level': 'DEBUG',
         },
-        'invitation': {  
+        'invitations': {  
             'handlers': ['console'],
             'level': 'DEBUG',
         },
@@ -277,6 +277,14 @@ LOGGING = {
             'level': 'DEBUG',
         },
         'products': {  
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
+        'partners': {  
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
+        'companies': {  
             'handlers': ['console'],
             'level': 'DEBUG',
         },

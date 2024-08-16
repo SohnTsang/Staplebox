@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views
-from .views import EditComment, UpdateDocument, UploadDocumentPartnerView, DocumentUploadView, DeleteDocumentView
+from .views import EditComment, UpdateDocument, UploadDocumentPartnerView, DocumentUploadView, DeleteDocumentView, DeletePartnerDocumentView
 
 
 
@@ -11,6 +11,7 @@ urlpatterns = [
     path('folders/<str:folder_uuid>/upload_document_partner/', UploadDocumentPartnerView.as_view(), name='upload_document_partner'),
 
     path('delete_documents/', DeleteDocumentView.as_view(), name='delete_documents'),
+    path('delete_partner_document/<str:document_uuid>/', DeletePartnerDocumentView.as_view(), name='delete_partner_document'),
 
     path('products/<str:product_uuid>/folders/<str:folder_uuid>/documents/', views.get_documents, name='get_documents'),
     path('document/<str:document_uuid>/versions/', views.document_versions, name='document_versions'),

@@ -172,7 +172,7 @@ th {
     position: relative; /* To position the pseudo-element */
     padding-right: 1.5em; /* Adjust according to the icon size */
     background-color: #ffffff;
-    padding: 10px 10px;
+    padding: 10px 10px 10px 5px;
     font-size: 1em; /* Lowered font size */
     text-align: left;
     border-bottom: 1px solid #ddd;
@@ -186,7 +186,7 @@ tr {
 }
 
 td {
-    padding: 5px 10px;
+    padding: 5px 10px 5px 5px;
     font-size: 0.95em; /* Lowered font size */
     text-align: left;
     border-bottom: 1px solid #ddd;
@@ -254,6 +254,7 @@ td.actions{
 th:nth-child(1), td:nth-child(1) {
     width: 3%;
     text-align: center;
+    text-overflow: unset !important;
 }
 
 th:nth-child(2), td:nth-child(2) {
@@ -507,7 +508,7 @@ tbody tr:nth-child(even) {
     touch-action: manipulation;
     vertical-align: baseline;
     white-space: nowrap;
-    margin-right: 5px;
+    margin-right: 12px;
     opacity: 0.6; /* Default to disabled state */
 }
 
@@ -674,6 +675,7 @@ tbody tr:nth-child(even) {
     position: relative;
     display: flex;
     align-items: center;
+    gap: 6px;
 }
 
 .delete-icon-wrapper {
@@ -896,7 +898,6 @@ li a {
 
 
 .form-control {
-    width: 200px;
 }
 
 .form-select {

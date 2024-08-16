@@ -5,19 +5,18 @@
 <div id="editExportModal" class="modal">
     <div class="modal-content">
         <div class="modal-title">Edit Export Details</div>
+        
         <div class="tab-content active" id="editExport">
+            <label style="padding-left: 5px;">Partner Name: {{ export.partner.partner_name }} </label>
+
             <form id="editExportForm">
                 <div class="form-messages" id="formMessages"></div>
+                
                 <label for="referenceNumber">Reference Number:</label>
                 <input type="text" id="referenceNumber" name="referenceNumber" required>
 
                 <label for="exportDate">Export Date:</label>
                 <input type="date" id="exportDate" name="exportDate" required>
-
-                <label for="partner">Partner:</label>
-                <select id="partner" name="partner" disabled>
-                    <!-- Partners will be populated here and will be disabled -->
-                </select>
             </form>
         </div>
         <div class="modal-footer">

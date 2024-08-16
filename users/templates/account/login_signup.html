@@ -126,25 +126,14 @@
                                 style="{% if show_form|default:'signup' == 'signup' %}display: block;{% else %}display: none;{% endif %}">
                                                        <form method="post" id="signupForm" class="login-form" novalidate>
                                     <h2>Sign Up</h2>
+                                    <div class="form-messages" id="formMessages">
+                                        {% if messages %}
+                                            {% for message in messages %}
+                                                <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
                                     {% csrf_token %}
-                                    <!-- Add form fields for signup here 
-                                    <div class="form-group " role="group">
-                                        <div id="div_id_role">
-                                            <div class="btn-group">
-                                                {% for value, label in signup_form.role.field.choices %}
-                                                        <input type="radio" class="btn-check is-invalid" name="{{ signup_form.role.name }}" id="{{ signup_form.role.name }}_{{ forloop.counter }}" value="{{ value }}" {% if forloop.first %}required{% endif %} autocomplete="off">
-                                                        <label class="btn btn-outline-primary form-label mb-0 requiredField" for="{{ signup_form.role.name }}_{{ forloop.counter }}">{{ label }}</label> 
-                                                {% endfor %}
-                                                {% if signup_form.role.errors %}
-                                                    <p id="error_{{ forloop.counter }}_id_{{ signup_form.role.name }}" class="invalid-feedback">
-                                                        {% for error in signup_form.role.errors %}
-                                                            <strong>{{ error }}</strong>
-                                                        {% endfor %}
-                                                    </p>
-                                                {% endif %}
-                                            </div>
-                                        </div>
-                                    </div>-->
                                     <div class="form-group">
                                         {{ signup_form.email|as_crispy_field }}
                                     </div>

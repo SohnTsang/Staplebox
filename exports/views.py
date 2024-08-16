@@ -35,29 +35,32 @@ from rest_framework.generics import RetrieveAPIView
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
 from django.core.signing import Signer, BadSignature
+from django.http import Http404
+from companies.models import CompanyProfile
+
 signer = Signer()
 
 
 
 logger = logging.getLogger(__name__)
 
-def generate_reference_number(partner_uuid, export_date, user):
+def generate_reference_number(partner_uuid, export_date, user_company_profile):
     try:
         # Fetch the partnership instance using the UUID
         partnership = Partnership.objects.get(uuid=partner_uuid)
-        # Determine the correct partner ID based on the requesting user
-        if partnership.partner1 == user:
-            partner_id = partnership.partner1.id
-        elif partnership.partner2 == user:
-            partner_id = partnership.partner2.id
+        # Determine the correct partner ID based on the requesting user's company profile
+        if partnership.partner1 == user_company_profile:
+            partner_id = partnership.partner1.uuid
+        elif partnership.partner2 == user_company_profile:
+            partner_id = partnership.partner2.uuid
         else:
-            raise ValueError("The requesting user is not part of the partnership.")
+            raise ValueError("The requesting user's company profile is not part of the partnership.")
     except Partnership.DoesNotExist:
         raise ValueError("Invalid partnership UUID provided.")
 
     export_date_obj = dt.strptime(export_date, '%Y-%m-%d')
     export_date_str = export_date_obj.strftime('%Y%m%d')
-    partner_hex = f'{partner_id:05X}'
+    partner_hex = f'{partner_id.hex[:5].upper()}'  # Convert UUID to a string and take the first 5 characters
     prefix = f'EXP{export_date_str}'
     ref_prefix = f'{prefix}{partner_hex}'
 
@@ -82,23 +85,27 @@ class ExportListView(APIView):
     @method_decorator(never_cache)
     def get(self, request):
         user = request.user
+        user_company_profiles = user.userprofile.company_profiles.all()
+
         partnerships = Partnership.objects.filter(
-            Q(partner1=user) | Q(partner2=user),
+            Q(partner1__in=user_company_profiles) | Q(partner2__in=user_company_profiles),
             is_active=True
         ).prefetch_related(
-            'partner1__userprofile__company_profiles',
-            'partner2__userprofile__company_profiles'
+            'partner1__user_profiles__user',
+            'partner2__user_profiles__user'
         )
+
         user_exports = Export.objects.filter(
             Q(created_by=user) | Q(partner__in=partnerships),
             completed=False  # Exclude completed exports
         ).distinct().order_by('export_date').prefetch_related(
             'documents',
             'products',
-            'partner__partner1__userprofile__company_profiles',
-            'partner__partner2__userprofile__company_profiles'
+            'partner__partner1__user_profiles__user',
+            'partner__partner2__user_profiles__user'
         )
-        all_partners = self.prepare_partners(user_exports, user)
+
+        all_partners = self.prepare_partners(user_exports, user_company_profiles)
         context = {
             'all_partners': all_partners,
             'partnerships': PartnershipSerializer(partnerships, many=True).data
@@ -111,11 +118,11 @@ class ExportListView(APIView):
                 'all_partners': all_partners
             })
 
-    def prepare_partners(self, user_exports, user):
+    def prepare_partners(self, user_exports, user_company_profiles):
         all_partners = []
         for export in user_exports:
-            partner = export.partner.partner2 if export.partner.partner1 == user else export.partner.partner1
-            partner_profile = partner.userprofile.company_profiles.first()
+            partner = export.partner.partner2 if export.partner.partner1 in user_company_profiles else export.partner.partner1
+            partner_profile = partner
             documents = [
                 {
                     'document_id': signer.sign(str(doc.uuid)),
@@ -127,7 +134,7 @@ class ExportListView(APIView):
             partner_info = {
                 'partner_name': partner_profile.name,
                 'partner_company_type': partner_profile.role,
-                'partner_id': signer.sign(str(partner.userprofile.uuid)),  # Sign the UUID from UserProfile
+                'partner_id': signer.sign(str(partner_profile.uuid)),  # Sign the UUID from CompanyProfile
                 'export_date': export.export_date.strftime('%Y-%m-%d'),
                 'document_count': len(documents),
                 'partner_exports': documents,
@@ -154,13 +161,18 @@ class ExportDetailView(APIView):
             Export.objects.prefetch_related(
                 'documents',
                 'products',
-                'partner__partner1__userprofile__company_profiles',
-                'partner__partner2__userprofile__company_profiles'
-            ), uuid=unsigned_export_uuid  # Use the UUID field
+                'partner__partner1__user_profiles',
+                'partner__partner2__user_profiles'
+            ), uuid=unsigned_export_uuid
         )
 
-        partner = export.partner.partner2 if export.partner.partner1 == request.user else export.partner.partner1
-        partner_profile = partner.userprofile.company_profiles.first()
+        # Determine the correct partner based on the requesting user's company profile
+        user_company_profile = request.user.userprofile.company_profiles.first()
+        if not user_company_profile:
+            return Response({"detail": "No company profile found for the requesting user."}, status=status.HTTP_400_BAD_REQUEST)
+
+        partner = export.partner.partner2 if export.partner.partner1 == user_company_profile else export.partner.partner1
+        partner_profile = partner
 
         documents = [
             {
@@ -189,18 +201,18 @@ class ExportDetailView(APIView):
                 'label': export.label,
                 'export_date': export.export_date.strftime('%Y-%m-%d'),
                 'created_by': export.created_by.username,
-                'created_by_id': signer.sign(str(export.created_by_id)),  # Signing the created_by_id
+                'created_by_company_profile_id': signer.sign(str(export.created_by.userprofile.company_profiles.first().uuid)),
                 'partner': {
                     'partner_name': partner_profile.name,
                     'partner_company_type': partner_profile.role,
-                    'partner_id': signer.sign(str(partner.id)),
+                    'partner_id': signer.sign(str(partner.uuid)),
                 },
                 'documents': documents,
                 'products': products,
                 'folder': export.folder.name if export.folder else None,
                 'completed': export.completed
             },
-            'signed_user_id': signer.sign(str(request.user.id))  # Signing the request.user.id
+            'signed_user_company_profile_id': signer.sign(str(user_company_profile.uuid))
         }
 
         if request.accepted_renderer.format == 'html':
@@ -214,6 +226,21 @@ class ExportDetailAPIView(RetrieveAPIView):
     queryset = Export.objects.all()
     serializer_class = ExportSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        # Get the signed export UUID from the URL
+        signed_export_uuid = self.kwargs['pk']
+
+        try:
+            # Unsign the UUID
+            unsigned_export_uuid = signer.unsign(signed_export_uuid)
+        except BadSignature:
+            raise Response({"detail": "Invalid export ID."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Retrieve the Export object using the unsigned UUID
+        export = Export.objects.get(uuid=unsigned_export_uuid)
+
+        return export
 
     def get_serializer_context(self):
         """
@@ -237,7 +264,8 @@ def list_partners(request):
     logger.debug("User: %s", user)
 
     # Fetch active partnerships
-    query = Q(partner1=user) | Q(partner2=user)
+    user_profiles = user.userprofile.company_profiles.all()
+    query = Q(partner1__in=user_profiles) | Q(partner2__in=user_profiles)
     query &= Q(is_active=True)
     partnerships = Partnership.objects.filter(query).distinct()
     logger.debug("Partnerships fetched: %s", partnerships)
@@ -245,17 +273,15 @@ def list_partners(request):
     partners = []
     for partnership in partnerships:
         try:
-            if partnership.partner1 == user:
-                userprofile = partnership.partner2.userprofile
+            if partnership.partner1 in user_profiles:
+                partner_profile = partnership.partner2
             else:
-                userprofile = partnership.partner1.userprofile
+                partner_profile = partnership.partner1
             
-            # Retrieve the first company profile associated with the userprofile, if any
-            company_profile = userprofile.company_profiles.first()
-            partner_name = company_profile.name if company_profile else "No Company"
+            partner_name = partner_profile.name if partner_profile else "No Company"
 
             partner_info = {
-                'id': signer.sign(str(partnership.uuid)),  # Use the partnership ID
+                'uuid': signer.sign(str(partnership.uuid)),  # Use the partnership ID
                 'partner_name': partner_name
             }
             partners.append(partner_info)
@@ -266,6 +292,7 @@ def list_partners(request):
 
     logger.debug("Final partner list: %s", partners)
     return JsonResponse({'partners': partners})
+
 
 
 class CreateExportView(APIView):
@@ -307,6 +334,8 @@ class CreateExportView(APIView):
         created_exports = []
         skipped_exports = []
 
+        user_company_profile = request.user.userprofile.company_profiles.first()
+
         for export_date in export_dates:
             if Export.objects.filter(partner=partnership, export_date=export_date).exists():
                 skipped_exports.append({
@@ -317,7 +346,7 @@ class CreateExportView(APIView):
                 continue
 
             data['export_date'] = export_date
-            reference_number = generate_reference_number(partnership_id, export_date, request.user)
+            reference_number = generate_reference_number(partnership_id, export_date, user_company_profile)
             data['reference_number'] = reference_number
 
             timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
@@ -332,6 +361,7 @@ class CreateExportView(APIView):
                 'reference_number': reference_number,
                 'export_date': export_date,
                 'created_by': request.user.pk,
+                'created_by_company': user_company_profile.pk if user_company_profile else None,  # Set the created_by_company field
                 'partner': signed_partnership_id,
                 'folder': folder.uuid,
                 'documents': documents_data
@@ -360,12 +390,20 @@ class CreateExportView(APIView):
 
 
 
-
-
 class EditExportView(generics.UpdateAPIView):
     serializer_class = ExportSerializer
     permission_classes = [IsAuthenticated]
     queryset = Export.objects.all()
+
+    def get_object(self):
+        export_uuid = self.kwargs.get('export_uuid')
+        try:
+            unsigned_export_uuid = signer.unsign(export_uuid)
+            export = Export.objects.get(uuid=unsigned_export_uuid)
+            return export
+        except (Export.DoesNotExist, BadSignature):
+            logger.error("Invalid export ID.")
+            raise Http404
 
     def put(self, request, *args, **kwargs):
         logger.debug(f"Received PUT request with data: {request.data}")
@@ -379,7 +417,9 @@ class EditExportView(generics.UpdateAPIView):
         if serializer.is_valid():
             self.perform_update(serializer)
             logger.debug("Export updated successfully.")
-            return Response(serializer.data)
+            response_data = serializer.data
+            response_data['message'] = "Export updated successfully."
+            return Response(response_data)
         else:
             logger.error(f"Update failed with errors: {serializer.errors}")
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -429,48 +469,51 @@ class CompleteExportView(APIView):
 class CompletedExportListView(APIView):
     permission_classes = [IsAuthenticated]
     renderer_classes = [TemplateHTMLRenderer]
-
     template_name = 'exports/completed_export_list.html'
 
     def get(self, request):
         user = request.user
+        try:
+            company_profile = user.userprofile.company_profiles.first()
+        except CompanyProfile.DoesNotExist:
+            return Response({'error': 'Company profile not found.'}, status=status.HTTP_400_BAD_REQUEST)
+
         partnerships = Partnership.objects.filter(
-            Q(partner1=user) | Q(partner2=user),
+            Q(partner1=company_profile) | Q(partner2=company_profile),
             is_active=True
-        ).prefetch_related(
-            'partner1__userprofile__company_profiles',  # Updated field name
-            'partner2__userprofile__company_profiles'   # Updated field name
         )
+
         user_exports = Export.objects.filter(
-            Q(created_by=user) | Q(partner__in=partnerships),
+            Q(created_by_company=company_profile) | Q(partner__in=partnerships),
             completed=True
         ).distinct().order_by('export_date').prefetch_related(
             'documents',
             'products',
-            'partner__partner1__userprofile__company_profiles',  # Updated field name
-            'partner__partner2__userprofile__company_profiles'   # Updated field name
+            'partner__partner1',
+            'partner__partner2'
         )
-        all_partners = self.prepare_partners(user_exports, user)
+
+        all_partners = self.prepare_partners(user_exports, company_profile)
         context = {
             'all_partners': all_partners,
             'partnerships': PartnershipSerializer(partnerships, many=True).data
         }
         if request.accepted_renderer.format == 'html':
-            return Response(context)
+            return Response(context, template_name=self.template_name)
         else:
             return Response({
                 'partnerships': PartnershipSerializer(partnerships, many=True).data,
                 'all_partners': all_partners
             })
 
-    def prepare_partners(self, user_exports, user):
+    def prepare_partners(self, user_exports, company_profile):
         all_partners = []
         for export in user_exports:
-            partner = export.partner.partner2 if export.partner.partner1 == user else export.partner.partner1
-            partner_profile = partner.userprofile.company_profiles.first()
+            partner = export.partner.partner2 if export.partner.partner1 == company_profile else export.partner.partner1
+            partner_profile = partner
             documents = [
                 {
-                    'document_id': doc.id,
+                    'document_id': doc.uuid,
                     'file_name': doc.original_filename,
                     'created_at': doc.created_at.strftime('%Y-%m-%d'),
                     'comment': doc.comments,
@@ -479,7 +522,7 @@ class CompletedExportListView(APIView):
             partner_info = {
                 'partner_name': partner_profile.name,
                 'partner_company_type': partner_profile.role,
-                'partner_id': partner.id,
+                'partner_id': partner.uuid,
                 'export_date': export.export_date.strftime('%Y-%m-%d'),
                 'document_count': len(documents),
                 'partner_exports': documents,
@@ -588,42 +631,58 @@ class UploadDocumentView(APIView):
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
-'''
 class DeleteExport(APIView):
     permission_classes = [IsAuthenticated]
 
-    def delete(self, request, pk, format=None):
-        logger.info(f"Delete request received for export ID: {pk}")
-        export = get_object_or_404(Export, pk=pk)
-        if request.user != export.created_by:
-            logger.warning(f"User {request.user} does not have permission to delete export ID: {pk}")
-            return Response({'error': 'You do not have permission to delete this export'}, status=status.HTTP_403_FORBIDDEN)
-        export.delete()
-        logger.info(f"Export ID: {pk} deleted successfully")
-        return Response({'message': 'Export deleted'}, status=status.HTTP_200_OK)
-'''
+    def delete(self, request, *args, **kwargs):
+        logger.debug("DELETE request received")
+        logger.debug(f"Request data: {request.data}")
 
-class DeleteExport(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def delete(self, request, format=None):
         data = request.data
-        if 'export_ids' in data:
-            # Handling multiple deletions
-            export_ids = data['export_ids']
-            exports = Export.objects.filter(id__in=export_ids, created_by=request.user)
-        else:
-            # Handling single deletion passed as JSON for consistency
-            export_id = data.get('export_id')
-            exports = Export.objects.filter(pk=export_id, created_by=request.user)
+        export_id = data.get('export_id')
+        export_ids = data.get('export_ids')
 
-        if not exports.exists():
-            return Response({'error': 'Exports not found or access denied.'}, status=status.HTTP_404_NOT_FOUND)
+        logger.debug(f"export_id: {export_id}")
+        logger.debug(f"export_ids: {export_ids}")
 
-        for export in exports:
-            export.delete()
+        if export_id:
+            export_ids = [export_id]
+        elif not export_ids:
+            logger.warning("No export ID provided in request data.")
+            return Response({'error': 'No export ID provided.'}, status=status.HTTP_400_BAD_REQUEST)
 
+        logger.debug(f"Export IDs to delete: {export_ids}")
+        deleted_exports = []
+
+        user_company_profile = request.user.userprofile.company_profiles.first()
+        if not user_company_profile:
+            logger.error("User does not have a company profile.")
+            return Response({'error': 'User does not have a company profile.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        for export_uuid in export_ids:
+            try:
+                unsigned_export_uuid = signer.unsign(export_uuid)
+                logger.debug(f"Unsigned export UUID: {unsigned_export_uuid}")
+                print(user_company_profile, unsigned_export_uuid)
+                export = Export.objects.get(uuid=unsigned_export_uuid, created_by_company=user_company_profile)
+                logger.info(f"export found {export}")
+                export.delete()
+                logger.info(f"Deleted export with UUID: {unsigned_export_uuid}")
+                deleted_exports.append(unsigned_export_uuid)
+            except BadSignature:
+                logger.error(f"BadSignature: Invalid export UUID: {export_uuid}")
+            except Export.DoesNotExist:
+                logger.error(f"Export.DoesNotExist: No export found with UUID: {unsigned_export_uuid}")
+            except Exception as e:
+                logger.error(f"Unexpected error: {str(e)}")
+
+        if not deleted_exports:
+            logger.error("No valid exports found or access denied.")
+            return Response({'error': 'No valid exports found or access denied.'}, status=status.HTTP_404_NOT_FOUND)
+
+        logger.debug("Exports deleted successfully")
         return Response({'message': 'Export(s) deleted successfully'}, status=status.HTTP_200_OK)
+
 
 
 class DownloadDocumentView(View):

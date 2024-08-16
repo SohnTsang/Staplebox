@@ -1,6 +1,6 @@
+import logging
+
 from django import forms
-from .models import UserProfile
-from companies.models import CompanyProfile
 from allauth.account.forms import LoginForm
 from allauth.account.forms import SignupForm as AllauthSignupForm
 
@@ -10,6 +10,7 @@ from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.password_validation import validate_password
 from django.db import transaction
 
+logger = logging.getLogger(__name__)
 
 class CustomLoginForm(LoginForm):
     def __init__(self, *args, **kwargs):
@@ -24,6 +25,7 @@ class SignupForm(AllauthSignupForm):
     def clean_email(self):
         email = self.cleaned_data.get('email')
         if User.objects.filter(email=email).exists():
+            logger.warning(f"Signup attempt with existing email: {email}")
             raise ValidationError("A user with that email already exists.")
         return email
 
@@ -31,6 +33,7 @@ class SignupForm(AllauthSignupForm):
     def save(self, request):
         # Call the original save method to save the user and get the user object
         user = super(SignupForm, self).save(request)
+        logger.info(f"User {user.email} created successfully.")
         return user
 
     def __init__(self, *args, **kwargs):
@@ -46,6 +49,7 @@ class PasswordResetRequestForm(forms.Form):
         data = self.cleaned_data['username_or_email']
 
         if not User.objects.filter(username=data).exists() and not User.objects.filter(email=data).exists():
+            logger.warning(f"Password reset request for non-existent user: {data}")
             raise ValidationError("A user with that username or email does not exist.")
         return data
 

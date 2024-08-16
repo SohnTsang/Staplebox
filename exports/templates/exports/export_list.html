@@ -52,7 +52,7 @@
                 </thead>
                 <tbody id="exportTableBody">
                     {% for partner in all_partners %}
-                    <tr data-export-id="{{ partner.export_uuid }}" class="non-clickable-tr"> <!-- Add the export ID here -->
+                    <tr data-export-id="{{ partner.export_id }}" class="non-clickable-tr"> <!-- Add the export ID here -->
                         <td><input type="checkbox"></td>
                         <td>{{ partner.reference_number }}</td>
                         <td>{{ partner.partner_name }}</td>

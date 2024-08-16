@@ -6,6 +6,7 @@ from documents.models import Document
 from django.core.cache import cache
 import uuid
 from django.core.signing import Signer
+from companies.models import CompanyProfile
 
 signer = Signer()
 
@@ -16,8 +17,8 @@ class AccessPermission(models.Model):
         ('read_only', 'Read Only'),
         ('full', 'Full'),
     ]
-    partner1 = models.ForeignKey(User, related_name='granted_permissions', on_delete=models.CASCADE)
-    partner2 = models.ForeignKey(User, related_name='received_permissions', on_delete=models.CASCADE)
+    partner1 = models.ForeignKey(CompanyProfile, related_name='granted_permissions', on_delete=models.CASCADE)
+    partner2 = models.ForeignKey(CompanyProfile, related_name='received_permissions', on_delete=models.CASCADE)
     product = models.ForeignKey(Product, blank=True, null=True, on_delete=models.CASCADE)
     folder = models.ForeignKey(Folder, blank=True, null=True, on_delete=models.CASCADE)
     document = models.ForeignKey(Document, blank=True, null=True, on_delete=models.CASCADE)

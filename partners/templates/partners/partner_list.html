@@ -10,9 +10,7 @@
 <link rel="stylesheet" type="text/css" href="{% static 'exports/css/modal.css' %}">
 <style>
 
-    .button-group {
-        gap: 10px;
-    }
+    
 	th:nth-child(1), td:nth-child(1) {
 		width: 1%;
 	}
@@ -98,7 +96,7 @@
                         <td>{{ partner.company_name }}</td>
                         <td>{{ partner.company_role }}</td>
                         <!--<td>{{ partner.company_email }}</td>-->
-                        <td>{{ partner.email }}</td>
+                        <td>{{ partner.company_email }}</td>
                         <td>{{ partner.created_at }}</td>
                         <td class="actions">
                             <div class="action-button-container">
@@ -106,7 +104,7 @@
                                     <img src="{% static 'images/table_icon/more_vert_24dp_FILL0_wght400_GRAD0_opsz24_333333.png' %}" alt="Actions">
                                 </button>
                                 <div class="action-button-dropdown">
-                                    <a href="#" class="text-danger" id="delete-partner">Remove Partner</a>
+                                    <a href="#" class="text-danger" id="delete-partner" data-partner-id="{{ partner.id }}">Remove Partner</a>
                                 </div>
                             </div>
                         </td>
@@ -126,9 +124,6 @@
 {% include "modal/invitation_list_modal.html" %}
 
 {% block javascript %}
-<script>
-    const partnerId = "{{ partner.id }}";
-</script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         // Select all rows with the class 'clickable-td'
@@ -150,6 +145,9 @@
         deleteLinks.forEach(link => {
             link.addEventListener('click', function(event) {
                 event.preventDefault();
+                
+                const partnerId = this.getAttribute('data-partner-id');
+
 
                 if (confirm('Are you sure you want to delete this partner?')) {
                     fetch(`/partners/delete/${partnerId}/`, {

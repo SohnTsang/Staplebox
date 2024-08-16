@@ -139,21 +139,16 @@ class UploadDocumentPartnerView(APIView):
             return Response({'error': 'Invalid folder ID.'}, status=400)
 
         folder = get_object_or_404(Folder, uuid=unsigned_folder_uuid)
-        company_profile = CompanyProfile.objects.filter(partners_contract_folder=folder).first()
+        partnership = get_object_or_404(Partnership, shared_folder=folder)
 
-        if not company_profile:
-            logger.error("No company profile associated with this folder.")
-            return Response({'error': 'No company profile associated with this folder.'}, status=404)
+        # Get the company profile of the authenticated user
+        user_profile = request.user.userprofile
+        user_company_profile = user_profile.company_profiles.first()
 
-        company_profile_users = User.objects.filter(userprofile__in=company_profile.user_profiles.all())
-        partnership = Partnership.objects.filter(
-            (Q(partner1__in=company_profile_users) | Q(partner2__in=company_profile_users)) &
-            (Q(partner1=request.user) | Q(partner2=request.user))
-        ).first()
-
-        if not partnership:
-            logger.error("No partnership associated with this company profile.")
-            return Response({'error': 'No partnership associated with this company profile.'}, status=403)
+        # Check if the user's company profile is part of the partnership
+        if user_company_profile not in [partnership.partner1, partnership.partner2]:
+            logger.error("User's company profile is not a partner in this partnership.")
+            return Response({'error': 'You are not authorized to upload to this folder.'}, status=403)
 
         files = request.FILES.getlist('document_files')
         comments_list = request.POST.getlist('comments[]')
@@ -395,6 +390,29 @@ class DeleteDocumentView(APIView):
         return Response({'detail': 'Items deleted'}, status=status.HTTP_200_OK)
 
 
+class DeletePartnerDocumentView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, document_uuid):
+        try:
+            # Unsign the document UUID
+            unsigned_document_uuid = signer.unsign(document_uuid)
+        except BadSignature:
+            return Response({"detail": "Invalid document ID."}, status=400)
+
+        document = get_object_or_404(Document, uuid=unsigned_document_uuid)
+
+        # Check if the user is in a partnership with the document's owner
+        if request.user != document.uploaded_by:
+            return Response({"detail": "You do not have permission to delete this document."}, status=403)
+
+        # Delete the document and all its versions
+        document.versions.all().delete()
+        document.delete()
+
+        return Response({'detail': 'Document deleted'}, status=200)
+    
+    
 @login_required
 def move_to_bin_document(request, document_id):
     document = get_object_or_404(Document, id=document_id)

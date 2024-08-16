@@ -6,13 +6,14 @@ from partners.models import Partnership
 from folder.models import Folder
 import uuid
 from django.core.signing import Signer
+from companies.models import CompanyProfile
 
 signer = Signer()
 
 class Export(models.Model):
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
-     
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_exports')
+    created_by_company = models.ForeignKey(CompanyProfile, on_delete=models.CASCADE, related_name='company_exports', null=True, blank=True)  # Add this line
     reference_number = models.CharField(max_length=100, unique=True, null=True, blank=True, verbose_name="Reference Number")
     label = models.CharField(max_length=255, blank=True, null=True, verbose_name="Label")
     export_date = models.DateField(verbose_name="Export Date")
@@ -25,12 +26,11 @@ class Export(models.Model):
     def __str__(self):
         label_display = f" - {self.label}" if self.label else ""
         return f"{self.reference_number}{label_display} by {self.created_by.username}" if self.reference_number else f"Pending export by {self.created_by.username}"
-    
+
     def save(self, *args, **kwargs):
         # Automatically create a folder for the export if not already set
         if not self.folder_id:
             self.folder = Folder.objects.create(name=f"Folder for {self.partner} on {self.export_date}")
-         
         super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):

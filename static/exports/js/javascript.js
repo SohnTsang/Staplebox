@@ -262,6 +262,10 @@
             fetch('/exports/list_partners/')
                 .then(response => {
                     console.log('Response status:', response.status); // Log response status
+                    const contentType = response.headers.get('content-type');
+                    if (!contentType || !contentType.includes('application/json')) {
+                        throw new TypeError("Response not JSON");
+                    }
                     return response.text(); // Change to text() to log the full response
                 })
                 .then(data => {
@@ -272,13 +276,13 @@
                         jsonResponse.partners.forEach(partner => {
                             var li = document.createElement('li');
                             li.textContent = partner.partner_name;
-                            li.setAttribute('data-partner', partner.id);  // Use partnership ID from the response
+                            li.setAttribute('data-partner', partner.uuid);  // Use partnership ID from the response
                             li.addEventListener('click', function() {
                                 document.querySelectorAll('.partners-list li').forEach(item => {
                                     item.classList.remove('selected');
                                 });
                                 li.classList.add('selected');
-                                selectedPartner = partner.id;  // Correctly set selectedPartner
+                                selectedPartner = partner.uuid;  // Correctly set selectedPartner
                             });
                             partnersList.appendChild(li);
                         });

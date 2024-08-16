@@ -14,23 +14,23 @@ th:nth-child(1), td:nth-child(1) {
     width: 1%;
 }
 th:nth-child(2), td:nth-child(2) {
-    width: 15%;
+    width: 12%;
 }
 
 th:nth-child(3), td:nth-child(3) {
-    width: 10%;
+    width: 8%;
 }
 
 th:nth-child(4), td:nth-child(4) {
-    width: 10%;
+    width: 6%;
 }
 
 th:nth-child(5), td:nth-child(5) {
-    width: 5%;
+    width: 8%;
 }
 
-th:nth-child(6), td:nth-child(6) {
-    width: 5%;
+th:nth-child(7), td:nth-child(7) {
+    width: 3%;
     text-align: center;
 }
 
@@ -130,8 +130,9 @@ th:nth-child(6), td:nth-child(6) {
                             <th id="productNameHeader">Product Name <span class="sort-icon desc inactive"></span></th>
                             <th id="productCodeHeader">Product Code <span class="sort-icon desc inactive"></span></th>
                             <th id="productTypeHeader">Product Type <span class="sort-icon desc inactive"></span></th>
+                            <th id="ownerHeader">Owner <span class="sort-icon desc inactive"></span></th>
                             <th id="updatedAtHeader">Date Modified <span class="sort-icon desc active"></span></th>
-                            <th>Action</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody id="productTableBody">
@@ -141,8 +142,10 @@ th:nth-child(6), td:nth-child(6) {
                             <td class="">{{ item.product.product_name }}</td>
                             <td>{{ item.product.product_code }}</td>
                             <td>{{ item.product.product_type }}</td>
+                            <td>{{ item.company_name }}</td>
                             <td>{{ item.product.updated_at|date:"Y-m-d"}}</td>
-                            <td class="actions">
+                            <td class="actions" style="height:20px;">
+                                {% if item.is_owner %}
                                 <div class="action-button-container">
                                     <button class="action-button">
                                         <img src="{% static 'images/table_icon/more_vert_24dp_FILL0_wght400_GRAD0_opsz24_333333.png' %}" alt="Actions">
@@ -155,11 +158,12 @@ th:nth-child(6), td:nth-child(6) {
                                         </form>
                                     </div>
                                 </div>
+                                {% endif %}
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="6">No Products Added</td>
+                            <td colspan="7">No Products Added</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -303,7 +307,12 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(response => response.json())
             .then(data => {
-                if (data) {
+                if (data.error) {
+                    // Handle the error message
+                    console.error('Error:', data.error);
+                    showMessage(data.error, 'error');
+                } else {
+                    // Proceed with setting the form values
                     document.getElementById('edit_product_name').value = data.product.product_name || '';
                     document.getElementById('edit_product_code').value = data.product.product_code || '';
                     document.getElementById('edit_product_description').value = data.product.product_description || '';
@@ -319,7 +328,7 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => {
                 console.error('Error:', error);
-                showMessage('There was an error processing your request.', 'error');
+                showMessage(error.message, 'error');
             });
         });
     });
@@ -431,6 +440,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function submitProductFormHandler() {
         const formData = new FormData(productForm);
+        const formMessages = document.getElementById('formMessages'); // Add this line to access form messages container
 
         fetch("{% url 'products:create_product' %}", {
             method: 'POST',
@@ -474,15 +484,19 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     }
                 });
+            } else if (errorData && errorData.error) {
+                formMessages.innerHTML = `<div class="alert alert-danger">${errorData.error}</div>`;
             }
         });
     }
 
     document.querySelectorAll('.delete-product').forEach(button => {
-        button.addEventListener('click', function(e) {
+        button.addEventListener('click', async function(e) {
             e.preventDefault();
             const productId = this.getAttribute('data-product-id');
-            if (confirm('Are you sure you want to delete this product?')) {
+            const confirmation = await showRemoveModal('Are you sure you want to delete the selected items?');
+
+            if (confirmation) {
                 fetch(`/products/delete/${productId}/`, {
                     method: 'DELETE',
                     headers: {

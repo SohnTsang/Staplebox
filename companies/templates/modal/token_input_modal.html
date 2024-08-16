@@ -1,0 +1,22 @@
+<!-- token_modal.html -->
+<div id="tokenModal" class="modal" style="display: none;">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" style="margin: 0; font-size: 1.25rem; font-weight: 400; border:0;">Link Company Profile
+                </h5>
+                
+            </div>
+            <div class="modal-body">
+                <form id="token-form" method="post">
+                    {% csrf_token %}
+                    <input type="text" class="form-control" id="tokenInput" name="token" placeholder="Enter your token" required>
+                </form>
+            </div>
+            <div class="modal-footer" style="border:0">
+                <button type="button" class="cancel-btn">Cancel</button>
+                <button type="submit" class="add-btn" form="token-form">Submit</button>
+            </div>
+        </div>
+    </div>
+</div>

@@ -6,6 +6,7 @@ from django.dispatch import receiver
 from django.apps import apps
 import uuid
 from django.core.signing import Signer
+from companies.models import CompanyProfile
 
 signer = Signer()
 
@@ -23,6 +24,7 @@ class Product(models.Model):
         ('grains_cereals', 'Grains and Cereals'),
         ('processed_foods', 'Processed Foods'),
     ]
+    company = models.ForeignKey(CompanyProfile, on_delete=models.CASCADE, related_name='products')
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='products')
     product_code = models.CharField(max_length=50)
     product_name = models.CharField(max_length=100)

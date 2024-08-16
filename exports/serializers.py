@@ -32,11 +32,11 @@ class DocumentSerializer(serializers.ModelSerializer):
 
 class ExportSerializer(serializers.ModelSerializer):
     documents = DocumentSerializer(many=True, required=False)
-    partner = PartnerSerializer(read_only=True)  # If partner needs to be updated, create a method to handle it
+    partner = PartnerSerializer(read_only=True)
 
     class Meta:
         model = Export
-        fields = ['uuid', 'reference_number', 'label', 'export_date', 'created_by', 'partner', 'folder', 'documents', 'products']
+        fields = ['uuid', 'reference_number', 'label', 'export_date', 'created_by', 'created_by_company', 'partner', 'folder', 'documents', 'products']
         read_only_fields = ['created_by']
 
     def create(self, validated_data):
