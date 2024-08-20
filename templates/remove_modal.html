@@ -52,18 +52,8 @@
             }
             modal.style.display = "none";
         };
+
     
-        // Handle clicks outside of the modal content
-        window.onclick = function(event) {
-            if (event.target === modal) {
-                closeModal();
-            }
-        };
-    
-        // Close modal when clicking on the close icon or outside the modal content
-        modal.querySelector('.custom-modal-close').onclick = function() {
-            closeModal();
-        };
     
         // Cancel button also closes the modal
         document.getElementById("cancelBtn").onclick = function() {

@@ -34,6 +34,7 @@ from django.http import Http404
 from rest_framework.parsers import MultiPartParser
 from django.core.signing import Signer, BadSignature
 from users.models import User
+from users.utils import log_user_activity
 
 signer = Signer()
 
@@ -121,6 +122,12 @@ class DocumentUploadView(APIView):
             if serializer.is_valid():
                 serializer.save()
                 logger.debug("File uploaded successfully: %s", file.name)
+                # Log the upload activity
+                log_user_activity(
+                    user=request.user,
+                    action=f"Uploaded document '{file.name}' to Product '{product.product_name}'",
+                    activity_type="DOCUMENT_UPLOAD"
+                )
 
         logger.info("All documents uploaded successfully for product_uuid: %s, folder_uuid: %s", product_uuid, folder_uuid)
         return Response({'detail': 'Documents uploaded'}, status=status.HTTP_201_CREATED)
@@ -144,6 +151,11 @@ class UploadDocumentPartnerView(APIView):
         # Get the company profile of the authenticated user
         user_profile = request.user.userprofile
         user_company_profile = user_profile.company_profiles.first()
+
+        if user_company_profile == partnership.partner1:
+            partner_company_profile = partnership.partner2
+        else:
+            partner_company_profile = partnership.partner1
 
         # Check if the user's company profile is part of the partnership
         if user_company_profile not in [partnership.partner1, partnership.partner2]:
@@ -180,6 +192,12 @@ class UploadDocumentPartnerView(APIView):
                     )
                     logger.debug(f"Document created: {document}")
                     documents.append(document)
+                    # Log the upload activity
+                    log_user_activity(
+                        user=request.user,
+                        action=f"'Document {file.name}' uploaded in '{partner_company_profile.name}' profile",
+                        activity_type="DOCUMENT_UPLOAD"
+                    )
 
                 serializer = DocumentSerializer(documents, many=True)
                 logger.debug("Documents uploaded successfully")
@@ -216,6 +234,12 @@ def edit_document(request, document_uuid):
         serializer = DocumentSerializer(data=request.data, instance=document)
         if serializer.is_valid():
             serializer.save()
+            # Log the document update
+            log_user_activity(
+                user=request.user,
+                action=f"Updated document '{document.original_filename}'",
+                activity_type="DOCUMENT_UPDATE"
+            )
             return JsonResponse({'success': True, 'message': 'Document updated'})
         else:
             return JsonResponse({'success': False, 'errors': serializer.errors}, status=400)
@@ -330,6 +354,12 @@ class UpdateDocument(APIView):
         serializer = DocumentUpdateSerializer(document, data=request.data, context={'request': request})
         if serializer.is_valid():
             serializer.save()
+            # Log the document update
+            log_user_activity(
+                user=request.user,
+                action=f"Updated document '{document.original_filename}'",
+                activity_type="DOCUMENT_UPDATE"
+            )
             return Response({'message': 'Document updated'}, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -354,6 +384,12 @@ def ajax_update_document(request, document_id):
     if uploaded_file:
         new_hash = file_hash(uploaded_file)  # Your file_hash function needs to be defined
         document.update_version(uploaded_file, new_hash, comments, user)
+        # Log the document update
+        log_user_activity(
+            user=request.user,
+            action=f"Updated document '{document.original_filename}' via AJAX",
+            activity_type="DOCUMENT_UPDATE"
+        )
 
         return JsonResponse({'message': 'Document updated'})
 
@@ -386,6 +422,12 @@ class DeleteDocumentView(APIView):
 
             document.versions.all().delete()
             document.delete()
+            # Log the document deletion
+            log_user_activity(
+                user=request.user,
+                action=f"Deleted document '{document.original_filename}' from '{document.folder.product.product_name}'",
+                activity_type="DOCUMENT_DELETE"
+            )
 
         return Response({'detail': 'Items deleted'}, status=status.HTTP_200_OK)
 
@@ -402,13 +444,29 @@ class DeletePartnerDocumentView(APIView):
 
         document = get_object_or_404(Document, uuid=unsigned_document_uuid)
 
-        # Check if the user is in a partnership with the document's owner
-        if request.user != document.uploaded_by:
+        # Get the user's company profile
+        user_company_profile = request.user.userprofile.company_profiles.first()
+
+        partnership = get_object_or_404(Partnership, shared_folder=document.folder)
+        if user_company_profile == partnership.partner1:
+            partner_company_profile = partnership.partner2
+        else:
+            partner_company_profile = partnership.partner1
+        
+        if user_company_profile not in [partnership.partner1, partnership.partner2]:
             return Response({"detail": "You do not have permission to delete this document."}, status=403)
+
 
         # Delete the document and all its versions
         document.versions.all().delete()
         document.delete()
+
+        # Log the document deletion
+        log_user_activity(
+            user=request.user,
+            action=f"Deleted document '{document.original_filename}' in '{partner_company_profile.name}' profile",
+            activity_type="DOCUMENT_DELETE"
+        )
 
         return Response({'detail': 'Document deleted'}, status=200)
     
@@ -457,6 +515,12 @@ def download_document(request, document_uuid, version_id=None):
 
     response = FileResponse(open(file_path, 'rb'))
     response['Content-Disposition'] = f'attachment; filename="{download_filename}"'
+    # Log the document download
+    log_user_activity(
+        user=request.user,
+        action=f"Downloaded document '{document.original_filename}'",
+        activity_type="DOCUMENT_DOWNLOAD"
+    )
     return response
 
 
@@ -539,7 +603,7 @@ class EditComment(APIView):
             return Response({'error': 'Invalid UUID'}, status=status.HTTP_400_BAD_REQUEST)
 
         logger.debug(f"Received request for document_uuid: {unsigned_document_uuid} with version_number: {version_number}")
-
+        
         if version_number is not None:
             if version_number == 1:
                 instance = get_object_or_404(Document, uuid=unsigned_document_uuid)
@@ -559,6 +623,21 @@ class EditComment(APIView):
             serializer.save()
             logger.debug(f"Comment updated successfully for instance: {instance}")
             logger.debug(f"Updated instance data: {serializer.data}")
+
+            # Log the comment update
+            if instance.folder.product:
+                log_user_activity(
+                    user=request.user,
+                    action=f"Updated comment '{serializer.data.get('comments')}' on document '{instance.original_filename}' in product '{instance.folder.product.product_name}' - Version {version_number}",
+                    activity_type="COMMENT_UPDATE"
+                )
+            else:
+                log_user_activity(
+                    user=request.user,
+                    action=f"Updated comment '{serializer.data.get('comments')}' on document '{instance.original_filename}' - Version {version_number}",
+                    activity_type="COMMENT_UPDATE"
+                )
+
             return Response({
                 'success': True,
                 'message': 'Comment updated',

@@ -143,13 +143,14 @@
         const deleteLinks = document.querySelectorAll('#delete-partner');
 
         deleteLinks.forEach(link => {
-            link.addEventListener('click', function(event) {
+            link.addEventListener('click', async function(event) {
                 event.preventDefault();
                 
                 const partnerId = this.getAttribute('data-partner-id');
 
+                const confirmation = await showRemoveModal('Are you sure you want to delete this partner?');
 
-                if (confirm('Are you sure you want to delete this partner?')) {
+                if (confirmation) {
                     fetch(`/partners/delete/${partnerId}/`, {
                         method: 'POST',  // Using POST for simplicity
                         headers: {

@@ -1,5 +1,6 @@
 {% block extra_css %}
 {% load custom_tags %}
+{% load static %}
 
 <style>
     header {
@@ -66,6 +67,21 @@
         background-color: #edf8ff;
     }
 
+
+    .user-controls {
+        display: flex;
+        align-items: center;
+    }
+
+    .user-avatar {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        margin-right: 15px;
+        vertical-align: middle;
+    }
+
+
 </style>
 {% endblock extra_css %}
 
@@ -73,10 +89,14 @@
     <div class="top-bar">
         <div class="logo">Company Logo</div>
         <input type="search" placeholder="Search..." class="search-bar">
-        <a href="{% url 'account_logout' %}" class="nav-link px-0 px-1 align-middle">
-            <!-- Optionally add an icon here -->
-            <span class="align-middle ps-2">Logout</span>
-        </a>
+        <div class="user-controls">
+            <a href="{% url 'users:user_profile' %}">
+                <img src="{% static 'images/navbar_icon/user_avatar.png' %}" alt="User Avatar" class="user-avatar">
+            </a>
+            <a href="{% url 'account_logout' %}" class="nav-link px-0 px-1 align-middle">
+                <span class="align-middle ps-2">Logout</span>
+            </a>
+        </div>
     </div>
     <nav class="nav-bar">
         <a href="{% url 'home' %}" class="{% if request.path == '/' %}active{% endif %}">Home</a>

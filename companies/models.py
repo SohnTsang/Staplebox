@@ -1,8 +1,21 @@
 from django.db import models
-import uuid, secrets, hashlib
+import uuid, secrets, hashlib, os
 from django.core.signing import Signer
 
 signer = Signer()
+
+
+def company_profile_image_upload_to(instance, filename):
+    """
+    Generate the upload path for a company profile image.
+    Path format: company_<uuid>/profile/<filename>
+    """
+    return os.path.join(
+        f"company_{str(instance.uuid)}",  # Use company UUID
+        'profile',
+        filename
+    )
+
 
 class CompanyProfile(models.Model):
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
@@ -47,7 +60,7 @@ class CompanyProfile(models.Model):
     facebook = models.URLField(max_length=200, null=True, blank=True)
     twitter = models.URLField(max_length=200, null=True, blank=True)
 
-    profile_image = models.ImageField(upload_to='company_profiles/', null=True, blank=True)
+    profile_image = models.ImageField(upload_to=company_profile_image_upload_to, null=True, blank=True)
 
     def __str__(self):
         return self.name

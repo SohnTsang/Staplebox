@@ -14,16 +14,12 @@ from partners.utils import get_partner_info
 from access_control.utils import get_partners_with_access
 from django.http import JsonResponse, Http404
 from django.db.models import Q
-from users.models import UserProfile
 from .utils import grant_product_access, grant_folder_or_document_access
-from django.http import HttpResponseNotAllowed
-from django.views.decorators.http import require_http_methods
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from .models import Product, Folder, Document, AccessPermission
-from .serializers import AccessPermissionSerializer
 from django.shortcuts import get_object_or_404
 from django.db import transaction
 from rest_framework.renderers import TemplateHTMLRenderer
@@ -32,7 +28,9 @@ from rest_framework.decorators import api_view, permission_classes
 from partners.models import Partnership
 from companies.models import CompanyProfile
 from django.core.signing import Signer, BadSignature
-from utils.utils import sign_uuid, unsign_uuid
+from users.utils import log_user_activity
+from django.db.models import Prefetch
+from django.http import JsonResponse
 
 signer = Signer()
 
@@ -199,10 +197,25 @@ def access_control_modal(request, product_uuid):
             item = get_object_or_404(Folder, uuid=unsigned_item_id)
             for partner in selected_partners:
                 grant_folder_or_document_access(user_company_profile, partner, product, folder=item)
+
+                log_user_activity(
+                    user=request.user,
+                    action=f"Granted access to folder '{item.name}' for partner '{partner.name}'",
+                    activity_type="ACCESS_PERMISSION_GRANTED",
+                    item_name= "Product: " + product.product_name
+                )
         elif item_type == 'document':
             item = get_object_or_404(Document, uuid=unsigned_item_id)
             for partner in selected_partners:
                 grant_folder_or_document_access(user_company_profile, partner, product, document=item)
+
+                log_user_activity(
+                    user=request.user,
+                    action=f"Granted access to document '{item.name}' for partner '{partner.name}'",
+                    activity_type="ACCESS_PERMISSION_GRANTED",
+                    item_name= "Product: " + product.product_name
+                )
+
         else:
             return Response({'error': 'Invalid item type'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -281,8 +294,7 @@ def get_partners_without_access(request, product_uuid, item_uuid, item_type):
 
 
 
-from django.db.models import Prefetch
-from django.http import JsonResponse
+
 
 @login_required
 def get_partners_with_access_json(request, item_uuid=None, item_type=None):
@@ -302,28 +314,30 @@ def get_partners_with_access_json(request, item_uuid=None, item_type=None):
     elif item_type == "document":
         product_condition = Q(product=item.folder.product)
 
+    # Get the user's company profile
+    user_company_profiles = request.user.userprofile.company_profiles.all()
+
     permissions = AccessPermission.objects.filter(
         Q(**{item_type: item}) | product_condition & Q(folder__isnull=True, document__isnull=True)
-    ).distinct().select_related('partner2').prefetch_related(
-        Prefetch('partner2__userprofile__company_profiles', to_attr='fetched_company_profiles')
-    )
-
+    ).distinct().select_related('partner2')
     partners_data = []
     for permission in permissions:
-        user_profile = getattr(permission.partner2, 'userprofile', None)
-        if user_profile:
-            company_profile = user_profile.fetched_company_profiles[0] if user_profile.fetched_company_profiles else None
+        partner = permission.partner2
+
+        # Determine which partner (1 or 2) is associated with the user
+        if partner in user_company_profiles:
+            real_partner = permission.partner1
         else:
-            company_profile = None
+            real_partner = partner
 
         partners_data.append({
-            'partner2_id': signer.sign(str(permission.partner2.id)),
-            'company_name': getattr(company_profile, 'name', 'N/A'),
-            'company_role': getattr(company_profile, 'role', 'N/A') if company_profile and company_profile.role else 'N/A',
+            'partner_id': signer.sign(str(real_partner.uuid)),
+            'company_name': real_partner.name,
+            'company_role': real_partner.role.capitalize() if real_partner.role else 'N/A',
             'access_detail': 'Full Access'
         })
-
     return JsonResponse(partners_data, safe=False)
+
 
 
 
@@ -365,8 +379,17 @@ def remove_access(request, product_id, partner_id):
         if product.user != request.user:
             return JsonResponse({'success': False, 'error': 'Unauthorized'}, status=403)
         
+        partner = get_object_or_404(CompanyProfile, pk=partner_id)
+
         AccessPermission.objects.filter(product=product, partner2_id=partner_id).delete()
         
+        log_user_activity(
+            user=request.user,
+            action=f"Removed access for partner '{partner.name}'",
+            activity_type="ACCESS_PERMISSION_REVOKED",
+            item_name= "Product: " + product.product_name
+        )
+
         return JsonResponse({'success': True})
     return JsonResponse({'success': False, 'error': 'Unauthorized'}, status=404)
 
@@ -388,10 +411,15 @@ def remove_specific_access(request, product_uuid, entity_type, entity_uuid):
 
     # Parse the partner UUID from the request body and unsign it
     try:
-        partner_id = json.loads(request.body).get('partner_id')
+        data = json.loads(request.body)
+        partner_id = data.get('partner_id')
+        if not partner_id:
+            raise ValueError("Partner ID is required")
+
         unsigned_partner_id = signer.unsign(partner_id)
-    except (json.JSONDecodeError, BadSignature):
-        return JsonResponse({'success': False, 'error': 'Invalid partner ID'}, status=400)
+        partner = get_object_or_404(CompanyProfile, uuid=unsigned_partner_id)
+    except (json.JSONDecodeError, BadSignature, ValueError) as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
     # Determine the model based on the entity type and get the entity
     entity_model = Document if entity_type == "document" else Folder
@@ -415,14 +443,29 @@ def remove_specific_access(request, product_uuid, entity_type, entity_uuid):
 
     if entity_type == "folder":
         remove_access_recursively(entity)
+        # Log the activity
+        log_user_activity(
+            user=request.user,
+            action=f"Removed access to folder '{entity.name}' for partner '{partner.name}'",
+            activity_type="ACCESS_PERMISSION_REVOKED",
+            item_name=f"Product: {product.product_name}"
+        )
     elif entity_type == "document":
         AccessPermission.objects.filter(
             product=product, partner2_id=unsigned_partner_id, document=entity
         ).delete()
+        # Log the activity
+        log_user_activity(
+            user=request.user,
+            action=f"Removed access to document '{entity.name}' for partner '{partner.name}'",
+            activity_type="ACCESS_PERMISSION_REVOKED",
+            item_name=f"Product: {product.product_name}"
+        )
     else:
         return JsonResponse({'success': False, 'error': 'Invalid entity type'}, status=400)
 
     return JsonResponse({'success': True})
+
 
 
 

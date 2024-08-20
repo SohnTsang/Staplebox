@@ -535,10 +535,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 modal.style.display = 'block';
             });
-            // Close the modal when clicking the cancel button or outside the modal
+            // Close the modal when clicking the cancel button 
             document.querySelectorAll('.cancel-btn, .modal').forEach(element => {
                 element.addEventListener('click', function(event) {
-                if (event.target.classList.contains('cancel-btn') || event.target.classList.contains('modal')) {
+                if (event.target.classList.contains('cancel-btn')) {
                     document.getElementById('accessControlModal').style.display = 'none';
                 }
             });
@@ -768,34 +768,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function updateUploadButtonState() {
         uploadBtn.disabled = invalidFileCount > 0 || validFilesMap.size === 0;
-    }
-
-    function formatFileSize(sizeInBytes) {
-        if (sizeInBytes < 1024) return "1 KB";
-        let sizeInKb = sizeInBytes / 1024.0;
-        const units = ['KB', 'MB', 'GB', 'TB', 'PB'];
-        for (let unit of units) {
-            if (sizeInKb < 1024.0) return `${sizeInKb.toFixed(1)} ${unit}`;
-            sizeInKb /= 1024.0;
-        }
-        return `${sizeInKb.toFixed(1)} PB`;
-    }
-
-    function getFileTypeIcon(fileName) {
-        const extension = fileName.split('.').pop().toLowerCase();
-        const iconMap = {
-            'png': '{% static "images/table_icon/png.png" %}',
-            'csv': '{% static "images/table_icon/csv.png" %}',
-            'zip': '{% static "images/table_icon/zip.png" %}',
-            'jpg': '{% static "images/table_icon/jpg.png" %}',
-            'pdf': '{% static "images/table_icon/pdf.png" %}',
-            'doc': '{% static "images/table_icon/doc.png" %}',
-            'xls': '{% static "images/table_icon/xls.png" %}',
-            'ppt': '{% static "images/table_icon/ppt.png" %}',
-            'txt': '{% static "images/table_icon/txt.png" %}',
-            'default': '{% static "images/table_icon/file.png" %}'
-        };
-        return iconMap[extension] || iconMap['default'];
     }
 
     function handleFiles(files) {

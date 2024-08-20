@@ -39,13 +39,12 @@
                         <th>Partner Name</th>
                         <th>Export Date</th>
                         <th>Document</th>
-                        <th>View</th>
                         <th>Delete</th>
                     </tr>
                 </thead>
                 <tbody id="exportTableBody">
                     {% for partner in all_partners %}
-                    <tr data-export-id="{{ partner.export_uuid }}"> <!-- Add the export ID here -->
+                    <tr data-href="{% url 'exports:export_detail' export_uuid=partner.export_id %}" data-export-id="{{ partner.export_id }}" class="clickable-td"> <!-- Add the export ID here -->
                         <td><input type="checkbox"></td>
                         <td>{{ partner.reference_number }}</td>
                         <td>{{ partner.partner_name }}</td>
@@ -55,16 +54,11 @@
                                 {{ partner.document_count }}
                             </div>
                         </td> <!-- Display the document count -->
-                        <td>
-                            <a href="{% url 'exports:export_detail' export_uuid=partner.export_id %}">
-                                <img src="{% static 'images/table_icon/visibility_24dp_FILL0_wght400_GRAD0_opsz24.png' %}" alt="View" class="icon-view">
-                            </a>
-                        </td>
                         <td><img src="{% static 'images/table_icon/delete_24dp_FILL0_wght400_GRAD0_opsz24.png' %}" alt="Delete" class="icon-delete"></td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="8">No completed exports found.</td>
+                        <td colspan="7">No completed exports found.</td>
                     </tr>
                     {% endfor %}
                 </tbody>

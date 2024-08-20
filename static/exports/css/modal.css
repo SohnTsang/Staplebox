@@ -330,9 +330,9 @@
 
 @media (max-width: 768px) {
     .modal-content {
-        width:75%;
-        max-width: 75%;
-        left: 45%;
+        width:90%;
+        max-width: 90%;
+        left: 50%;
     }
 
     .tab {

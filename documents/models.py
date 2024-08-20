@@ -11,16 +11,89 @@ import logging
 from django.core.exceptions import ValidationError
 import uuid
 from django.core.signing import Signer
+import hashlib
 
 signer = Signer()
 
 logger = logging.getLogger(__name__)
+
+def abbreviate(name, length=10):
+    """
+    Abbreviate the name to a maximum length by taking the first 'length' characters.
+    """
+    return name[:length] if name else None
 
 
 def validate_file_size(file):
     max_file_size = 10 * 1024 * 1024  # 10 MB
     if file.size > max_file_size:
         raise ValidationError(f"The file size exceeds the limit of {max_file_size / (1024 * 1024)} MB.")
+
+def document_upload_to(instance, filename):
+    user_profile = instance.uploaded_by.userprofile
+    company = user_profile.company_profiles.first()
+    
+    folder = instance.folder
+    export = folder.exports.first() if folder.exports.exists() else None
+    partner_name = None
+    shared_folder_name = None
+
+    if export:
+        if export.partner.partner1 == company:
+            partner_name = str(export.partner.partner2.uuid)  # Use UUID
+        else:
+            partner_name = str(export.partner.partner1.uuid)  # Use UUID
+
+    partnership = folder.partnerships.first()
+    if partnership and partnership.shared_folder:
+        shared_folder_name = str(partnership.shared_folder.uuid)  # Use UUID
+
+    # Use short names with UUIDs for better readability, exclude None values
+    path_parts = [
+        f"company_{abbreviate(str(company.uuid))}",  # Short name with UUID
+        f"export_{abbreviate(str(export.uuid))}" if export else None,  # Short name with UUID
+        f"partner_{abbreviate(partner_name)}" if partner_name else None,
+        f"product_{abbreviate(str(folder.product.uuid))}" if folder.product else None,  # Short name with UUID
+        f"shared_{abbreviate(shared_folder_name)}" if shared_folder_name else None,
+        timezone.now().strftime('%Y%m%d')
+    ]
+
+    path_parts = [part for part in path_parts if part]  # Exclude None values
+    return os.path.join('docs', *path_parts, filename)
+
+
+def document_version_upload_to(instance, filename):
+    user_profile = instance.uploaded_by.userprofile
+    company = user_profile.company_profiles.first()
+
+    document = instance.document
+    folder = document.folder
+    export = folder.exports.first() if folder.exports.exists() else None
+    partner_name = None
+    shared_folder_name = None
+
+    if export:
+        if export.partner.partner1 == company:
+            partner_name = str(export.partner.partner2.uuid)  # Use UUID
+        else:
+            partner_name = str(export.partner.partner1.uuid)  # Use UUID
+
+    partnership = folder.partnerships.first()
+    if partnership and partnership.shared_folder:
+        shared_folder_name = str(partnership.shared_folder.uuid)  # Use UUID
+
+    # Use short names with UUIDs for better readability, exclude None values
+    path_parts = [
+        f"company_{abbreviate(str(company.uuid))}",  # Short name with UUID
+        f"export_{abbreviate(str(export.uuid))}" if export else None,  # Short name with UUID
+        f"partner_{abbreviate(partner_name)}" if partner_name else None,
+        f"product_{abbreviate(str(folder.product.uuid))}" if folder.product else None,  # Short name with UUID
+        f"shared_{abbreviate(shared_folder_name)}" if shared_folder_name else None,
+        timezone.now().strftime('%Y%m%d')
+    ]
+
+    path_parts = [part for part in path_parts if part]  # Exclude None values
+    return os.path.join('doc_ver', *path_parts, filename)
 
 
 class Document(models.Model):
@@ -30,7 +103,7 @@ class Document(models.Model):
     folder = models.ForeignKey(Folder, on_delete=models.CASCADE, related_name='documents')
     original_filename = models.CharField(max_length=255)
     document_type = models.ForeignKey(DocumentType, on_delete=models.SET_NULL, null=True, blank=True)
-    file = models.FileField(upload_to='documents/%Y/%m/%d/')
+    file = models.FileField(upload_to=document_upload_to, max_length=500)
     version = models.IntegerField(default=1)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
@@ -89,14 +162,22 @@ class Document(models.Model):
         self.version = new_version.version
         self.file_hash = new_hash
         self.save()
+
+    def delete(self, *args, **kwargs):
+        # Delete the associated file from the storage
+        if self.file and default_storage.exists(self.file.name):
+            default_storage.delete(self.file.name)
+        super().delete(*args, **kwargs)
     
-    
+
+
+
 class DocumentVersion(models.Model):
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
      
 
     document = models.ForeignKey(Document, related_name='versions', on_delete=models.CASCADE)
-    file = models.FileField(upload_to='document_versions/%Y/%m/%d/')
+    file = models.FileField(upload_to=document_version_upload_to, max_length=500)
     version = models.IntegerField()
     created_at = models.DateTimeField(default=timezone.now)
     uploaded_at = models.DateTimeField(auto_now=True)
@@ -125,6 +206,12 @@ class DocumentVersion(models.Model):
     def save(self, *args, **kwargs):
          
         super().save(*args, **kwargs)
+    
+    def delete(self, *args, **kwargs):
+        # Delete the associated file from the storage
+        if self.file and default_storage.exists(self.file.name):
+            default_storage.delete(self.file.name)
+        super().delete(*args, **kwargs)
 
 def format_file_size(size_in_bytes):
     """

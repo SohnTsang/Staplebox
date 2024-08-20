@@ -124,8 +124,12 @@ main {
 
 .subheading {
     font-size: 0.9em; /* Smaller font size */
-    margin-top: 3px; /* Small margin for spacing */
+    margin-top: 10px; /* Small margin for spacing */
     color: black; /* Slightly lighter color for the subheading */
+}
+
+.subheading div {
+    margin-bottom: 3px;
 }
 
 
@@ -142,7 +146,7 @@ main {
 .table-container-2, .table-container-3 {
     overflow-x: auto;
     background-color: #ffffff;
-    height: 71vh;
+    height: 70vh;
     position: relative; /* Ensure the table container is positioned relative */
     border-radius: 0 0 5px 5px;
 }
@@ -219,7 +223,7 @@ td.actions{
     color: #4CAF50; /* Default color for .green */
     border: 1px solid #4CAF50; /* Default border color for .green */
     width: 35px;
-    padding: 3px 10px;
+    padding: 2px 8px;
     border-radius: 4px;
     display: inline-block;
     text-align: center; /* Center text within the box */

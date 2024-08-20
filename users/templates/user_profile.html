@@ -1,0 +1,407 @@
+{% extends "base_users.html" %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% load crispy_forms_filters %}
+
+{% block title %}User Profile{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" type="text/css" href="{% static 'exports/css/style.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'exports/css/modal.css' %}">
+
+<style>
+
+*,
+*:before,
+*:after {
+    box-sizing: border-box;
+}
+.profile-container {
+    max-width: 768px;
+    margin: 0 auto;
+    padding: 20px 50px 20px 50px;
+    border-radius: 8px;
+    box-shadow: rgba(9, 30, 66, 0.25) 0px 1px 1px, rgba(9, 30, 66, 0.13) 0px 0px 1px 1px;
+    height: 84vh;
+}
+
+.profile-container h2 {
+    text-align: center;
+    margin-bottom: 0;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #333;
+}
+
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="password"],
+.form-group ul {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #f0f0f0;
+}
+
+
+#old_password, #new_password1, #new_password2 {
+    background-color: white;
+}
+.form-group {
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+.form-group ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+}
+
+.form-group ul li {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+}
+
+.form-group-email {
+    display: flex;
+    flex-direction: column;
+}
+
+.label-btn-container {
+    display: flex;
+    align-items: center; /* Vertically align label and button */
+    justify-content: space-between;
+}
+
+.label-btn-container label {
+    margin-right: 10px;
+}
+
+.form-group-email input[type="email"] {
+    width: 100%;
+    margin-top: 10px; /* Space between label/buttons and the input field */
+}
+
+.edit-mode input[type="text"],
+.edit-mode input[type="email"],
+.edit-mode input[type="password"] {
+    background-color: white !important;
+    cursor: text;
+}
+
+.edit-mode input:focus, .edit-mode textarea:focus, .edit-mode select:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+    outline: none;
+}
+
+.edit-btn {
+    text-align: right;
+    height:auto;
+}
+
+.edit-btn .btn {
+    width: auto;
+    display: inline-block;
+}
+
+#edit-email-btn, #save-email-btn {
+    background-color: white;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #39739d;
+    border: none; /* Remove default border */
+    font-size: 14px; /* Font size */
+    font-weight: 600; /* Font weight for a slightly bolder text */
+    text-transform: uppercase; /* Uppercase text for a modern look */
+    cursor: pointer; /* Pointer cursor on hover */
+    border-bottom: 1px solid transparent; /* Invisible border for smooth transition */
+    padding:0;
+    gap:2px;
+}
+
+.load-more-btn {
+    background-color: white;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #39739d;
+    border: none; /* Remove default border */
+    font-size: 14px; /* Font size */
+    font-weight: 600; /* Font weight for a slightly bolder text */
+    cursor: pointer; /* Pointer cursor on hover */
+    padding:0;
+    text-decoration: none;
+}
+
+
+#edit-email-btn:hover {
+    border-bottom: 1px solid #39739d; /* Visible border on hover to simulate underline */
+}
+
+.form-group-password .label-btn-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.form-group-password label {
+    flex-grow: 1;
+    margin-right: 10px;
+}
+
+#update-password-btn {
+    background-color: white;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #39739d;
+    border: none; /* Remove default border */
+    font-size: 14px; /* Font size */
+    font-weight: 600; /* Font weight for a slightly bolder text */
+    text-transform: uppercase; /* Uppercase text for a modern look */
+    cursor: pointer; /* Pointer cursor on hover */
+    border-bottom: 1px solid transparent; /* Invisible border for smooth transition */
+    gap:2px;
+    padding:0;
+}
+
+
+#update-password-btn:hover {
+    border-bottom: 1px solid #39739d; /* Visible border on hover to simulate underline */
+}
+
+.button-icon {
+    margin-left: 8px; /* Space between text and icon */
+    width: 12px; /* Icon width */
+    height: 12px; /* Icon height */
+    vertical-align: middle; /* Align icon vertically with text */
+}
+
+.text-center {
+    text-align: center;
+    text-align: -webkit-center;
+}
+
+.company-profile:not(.button-8) {
+    color: #39739d; /* Primary color for links */
+    text-decoration: none; /* Remove underline by default */
+    font-weight: 500; /* Slightly bolder text */
+    border-bottom: 2px solid transparent; /* Create space for the underline */
+}
+
+h3 {
+    text-decoration: underline;
+}
+
+</style>
+{% endblock %}
+
+{% block content %}
+
+{% if messages %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        {% for message in messages %}
+            showMessage('{{ message }}', '{{ message.tags }}');
+        {% endfor %}
+    });
+</script>
+{% endif %}
+
+<div class="profile-container">
+    <h2>User Profile</h2>
+
+    <form id="profile-form" method="POST">
+        {% csrf_token %}
+        <!-- User Information Section -->
+        <div class="section">
+            <h3>User Information</h3>
+            <div class="section-content">
+                <!-- Email Edit Section -->
+                <div class="form-group form-group-email">
+                    <div class="label-btn-container">
+                        <label for="email" style="margin-bottom:0;">Email</label>
+                        <button type="button" id="edit-email-btn" class="edit-btn">Edit Email<img src="{% static 'images/button/pencil-01.png' %}" alt="" class="text-center" style="align-self:center;" width="12" height="12"></button>
+                        <button type="button" id="save-email-btn" class="add-btn" style="display:none; font-weight: 600; padding:1px 8px 1px 8px;">Save</button>
+                    </div>
+                    <input type="email" id="email" name="email" value="{{ request.user.email }}" style="margin-top:5px; border-color:#ccc;" readonly>
+                </div>
+                
+                <!-- Current Password Section -->
+                <div class="form-group form-group-password">
+                    <div class="label-btn-container">
+                        <label for="current-password" style="margin-bottom:0;">Current Password</label>
+                        <button type="button" id="update-password-btn" class="edit-btn">Update Password<img src="{% static 'images/button/update_password.png' %}" alt="Lock Icon" class="text-center" style="align-self:center;" width="12" height="12"></button>
+                    </div>
+                    <input type="password" id="current-password" name="current-password" value="********" style="margin-top:5px; border-color:#ccc;" readonly>
+                </div>
+
+                <!-- Company Profiles Section -->
+                <div class="form-group">
+                    <label for="company_profiles">Company Profiles</label>
+                    <ul>
+                        {% for company in user_profile.company_profiles %}
+                            <li>{{ company.name }} - {{ company.role }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Account Details Section -->
+        <div class="section">
+            <h3>Account Details</h3>
+            <div class="section-content">
+                <div class="form-group">
+                    <label for="created_at">Created At</label>
+                    <input type="text" id="created_at" name="created_at" value="{{ created_at_formatted }}" style="border-color:#ccc;" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="updated_at">Last Updated</label>
+                    <input type="text" id="updated_at" name="updated_at" value="{{ updated_at_formatted }}" style="border-color:#ccc;" readonly>
+                </div>
+            </div>
+        </div>
+    </form>
+    <!-- Recent Activities Section -->
+    <div class="section">
+        <h3>Recent Activities</h3>
+        <div class="section-content">
+            <a href="{% url 'users:activity_log' %}" class="load-more-btn">View Full Activity Log</a>
+        </div>
+    </div>
+</div>
+
+{% include "modal/password_update_modal.html" %}
+
+{% block javascript %}
+
+
+<script>
+    
+
+document.getElementById('edit-email-btn').addEventListener('click', function() {
+    document.getElementById('email-form').style.display = 'block';
+    this.style.display = 'none';
+});
+
+document.getElementById('update-password-btn').addEventListener('click', function() {
+    document.getElementById('passwordUpdateModal').style.display = 'block';
+});
+
+
+document.getElementById('password-update-form').addEventListener('submit', function(event) {
+    event.preventDefault();
+    const formData = new FormData(this);
+
+    // Clear previous errors and reset field styles
+    document.querySelectorAll('.error-message').forEach(el => el.remove());
+    document.querySelectorAll('#password-update-form input').forEach(input => {
+        input.style.borderColor = ''; // Reset border color to default
+    });
+
+    fetch('/users/profile/', {
+        method: 'PUT',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+        },
+        body: formData,
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage(data.message, 'success');
+            document.getElementById('passwordUpdateModal').style.display = 'none';
+        } else {
+            // Show field-specific error messages
+            if (data.errors) {
+                Object.keys(data.errors).forEach(fieldId => {
+                    const fieldErrors = data.errors[fieldId];
+                    fieldErrors.forEach(errorMessage => {
+                        displayFieldError(fieldId, errorMessage);
+                    });
+                });
+            }
+        }
+    })
+    .catch(error => {
+        showMessage('Error updating password: Unknown error', 'error');
+        console.error('Error:', error);
+    });
+});
+
+function displayFieldError(fieldId, errorMessage) {
+    const field = document.getElementById(fieldId);
+
+    // Add red border to the input field
+    field.style.borderColor = '#b33b3b';
+    
+    // Create and add the error message
+    const errorElement = document.createElement('div');
+    errorElement.className = 'error-message';
+    errorElement.style.color = '#b33b3b';
+    errorElement.style.marginTop = '5px';
+    errorElement.textContent = errorMessage;
+    field.parentNode.appendChild(errorElement);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const editEmailBtn = document.getElementById('edit-email-btn');
+    const saveEmailBtn = document.getElementById('save-email-btn');
+    const emailInput = document.getElementById('email');
+    const emailFormGroup = emailInput.parentElement;
+
+    editEmailBtn.addEventListener('click', function() {
+        emailInput.readOnly = false;
+        emailFormGroup.classList.add('edit-mode');
+        saveEmailBtn.style.display = 'inline-block';
+        editEmailBtn.style.display = 'none';
+    });
+
+    saveEmailBtn.addEventListener('click', function() {
+        const formData = new FormData();
+        formData.append('email', emailInput.value);
+
+        fetch('/users/profile/', {
+            method: 'PUT',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: formData,
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showMessage(data.message, 'success');
+                emailInput.readOnly = true;
+                emailFormGroup.classList.remove('edit-mode');
+                saveEmailBtn.style.display = 'none';
+                editEmailBtn.style.display = 'inline-block';
+            } else {
+                // Extract the first error message from the response
+                const errorMessage = Object.values(data.errors).flat()[0];
+                showMessage('Error updating email: ' + errorMessage, 'error');
+            }
+        })
+        .catch(error => {
+            showMessage('Error updating email: Unknown error', 'error');
+            console.error('Error:', error);
+        });
+    });
+});
+</script>
+{% endblock %}
+{% endblock %}

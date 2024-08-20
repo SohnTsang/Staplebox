@@ -15,7 +15,7 @@ class CompanyProfileForm(forms.ModelForm):
             'linkedin', 'facebook', 'twitter', 'profile_image'
         ]
         widgets = {
-            'description': forms.Textarea(attrs={'rows': 3, 'maxlength': '2000'}),
+            'description': forms.Textarea(attrs={'rows': 6, 'maxlength': '1000'}),
             'address': forms.Textarea(attrs={'rows': 2}),
             'role': forms.Select(attrs={'style': 'width: 100%;'}),
         }

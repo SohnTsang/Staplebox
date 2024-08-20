@@ -91,8 +91,6 @@
     outline: none;
 }
 
-
-
 .company-contact-info {
     display: flex;
     flex-direction: column;
@@ -428,7 +426,7 @@
 	function updateCharCount() {
 		var text = descriptionInput.value;
 		var charCount = text.length;
-		charCountDisplay.textContent = charCount + "/2000"; // Update the display, assuming 1000 is the max char count
+		charCountDisplay.textContent = charCount + "/1000"; 
 		if(charCount > 1000) {
 			charCountDisplay.style.color = 'red';
 		} else {
@@ -469,19 +467,31 @@
 </script>
 
 <script>
+    // Initialize intl-tel-input
     var input = document.querySelector("#id_phone_number");
     var iti = intlTelInput(input, {
-        utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/utils.js"
+        utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/utils.js",
+        autoPlaceholder: "aggressive",
+        separateDialCode: true, // Show the country code next to the flag, not in the input field
+        initialCountry: "auto", // Automatically detect the user's initial country
+        geoIpLookup: function(callback) {
+            fetch('https://ipinfo.io?token=YOUR_TOKEN_HERE', { headers: { 'Accept': 'application/json' }})
+                .then(response => response.json())
+                .then(data => {
+                    callback(data.country ? data.country : "us");
+                })
+                .catch(() => callback("us")); // Fallback to the United States
+        }
     });
 
+    // Prevent the form from altering the input format
     input.form.addEventListener('submit', function(event) {
-        var phoneNumber = input.value.trim(); // Trim whitespace from the input
+        var dialCode = iti.getSelectedCountryData().dialCode; // Get the country dial code
+        var phoneNumber = input.value.trim(); // Get the current value of the input field
+
         if (phoneNumber !== '') {
-            var countryCode = iti.getSelectedCountryData().dialCode;
-            // Ensure there's a space between the country code and the phone number
-            var fullNumber = "+" + countryCode + " " + phoneNumber;
-            // Assuming you have a hidden field for the full phone number
-            document.querySelector("#id_phone_number").value = fullNumber;
+            var fullNumber = "+" + dialCode + " " + phoneNumber; // Format with space
+            input.value = fullNumber; // Set the full number with space as the input value
         }
     });
 </script>

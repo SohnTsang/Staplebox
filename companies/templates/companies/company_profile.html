@@ -35,39 +35,6 @@ table {
     box-sizing: border-box; /* Include padding in height calculation */
 }
 
-/* Base link styles within #profile-section, excluding .button-8 */
-.profile-section a:not(.button-8) {
-    color: #39739d; /* Primary color for links */
-    text-decoration: none; /* Remove underline by default */
-    font-weight: 500; /* Slightly bolder text */
-    transition: color 0.3s ease, border-bottom-color 0.3s ease; /* Smooth transition for color changes */
-    border-bottom: 2px solid transparent; /* Create space for the underline */
-}
-
-.profile-section a:not(.button-8):hover, 
-.profile-section a:not(.button-8):focus {
-    color: #0056b3; /* Darker shade for hover/focus */
-    border-bottom-color: #0056b3; /* Underline with hover/focus color */
-    text-decoration: none; /* Keep underline consistent */
-    outline: none; /* Remove focus outline */
-}
-
-.profile-section a:not(.button-8):active {
-    color: #003865; /* Even darker shade for active state */
-    border-bottom-color: #003865; /* Underline with active color */
-}
-
-.profile-section a:not(.button-8):visited {
-    color: #6c757d; /* Different color for visited links */
-    border-bottom-color: #6c757d; /* Underline with visited color */
-}
-
-/* Adjust for accessibility */
-.profile-section a:not(.button-8):focus-visible {
-    outline: 2px dashed #0056b3; /* Visible outline for keyboard navigation */
-    outline-offset: 4px; /* Space between the outline and the link */
-}
-
 /* Adjust the widths for item names in the active partnerships section */
 #active-partnerships .item-name {
     flex: 1 1 60%; /* Increase width allocation to 60% */
@@ -79,6 +46,11 @@ table {
     max-width: 40%; /* Ensure it does not exceed 40% of the container */
 }
 
+section p:not(:first-child) {
+    margin-bottom: 0px;
+    margin-top: 0px;
+}
+
 a {
     position: relative; /* Make sure the tooltip is positioned relative to the anchor */
 }
@@ -88,6 +60,17 @@ a {
 {% endblock %}
 
 {% block content %}
+
+{% if messages %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        {% for message in messages %}
+            showMessage('{{ message }}', '{{ message.tags }}');
+        {% endfor %}
+    });
+</script>
+{% endif %}
+
 <div class="profile-container">
     {% if not company_profile %}
     <div class="alert alert-warning">
@@ -97,7 +80,7 @@ a {
     </div>
     {% endif %}
     <!-- Upper Section -->
-    <div class="profile-section">
+    <div class="profile-section upper">
         <div class="profile-left" style="max-width:33%;">
             <div class="profile-image-container">
                 {% if company_profile.profile_image %}
@@ -119,13 +102,15 @@ a {
                     <button id="openTokenModal" class="btn">Enter Token</button>
                 {% elif own_profile %}
                     <button id="loadTokenBtn" class="btn">Show Invite Token</button>
+                    <button id="showLinkedUsersBtn" class="btn">Show Linked Users</button> <!-- New Button -->
+
                 {% endif %}
             </div>
 
             <div class="social-icons">
                 <span class="social-icon">
                     {% if company_profile.linkedin %}
-                        <a href="{{ company_profile.linkedin }}" target="_blank">
+                        <a href="{{ company_profile.linkedin }}" style="border:none;" target="_blank">
                             <img src="{% static 'images/social_media_icon/LinkedIn Color Original.png' %}" alt="LinkedIn">
                         </a>
                     {% else %}
@@ -134,7 +119,7 @@ a {
                 </span>
                 <span class="social-icon">
                     {% if company_profile.facebook %}
-                        <a href="{{ company_profile.facebook }}" target="_blank">
+                        <a href="{{ company_profile.facebook }}" style="border:none;" target="_blank">
                             <img src="{% static 'images/social_media_icon/Facebook Color Original.png' %}" alt="Facebook">
                         </a>
                     {% else %}
@@ -143,7 +128,7 @@ a {
                 </span>
                 <span class="social-icon">
                     {% if company_profile.twitter %}
-                        <a href="{{ company_profile.twitter }}" target="_blank">
+                        <a href="{{ company_profile.twitter }}" style="border:none;" target="_blank">
                             <img src="{% static 'images/social_media_icon/X Color Original.png' %}" alt="X">
                         </a>
                     {% else %}
@@ -160,7 +145,7 @@ a {
 
             <section class="about-us-section">
                 <h5 style="text-decoration: underline;">About Us</h5>
-                <p>{{ company_profile.description|default:'No description available.' }}</p>
+                <p>{{ company_profile.description|linebreaks|default:'No description available.' }}</p>
             </section>
 
             <div class="company-contact-info">
@@ -308,7 +293,8 @@ a {
                                 <td>{{ document.comments }}</td>
                                 <td>{{ document.uploaded_by }}</td>
                                 <td>
-                                    {% if request.user == document.uploaded_by %}
+                                    {% if request.user.userprofile.company_profiles.first == document.uploaded_by.userprofile.company_profiles.first %}
+                                    
                                     <form class="delete-form" data-document-id="{{ document.uuid }}">
                                         {% csrf_token %}
                                         <button type="submit" class="remove-btn">Delete</button>
@@ -332,8 +318,9 @@ a {
 {% if not company_profile %}
     {% include "modal/token_input_modal.html" %}
 {% endif %}
-{% if  company_profile %}
+{% if company_profile and own_profile %}
     {% include "modal/token_modal.html" %}
+    {% include "modal/linked_users_modal.html" %}
 {% endif %}
 
 {% block javascript %}
@@ -359,6 +346,7 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 });
+
 
 
 //function to add company profile by entering token
@@ -400,6 +388,65 @@ document.addEventListener('DOMContentLoaded', function() {
                 location.reload();  // Optionally reload the page to reflect changes
             }).catch(error => {
                 showMessage(error.message, 'error'); // Handle errors
+            });
+        });
+    }
+});
+
+
+//function to show linked users
+
+document.addEventListener('DOMContentLoaded', function() {
+    const showLinkedUsersBtn = document.getElementById('showLinkedUsersBtn');
+    const linkedUsersModal = document.getElementById('linkedUsersModal');
+    const linkedUsersList = document.getElementById('linkedUsersList');
+    const loadingOverlayUsers = document.getElementById('loadingOverlayUsers');
+
+    if (showLinkedUsersBtn) {
+        showLinkedUsersBtn.addEventListener('click', function() {
+            linkedUsersModal.style.display = 'block';
+            loadingOverlayUsers.style.display = 'flex';
+
+            const signedCompanyUuid = "{{ signed_company_uuid }}";
+
+            fetch(`/companies/linked_users/${signedCompanyUuid}/`, {
+                method: 'GET',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                loadingOverlayUsers.style.display = 'none';
+                linkedUsersList.innerHTML = ''; // Clear the list first
+
+                if (data.users && data.users.length > 0) {
+                    let maxUsernameLength = 0;
+                    data.users.forEach(user => {
+                        if (user.name.length > maxUsernameLength) {
+                            maxUsernameLength = user.name.length;
+                        }
+                    });
+
+                    // Create list items
+                    data.users.forEach(user => {
+                        const li = document.createElement('li');
+                        li.className = 'linked-user-item';
+                        li.innerHTML = `<span class="user-name" style="width: ${maxUsernameLength}ch;">${user.name}</span> <span class="separator">-</span> <span class="user-email">${user.email}</span>`;
+                        linkedUsersList.appendChild(li);
+                    });
+                } else {
+                    const li = document.createElement('li');
+                    li.textContent = 'No linked users found.';
+                    linkedUsersList.appendChild(li);
+                }
+            })
+            .catch(error => {
+                loadingOverlayUsers.style.display = 'none';
+                showMessage('An error occurred while fetching linked users.');
+                console.error('Error:', error);
+                linkedUsersModal.style.display = 'none';
             });
         });
     }
@@ -479,11 +526,14 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function (){
         document.querySelectorAll('.delete-form').forEach(function(form) {
-            form.addEventListener('submit', function(event) {
+            form.addEventListener('submit', async function(event) {
                 event.preventDefault(); // Prevent the default form submission
-                if (confirm('Are you sure you want to delete this document?')) {
+
+                const confirmation = await showRemoveModal('Are you sure you want to delete the document?');
+
+                if (confirmation) {                    
                     const documentId = form.getAttribute('data-document-id');
                     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
@@ -526,34 +576,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function updateUploadButtonState() {
         uploadBtn.disabled = invalidFileCount > 0 || validFilesMap.size === 0;
-    }
-
-    function formatFileSize(sizeInBytes) {
-        if (sizeInBytes < 1024) return "1 KB";
-        let sizeInKb = sizeInBytes / 1024.0;
-        const units = ['KB', 'MB', 'GB', 'TB', 'PB'];
-        for (let unit of units) {
-            if (sizeInKb < 1024.0) return `${sizeInKb.toFixed(1)} ${unit}`;
-            sizeInKb /= 1024.0;
-        }
-        return `${sizeInKb.toFixed(1)} PB`;
-    }
-
-    function getFileTypeIcon(fileName) {
-        const extension = fileName.split('.').pop().toLowerCase();
-        const iconMap = {
-            'png': '{% static "images/table_icon/png.png" %}',
-            'csv': '{% static "images/table_icon/csv.png" %}',
-            'zip': '{% static "images/table_icon/zip.png" %}',
-            'jpg': '{% static "images/table_icon/jpg.png" %}',
-            'pdf': '{% static "images/table_icon/pdf.png" %}',
-            'doc': '{% static "images/table_icon/doc.png" %}',
-            'xls': '{% static "images/table_icon/xls.png" %}',
-            'ppt': '{% static "images/table_icon/ppt.png" %}',
-            'txt': '{% static "images/table_icon/txt.png" %}',
-            'default': '{% static "images/table_icon/file.png" %}'
-        };
-        return iconMap[extension] || iconMap['default'];
     }
 
     function handleFiles(files) {

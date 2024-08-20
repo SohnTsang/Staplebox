@@ -37,6 +37,7 @@ from django.views.decorators.cache import never_cache
 from django.core.signing import Signer, BadSignature
 from django.http import Http404
 from companies.models import CompanyProfile
+from users.utils import log_user_activity
 
 signer = Signer()
 
@@ -372,6 +373,12 @@ class CreateExportView(APIView):
                 export = serializer.save(created_by=request.user, partner=partnership)
                 created_exports.append(export)
                 logger.info(f"Export created with ID {export.uuid}")
+
+                log_user_activity(
+                    user=request.user,
+                    action=f"Created export '{export.reference_number}'",
+                    activity_type="EXPORT_CREATION"
+                )
             else:
                 logger.error(f"Errors: {serializer.errors}")
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -425,7 +432,12 @@ class EditExportView(generics.UpdateAPIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def perform_update(self, serializer):
-        serializer.save()
+        instance = serializer.save()
+        log_user_activity(
+            user=self.request.user,
+            action=f"Updated export '{instance.reference_number}'",
+            activity_type="EXPORT_UPDATE"
+        )
         logger.debug("Export updated successfully.")
 
 
@@ -453,6 +465,14 @@ class CompleteExportView(APIView):
                 return Response({'error': 'Invalid action.'}, status=status.HTTP_400_BAD_REQUEST)
             
             export.save()
+
+            # Log the activity
+            action_description = 'marked as completed' if export.completed else 'reopened'
+            log_user_activity(
+                user=request.user,
+                action=f"Export '{export.reference_number}' {action_description}",
+                activity_type="EXPORT_UPDATE"
+            )
             
             return Response({'message': message}, status=status.HTTP_200_OK)
         
@@ -556,6 +576,15 @@ class AddProductsToExportView(APIView):
             
             # Add products to the export
             export.products.add(*products)
+
+            product_names = ', '.join([product.name for product in products])
+
+            log_user_activity(
+                user=request.user,
+                action=f"Added products to export '{export.reference_number}': {product_names}",
+                activity_type="EXPORT_UPDATE"
+            )
+
             return Response({'message': 'Products added to the export.'})
         
         except BadSignature:
@@ -616,6 +645,12 @@ class UploadDocumentView(APIView):
                     document = doc_serializer.save()
                     export.documents.add(document)
                     logger.info(f"Added document with ID {document.uuid} to export {export.uuid}")
+                    # Inside the loop where documents are uploaded and saved
+                    log_user_activity(
+                        user=request.user,
+                        action=f"Uploaded document '{document.original_filename}' to export '{export.reference_number}'",
+                        activity_type="DOCUMENT_UPLOAD"
+                    )
                 else:
                     logger.error(f"Document serializer errors: {doc_serializer.errors}")
                     return Response(doc_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -669,6 +704,13 @@ class DeleteExport(APIView):
                 export.delete()
                 logger.info(f"Deleted export with UUID: {unsigned_export_uuid}")
                 deleted_exports.append(unsigned_export_uuid)
+
+                # After successful deletion of an export
+                log_user_activity(
+                    user=request.user,
+                    action=f"Deleted export '{export.reference_number}'",
+                    activity_type="EXPORT_UPDATE"
+                )
             except BadSignature:
                 logger.error(f"BadSignature: Invalid export UUID: {export_uuid}")
             except Export.DoesNotExist:
@@ -732,6 +774,24 @@ class DownloadDocumentView(View):
         
         response = HttpResponse(document.file, content_type='application/octet-stream')
         response['Content-Disposition'] = f'attachment; filename={document.original_filename}'
+
+        # Retrieve the related export(s)
+        related_exports = document.exports.all()
+        
+        # If there are related exports, log the activity for the first one (or modify logic as needed)
+        if related_exports.exists():
+            export = related_exports.first()  # You can choose to log all or just the first one
+            log_user_activity(
+                user=self.request.user,
+                action=f"Downloaded document '{document.original_filename}' from export '{export.reference_number}'",
+                activity_type="DOCUMENT_DOWNLOAD"
+            )
+        else:
+            log_user_activity(
+                user=self.request.user,
+                action=f"Downloaded document '{document.original_filename}'",
+                activity_type="DOCUMENT_DOWNLOAD"
+            )
         return response
     
     def download_multiple_documents(self, documents):
@@ -751,6 +811,12 @@ class DownloadDocumentView(View):
         zip_buffer.seek(0)
         response = HttpResponse(zip_buffer, content_type='application/zip')
         response['Content-Disposition'] = 'attachment; filename=documents.zip'
+        document_names = ', '.join([doc.original_filename for doc in documents])
+        log_user_activity(
+            user=self.request.user,
+            action=f"Downloaded multiple documents: {document_names}",
+            activity_type="DOCUMENT_DOWNLOAD"
+        )
         return response
     
 
@@ -782,6 +848,12 @@ class DeleteDocumentsView(APIView):
 
             documents_deleted = documents.count()
             documents.delete()
+
+            log_user_activity(
+                user=request.user,
+                action=f"Deleted {documents_deleted} document(s) from export '{export.reference_number}'",
+                activity_type="DOCUMENT_UPDATE"
+            )
 
             logger.info(f"Deleted {documents_deleted} document(s) for export ID {unsigned_export_uuid}")
             return Response({'message': f'{documents_deleted} document(s) deleted'}, status=status.HTTP_200_OK)
@@ -823,6 +895,14 @@ class RemoveProductsFromExportView(APIView):
 
             products_to_remove = products.count()
             export.products.remove(*products)  # Use remove() for many-to-many relationships
+
+            product_names = ', '.join([product.name for product in products])
+
+            log_user_activity(
+                user=request.user,
+                action=f"Removed products from export '{export.reference_number}': {product_names}",
+                activity_type="EXPORT_UPDATE"
+            )
 
             logger.info(f"Removed {products_to_remove} product(s) from export ID {unsigned_export_uuid}")
             return Response({'message': f'Removed {products_to_remove} product(s) from export'}, status=status.HTTP_200_OK)

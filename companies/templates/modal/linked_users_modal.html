@@ -1,0 +1,41 @@
+
+<style>
+    /* Style the linked user items */
+    .linked-user-item {
+        display: flex;
+        align-items: center;
+        padding: 5px 0; /* Add some padding between rows */
+    }
+
+    /* Separator styling */
+    .linked-user-item .separator {
+        margin: 0 10px; /* Space between name and email */
+    }
+
+    /* Email takes up the remaining space */
+    .linked-user-item .user-email {
+        flex: 1; /* Allow email to take the remaining space */
+        overflow: hidden; /* Prevent overflow */
+        text-overflow: ellipsis; /* Add ellipsis for overflow */
+        white-space: nowrap; /* Prevent text wrapping */
+    }
+</style>
+<!-- linked_users_modal.html -->
+<div id="linkedUsersModal" class="modal" style="display: none;">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" style="margin: 0; font-size: 1.25rem; font-weight: 400; border:0;">{{ company_profile.name }} Linked Users</h5>
+            </div>
+            <div class="modal-body">
+                <div id="loadingOverlayUsers" class="loading-overlay">
+                    <div class="loading-spinner"></div>
+                </div>
+                <ul id="linkedUsersList" style="list-style-type: none; padding-left: 10px; margin: 0;"></ul> <!-- List for user info -->
+            </div>
+            <div class="modal-footer" style="border:0">
+                <button type="button" class="cancel-btn">Close</button>
+            </div>
+        </div>
+    </div>
+</div>

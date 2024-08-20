@@ -61,7 +61,7 @@
             }
         };
 
-        deleteSelectedExports.addEventListener('click', function () {
+        deleteSelectedExports.addEventListener('click', async function () {
             if (bulkActionButton.disabled) {
                 return; // Prevent action if the button is disabled
             }
@@ -70,7 +70,9 @@
                 .filter(checkbox => checkbox.checked)
                 .map(checkbox => checkbox.closest('tr').getAttribute('data-export-id'));
 
-            if (confirm(`Are you sure you want to delete the selected exports?`)) {
+            const confirmation = await showRemoveModal(`Are you sure you want to delete the selected exports?`);
+
+            if (confirmation) {
                 fetch(`/exports/delete/`, {
                     method: 'DELETE',
                     headers: {
@@ -101,9 +103,12 @@
         }
 
         document.querySelectorAll('.icon-delete').forEach(icon => {
-            icon.addEventListener('click', function () {
+            icon.addEventListener('click', async function () {
                 const exportId = this.closest('tr').getAttribute('data-export-id');
-                if (confirm('Are you sure you want to delete this export?')) {
+
+                const confirmation = await showRemoveModal('Are you sure you want to delete this export?');
+
+                if (confirmation) {
                     fetch(`/exports/delete/`, {
                         method: 'DELETE',
                         headers: {
@@ -223,37 +228,6 @@
     
         function updateUploadButtonState() {
             addBtn.disabled = invalidFileCount > 0;
-        }
-    
-        function formatFileSize(sizeInBytes) {
-            if (sizeInBytes < 1024) return "1 KB";
-            let sizeInKb = sizeInBytes / 1024.0;
-            const units = ['KB', 'MB', 'GB', 'TB', 'PB'];
-            for (let unit of units) {
-                if (sizeInKb < 1024.0) return `${sizeInKb.toFixed(1)} ${unit}`;
-                sizeInKb /= 1024.0;
-            }
-            return `${sizeInKb.toFixed(1)} PB`;
-        }
-    
-        function getFileTypeIcon(fileName) {
-            const extension = fileName.split('.').pop().toLowerCase();
-            const iconMap = {
-                'png': '/static/images/table_icon/png.png',
-                'csv': '/static/images/table_icon/csv.png',
-                'zip': '/static/images/table_icon/zip.png',
-                'jpg': '/static/images/table_icon/jpg.png',
-                'pdf': '/static/images/table_icon/pdf.png',
-                'doc': '/static/images/table_icon/doc.png',
-                'docx': '/static/images/table_icon/doc.png',
-                'xls': '/static/images/table_icon/xls.png',
-                'xlsx': '/static/images/table_icon/xls.png',
-                'xlsm': '/static/images/table_icon/xls.png',
-                'ppt': '/static/images/table_icon/ppt.png',
-                'txt': '/static/images/table_icon/txt.png',
-                'default': '/static/images/table_icon/file.png'
-            };
-            return iconMap[extension] || iconMap['default'];
         }
     
         function loadPartners() {
@@ -423,26 +397,6 @@
                 uploadZone.classList.remove('dragover');
                 handleFiles(e.dataTransfer.files);
             });
-        }
-    
-        function getFileTypeIcon(fileName) {
-            const extension = fileName.split('.').pop().toLowerCase();
-            const iconMap = {
-                'png': '/static/images/table_icon/png.png',
-                'csv': '/static/images/table_icon/csv.png',
-                'zip': '/static/images/table_icon/zip.png',
-                'jpg': '/static/images/table_icon/jpg.png',
-                'pdf': '/static/images/table_icon/pdf.png',
-                'doc': '/static/images/table_icon/doc.png',
-                'docx': '/static/images/table_icon/doc.png',
-                'xls': '/static/images/table_icon/xls.png',
-                'xlsx': '/static/images/table_icon/xls.png',
-                'xlsm': '/static/images/table_icon/xls.png',
-                'ppt': '/static/images/table_icon/ppt.png',
-                'txt': '/static/images/table_icon/txt.png',
-                'default': '/static/images/table_icon/file.png'
-            };
-            return iconMap[extension] || iconMap['default'];
         }
     
         function handleFiles(files) {

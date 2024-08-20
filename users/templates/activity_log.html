@@ -1,0 +1,328 @@
+{% extends "base_users.html" %}
+{% load static %}
+
+{% block title %}Activity Log{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" type="text/css" href="{% static 'exports/css/style.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'exports/css/modal.css' %}">
+
+<style>
+    .activity-log-container {
+        max-width: 1024px;
+        margin: 0 auto;
+        padding: 20px 50px 20px 50px;
+        border-radius: 8px;
+        box-shadow: rgba(9, 30, 66, 0.25) 0px 1px 1px, rgba(9, 30, 66, 0.13) 0px 0px 1px 1px;
+        background-color: #fff;
+        min-height: 80vh; /* Ensures minimum height */
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .filters {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    
+    @media (min-width: 600px) {
+        .filters {
+            flex-direction: row;
+            align-items: center;
+        }
+    }
+    
+    .filter-actions {
+        display: flex;
+        gap: 5px; /* Space between the Filter and Reset buttons */
+    }
+
+    .filters label {
+        font-weight: bold;
+        color: #333;
+        font-size: 13px;
+    }
+    
+    .filters input[type="date"], 
+    .filters input[type="text"] {
+        padding: 5px 10px 5px 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 13px;
+    }
+
+    .filters input[type="date"]:focus, 
+    .filters input[type="text"]:focus {
+        border-color: #39739d;
+        box-shadow: 0 0 5px rgba(57, 115, 157, 0.5);
+        outline: none;
+    }
+
+    .filter-btn {
+        background-color: #2c5777;
+        color: white;
+        border: none;
+        border-radius: 3px;
+        padding: 5px 15px;
+        cursor: pointer;
+        font-size: 14px;
+    }
+
+    .filter-btn:hover {
+        background-color: #2c5b81;
+    }
+    
+    .activity-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        flex-grow: 1; /* Allows the list to take up available space */
+
+    }
+    
+    .activity-list li {
+        padding: 10px 5px;
+        border-bottom: 1px solid #ddd;
+    }
+    
+    .activity-list li:last-child {
+        border-bottom: none;
+    }
+
+    .activity-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 1px solid #ddd;
+        position: relative; /* Positioning to allow for absolute positioning of the button */
+    }
+
+    .activity-item:last-child {
+        border-bottom: none;
+    }
+
+    .activity-item span {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        transition: max-height 0.3s ease;
+    }
+
+    .activity-timestamp {
+        flex-basis: 15%; /* Adjust flex-basis as needed */
+    }
+
+    .activity-action {
+        flex-basis: 55%;
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
+    .activity-type {
+        flex-basis: 25%; /* Adjust flex-basis as needed */
+    }
+
+    .activity-item span {
+        padding-right: 10px; /* Optional spacing between items */
+    }
+
+    .action-content {
+        display: inline-block;
+        max-width: calc(100% - 70px); /* Adjust the max-width to account for the View More button */
+        max-height: 1.2em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .view-more-btn {
+        display: none;
+        background-color: transparent;
+        border: none;
+        color: #2c5777;
+        cursor: pointer;
+        font-size: 12px;
+        margin-left: 5px;
+        text-decoration: underline;
+        position: absolute;
+        right: 0;
+        bottom: 0;
+    }
+
+    .expanded .action-content {
+        white-space: normal;
+        overflow: visible;
+        text-overflow: unset;
+        max-height: none;
+    }
+
+    .expanded .view-more-btn {
+        content: "View Less";
+    }
+
+    .pagination {
+        margin-top: auto;
+        text-align: center;
+    }
+    
+    .pagination a,
+    .pagination span {
+        display: inline-block;
+        margin: 0 5px;
+        padding: 8px 12px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        color: #333;
+        text-decoration: none;
+    }
+
+    .pagination .current {
+        background-color: #2c5777;
+        color: white;
+        border-color: #2c5777;
+    }
+
+    .pagination a:hover {
+        background-color: #2c5b81;
+        color: white;
+    }
+
+    select#activity_type {
+        padding: 5px 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 13px;
+        max-height: 150px; /* Adjust the height as needed */
+        overflow-y: auto; /* Enable vertical scrolling */
+    }
+
+        
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="activity-log-container">
+    <h2>Activity Log</h2>
+
+    <form method="get" action="{% url 'users:activity_log' %}" class="filters">
+        <div class="filters">
+            <label for="start_date">Start Date</label>
+            <input type="date" id="start_date" name="start_date" value="{{ request.GET.start_date }}">
+
+            <label for="end_date">End Date</label>
+            <input type="date" id="end_date" name="end_date" value="{{ request.GET.end_date }}">
+
+            <label for="activity_type">Activity Type</label>
+            <select id="activity_type" name="activity_type">
+                <option value="">Select Activity Type</option> <!-- Default option to allow unfiltered results -->
+                {% for value, label in ACTIVITY_TYPE_CHOICES %}
+                <option value="{{ value }}" {% if request.GET.activity_type == value %}selected{% endif %}>
+                    {{ label }}
+                </option>
+                {% endfor %}
+            </select>
+
+            <div class="filter-actions">
+                <button type="submit" class="filter-btn">Filter</button>
+                <button type="reset" class="btn-reset" id="resetButton">Reset</button>
+            </div>
+        </div>
+    </form>
+
+    <ul class="activity-list" id="activity-list">
+        {% for activity in activities %}
+            <li class="activity-item">
+                <span class="activity-timestamp">{{ activity.timestamp|date:"Y-m-d H:i" }}</span>
+                <span class="activity-action">
+                    <span class="action-content">{{ activity.action }}</span>
+                    <button class="view-more-btn">View More</button>
+                </span>
+                <span class="activity-type">{{ activity.activity_type }}</span>
+            </li>
+        {% endfor %}
+    </ul>
+
+    <!-- Pagination controls -->
+    <div class="pagination">
+        {% if is_paginated %}
+            {% if page_obj.has_previous %}
+            {% endif %}
+    
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                    <span class="current">{{ num }}</span>
+                {% else %}
+                    <a href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+    
+            {% if page_obj.has_next %}
+            {% endif %}
+        {% endif %}
+    </div>
+</div>
+
+{% block javascript %}
+<script>
+
+document.addEventListener('DOMContentLoaded', function() {
+    const activityItems = document.querySelectorAll('.activity-item');
+
+    activityItems.forEach(function(item) {
+        const content = item.querySelector('.action-content');
+        const viewMoreBtn = item.querySelector('.view-more-btn');
+
+        // Preserve original styles
+        const originalMaxHeight = content.style.maxHeight;
+        const originalWhiteSpace = content.style.whiteSpace;
+
+        // Temporarily remove restrictions to measure overflow
+        content.style.maxHeight = 'none';
+        content.style.whiteSpace = 'nowrap'; // Keep single-line to check for overflow
+
+        // Check if the content is overflowing
+        const isOverflowing = content.scrollWidth > content.clientWidth;
+
+        // Reapply the original styles
+        content.style.maxHeight = originalMaxHeight;
+        content.style.whiteSpace = originalWhiteSpace;
+
+        if (isOverflowing) {
+            viewMoreBtn.style.display = 'inline-block'; // Show the View More button
+        }
+
+        viewMoreBtn.addEventListener('click', function() {
+            if (item.classList.contains('expanded')) {
+                item.classList.remove('expanded');
+                viewMoreBtn.textContent = 'View More';
+                content.style.maxHeight = '1.2em'; // Collapse the content
+                content.style.whiteSpace = 'nowrap';
+            } else {
+                item.classList.add('expanded');
+                viewMoreBtn.textContent = 'View Less';
+                content.style.maxHeight = 'none'; // Expand the content
+                content.style.whiteSpace = 'normal';
+            }
+        });
+    });
+});
+
+
+document.getElementById('resetButton').addEventListener('click', function() {
+    // Clear all the filter inputs
+    document.getElementById('start_date').value = '';
+    document.getElementById('end_date').value = '';
+    document.getElementById('activity_type').value = '';
+
+    // Optionally, submit the form after resetting to clear the filters
+    document.querySelector('.filters').submit();
+});
+
+</script>
+
+{% endblock %}
+
+{% endblock %}

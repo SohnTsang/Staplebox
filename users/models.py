@@ -31,3 +31,45 @@ def create_user_profile(sender, instance, created, **kwargs):
 @receiver(post_save, sender=User)
 def save_user_profile(sender, instance, **kwargs):
     instance.userprofile.save()
+
+
+class UserActivity(models.Model):
+
+    ACTIVITY_TYPE_CHOICES = [
+        ('ACCOUNT_CREATION', 'Account Creation'),
+        ('ACCESS_PERMISSION_GRANTED', 'Access Permission Granted'),
+        ('ACCESS_PERMISSION_REVOKED', 'Access Permission Revoked'),
+        ('COMMENT_UPDATE', 'Comment Update'),
+        ('DOCUMENT_DOWNLOAD', 'Document Download'),
+        ('DOCUMENT_UPDATE', 'Document Update'),
+        ('DOCUMENT_UPLOAD', 'Document Upload'),
+        ('EMAIL_CHANGE', 'Email Change'),
+        ('EMAIL_PREFERENCE_UPDATE', 'Email Preferences Updated'),
+        ('EXPORT_CREATION', 'Export Creation'),
+        ('EXPORT_UPDATE', 'Export Update'),
+        ('FEEDBACK_SUBMITTED', 'Feedback Submitted'),
+        ('FOLDER_CREATION', 'Folder Creation'),
+        ('FOLDER_UPDATE', 'Folder Update'),
+        ('LOGIN', 'Login'),
+        ('LOGOUT', 'Logout'),
+        ('NOTIFICATION_SETTING_UPDATE', 'Notification Settings Updated'),
+        ('PARTNERSHIP_ACCEPT', 'Partnership Invite Accepted'),
+        ('PARTNERSHIP_INVITE', 'Partnership Invite Sent'),
+        ('PASSWORD_CHANGE', 'Password Change'),
+        ('PRIVACY_SETTING_UPDATE', 'Privacy Settings Updated'),
+        ('PRODUCT_CREATION', 'Product Creation'),
+        ('PRODUCT_UPDATE', 'Product Update'),
+        ('PROFILE_UPDATE', 'Profile Update'),
+        ('SUPPORT_TICKET_CREATED', 'Support Ticket Created'),
+        ('SUPPORT_TICKET_RESOLVED', 'Support Ticket Resolved'),
+        ('TOKEN_USED', 'Company Token Used'),
+    ]
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='activities')
+    action = models.CharField(max_length=255)
+    activity_type = models.CharField(max_length=50, choices=ACTIVITY_TYPE_CHOICES)
+
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.email} - {self.action} ({self.activity_type}) at {self.timestamp}"

@@ -30,6 +30,7 @@
         * {
             font-family: 'DM Sans', sans-serif;
         }
+
         html {
             width: 99.8vw;
         }
@@ -319,7 +320,7 @@
             font-weight: 500;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
             margin: 0 auto;
-            max-width: 90%; /* Limit maximum width */
+            max-width: 100%; /* Limit maximum width */
             color: #ffffff;
             background: linear-gradient(135deg, #a75e55, #b8493d); /* Muted red gradient */
             word-wrap: break-word; /* Allow text to wrap within the container */
@@ -351,6 +352,38 @@
 
         .input-error {
             border-color: #dc3545 !important;
+        }
+
+        /* Base link styles within #profile-section, excluding .button-8 */
+        .upper a:not(.button-8), .forgot-password {
+            color: #39739d; /* Primary color for links */
+            text-decoration: none; /* Remove underline by default */
+            font-weight: 400; /* Slightly bolder text */
+            border-bottom: 2px solid transparent; /* Create space for the underline */
+        }
+
+        .upper a:not(.button-8):hover, 
+        .upper a:not(.button-8):focus {
+            color: #0056b3; /* Darker shade for hover/focus */
+            border-bottom-color: #0056b3; /* Underline with hover/focus color */
+            text-decoration: none; /* Keep underline consistent */
+            outline: none; /* Remove focus outline */
+        }
+
+        .upper a:not(.button-8):active {
+            color: #003865; /* Even darker shade for active state */
+            border-bottom-color: #003865; /* Underline with active color */
+        }
+
+        .upper a:not(.button-8):visited {
+            color: #6c757d; /* Different color for visited links */
+            border-bottom-color: #6c757d; /* Underline with visited color */
+        }
+
+        /* Adjust for accessibility */
+        .upper a:not(.button-8):focus-visible {
+            outline: 2px dashed #0056b3; /* Visible outline for keyboard navigation */
+            outline-offset: 4px; /* Space between the outline and the link */
         }
 
         
@@ -445,6 +478,22 @@
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js" integrity="sha384-7+zCNj/IqJ95wo16oMtfsKbZ9ccEh31eOz1HGyDuCQ6wgnyJNSYdrPa03rtR1zdB" crossorigin="anonymous"></script>
 
 {% block extra_js %}
+
+<script>
+    //function for clickable-td in export list/completed export list
+    document.addEventListener('DOMContentLoaded', function() {
+    const rows = document.querySelectorAll('#exportTableBody .clickable-td');
+
+    rows.forEach(function(row) {
+        row.addEventListener('click', function(event) {
+            // Prevent navigating when clicking on specific elements
+            if (event.target.tagName.toLowerCase() !== 'input' && event.target.tagName.toLowerCase() !== 'a' && event.target.tagName.toLowerCase() !== 'img') {
+                window.location.href = row.dataset.href;
+            }
+        });
+    });
+});
+</script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -593,15 +642,28 @@ document.addEventListener('DOMContentLoaded', function() {
 <script>
     function showMessage(message, type) {
         const messagePopupContainer = document.getElementById('message-popup-container');
-        const messagePopup = document.createElement('div');
-        messagePopup.className = `message-popup ${type}`;
-        messagePopup.innerText = message;
-        messagePopupContainer.appendChild(messagePopup);
+        let messagePopup = messagePopupContainer.querySelector('.message-popup');
+
+        if (messagePopup) {
+            // If a message is already being shown, replace it with the new message
+            messagePopup.className = `message-popup ${type}`;
+            messagePopup.innerText = message;
+
+            // Reset the timeout for the new message
+            clearTimeout(messagePopup.timeoutId);
+        } else {
+            // If no message is being shown, create a new one
+            messagePopup = document.createElement('div');
+            messagePopup.className = `message-popup ${type}`;
+            messagePopup.innerText = message;
+            messagePopupContainer.appendChild(messagePopup);
+        }
 
         messagePopup.style.display = 'block'; // Show the popup
 
-        setTimeout(() => {
-            messagePopupContainer.removeChild(messagePopup); // Remove the popup after animation ends
+        // Set a timeout to remove the message after 4 seconds
+        messagePopup.timeoutId = setTimeout(() => {
+            messagePopupContainer.removeChild(messagePopup);
         }, 4000); // Total duration of slideDown and slideUp animations
     }
 
@@ -621,35 +683,32 @@ document.addEventListener('DOMContentLoaded', function() {
         sessionStorage.setItem('messageType', type);
     }
 
-    function formatFileSize(size) {
-        if (size < 1024) {
-            return "1 KB";
-        }
-        let sizeInKB = size / 1024;
+    function formatFileSize(sizeInBytes) {
+        if (sizeInBytes < 1024) return "1 KB";
+        let sizeInKb = sizeInBytes / 1024.0;
         const units = ['KB', 'MB', 'GB', 'TB', 'PB'];
         for (let unit of units) {
-            if (sizeInKB < 1024) {
-                return `${sizeInKB.toFixed(1)} ${unit}`;
-            }
-            sizeInKB /= 1024;
+            if (sizeInKb < 1024.0) return `${sizeInKb.toFixed(1)} ${unit}`;
+            sizeInKb /= 1024.0;
         }
-        return `${sizeInKB.toFixed(1)} PB`;
+        return `${sizeInKb.toFixed(1)} PB`;
     }
 
     function getFileTypeIcon(fileName) {
         const extension = fileName.split('.').pop().toLowerCase();
-        switch (extension) {
-            case 'png': return '{% static "images/table_icon/png.png" %}';
-            case 'csv': return '{% static "images/table_icon/csv.png" %}';
-            case 'zip': return '{% static "images/table_icon/zip.png" %}';
-            case 'jpg': return '{% static "images/table_icon/jpg.png" %}';
-            case 'pdf': return '{% static "images/table_icon/pdf.png" %}';
-            case 'doc': return '{% static "images/table_icon/doc.png" %}';
-            case 'xls': return '{% static "images/table_icon/xls.png" %}';
-            case 'ppt': return '{% static "images/table_icon/ppt.png" %}';
-            case 'txt': return '{% static "images/table_icon/txt.png" %}';
-            default: return '{% static "images/table_icon/file.png" %}';
-        }
+        const iconMap = {
+            'png': '{% static "images/table_icon/png.png" %}',
+            'csv': '{% static "images/table_icon/csv.png" %}',
+            'zip': '{% static "images/table_icon/zip.png" %}',
+            'jpg': '{% static "images/table_icon/jpg.png" %}',
+            'pdf': '{% static "images/table_icon/pdf.png" %}',
+            'doc': '{% static "images/table_icon/doc.png" %}',
+            'xls': '{% static "images/table_icon/xls.png" %}',
+            'ppt': '{% static "images/table_icon/ppt.png" %}',
+            'txt': '{% static "images/table_icon/txt.png" %}',
+            'default': '{% static "images/table_icon/file.png" %}'
+        };
+        return iconMap[extension] || iconMap['default'];
     }
 </script>
 
