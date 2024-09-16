@@ -35,6 +35,7 @@ from rest_framework.parsers import MultiPartParser
 from django.core.signing import Signer, BadSignature
 from users.models import User
 from users.utils import log_user_activity
+from users.models import UserActivity
 
 signer = Signer()
 
@@ -234,12 +235,29 @@ def edit_document(request, document_uuid):
         serializer = DocumentSerializer(data=request.data, instance=document)
         if serializer.is_valid():
             serializer.save()
-            # Log the document update
-            log_user_activity(
-                user=request.user,
-                action=f"Updated document '{document.original_filename}'",
-                activity_type="DOCUMENT_UPDATE"
-            )
+            related_exports = document.exports.all()
+            related_products = document.products.all()
+
+            if related_exports.exists():
+                export = related_exports.first()
+                log_user_activity(
+                    user=request.user,
+                    action=f"Downloaded document '{document.original_filename}' from export '{export.reference_number}'",
+                    activity_type="DOCUMENT_DOWNLOAD"
+                )
+            elif related_products.exists():
+                product = related_products.first()
+                log_user_activity(
+                    user=request.user,
+                    action=f"Downloaded document '{document.original_filename}' from product '{product.product_name}'",
+                    activity_type="DOCUMENT_DOWNLOAD"
+                )
+            else:
+                log_user_activity(
+                    user=request.user,
+                    action=f"Downloaded document '{document.original_filename}'",
+                    activity_type="DOCUMENT_DOWNLOAD"
+                )
             return JsonResponse({'success': True, 'message': 'Document updated'})
         else:
             return JsonResponse({'success': False, 'errors': serializer.errors}, status=400)
@@ -307,12 +325,21 @@ def ajax_document_versions(request, document_uuid):
     if not is_owner:
         versions = versions.filter(uploaded_by__in=[user, original_document.uploaded_by])
 
+    def get_company_name(user):
+        # Assuming each user has one or more company profiles, and you want to display the first one.
+        user_profile = user.userprofile
+        company_profiles = user_profile.company_profiles.all()
+        return company_profiles.first().name if company_profiles.exists() else user.username
+
     versions_data = [{
         'version': version.version,
         'filename': version.original_filename,
         'modified': localtime(version.created_at).strftime("%Y-%m-%d %H:%M"),
-        'uploader': version.uploaded_by.username,
-        'download_url': reverse('documents:download_document', kwargs={'document_uuid': document_uuid, 'version_id': signer.sign(str(version.uuid))})
+        'uploader': get_company_name(version.uploaded_by),
+        'download_url': reverse('documents:download_document_version', kwargs={
+            'document_uuid': unsigned_document_uuid,  # Use the unsigned UUID
+            'version_id': signer.sign(str(version.uuid))  # Sign the version UUID
+        })
     } for version in versions]
 
     if not versions or (versions and versions.last().version != 1):
@@ -320,7 +347,7 @@ def ajax_document_versions(request, document_uuid):
             'version': 1,
             'filename': original_document.original_filename,
             'modified': localtime(original_document.created_at).strftime("%Y-%m-%d %H:%M"),
-            'uploader': original_document.uploaded_by.username,
+            'uploader': get_company_name(original_document.uploaded_by),
             'download_url': reverse('documents:download_document', kwargs={'document_uuid': document_uuid})
         })
 
@@ -331,6 +358,36 @@ def ajax_document_versions(request, document_uuid):
     }
     return JsonResponse(data)
 
+
+class DownloadHistoryView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, document_uuid):
+        try:
+            # Unsign the document UUID
+            unsigned_document_uuid = signer.unsign(document_uuid)
+        except BadSignature:
+            return Response({'error': 'Invalid document ID.'}, status=400)
+
+        # Fetch the document using the unsigned UUID
+        document = get_object_or_404(Document, uuid=unsigned_document_uuid)
+        
+        # Query UserActivity for download actions related to this document
+        download_activities = UserActivity.objects.filter(
+            action__icontains=f"Downloaded document '{document.original_filename}'",
+            activity_type="DOCUMENT_DOWNLOAD"
+        ).order_by('-timestamp')
+        
+        data = [
+            {
+                'timestamp': activity.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+                'downloaded_by': activity.user.userprofile.company_profiles.first().name if activity.user.userprofile.company_profiles.exists() else activity.user.username,
+                'filename': document.original_filename,
+            }
+            for activity in download_activities
+        ]
+        return Response(data)
+    
 
 class UpdateDocument(APIView):
     permission_classes = [IsAuthenticated]
@@ -346,7 +403,10 @@ class UpdateDocument(APIView):
 
         # Check if the user is the owner or has access
         is_owner = document.uploaded_by == user
-        has_access = AccessPermission.objects.filter(partner2=user, document=document).exists()
+
+        company_profile = user.userprofile.company_profiles.first()
+
+        has_access = AccessPermission.objects.filter(partner2=company_profile, document=document).exists()
 
         if not (is_owner or has_access):
             return Response({"detail": "You do not have permission to update this document."}, status=status.HTTP_403_FORBIDDEN)
@@ -354,10 +414,15 @@ class UpdateDocument(APIView):
         serializer = DocumentUpdateSerializer(document, data=request.data, context={'request': request})
         if serializer.is_valid():
             serializer.save()
+
+            # Get the associated product name, if any
+            product_name = document.folder.product.product_name if document.folder and document.folder.product else None
+            product_info = f" in product '{product_name}'" if product_name else ""
+
             # Log the document update
             log_user_activity(
                 user=request.user,
-                action=f"Updated document '{document.original_filename}'",
+                action=f"Updated document '{document.original_filename}'{product_info}",
                 activity_type="DOCUMENT_UPDATE"
             )
             return Response({'message': 'Document updated'}, status=status.HTTP_200_OK)
@@ -515,12 +580,31 @@ def download_document(request, document_uuid, version_id=None):
 
     response = FileResponse(open(file_path, 'rb'))
     response['Content-Disposition'] = f'attachment; filename="{download_filename}"'
+    
+    product = document.folder.product
+
     # Log the document download
-    log_user_activity(
-        user=request.user,
-        action=f"Downloaded document '{document.original_filename}'",
-        activity_type="DOCUMENT_DOWNLOAD"
-    )
+    related_exports = document.exports.all()
+
+    if related_exports.exists():
+        export = related_exports.first()
+        log_user_activity(
+            user=request.user,
+            action=f"Downloaded document '{document.original_filename}' from export '{export.reference_number}'",
+            activity_type="DOCUMENT_DOWNLOAD"
+        )
+    elif product:
+        log_user_activity(
+            user=request.user,
+            action=f"Downloaded document '{document.original_filename}' from product '{product.product_name}'",
+            activity_type="DOCUMENT_DOWNLOAD"
+        )
+    else:
+        log_user_activity(
+            user=request.user,
+            action=f"Downloaded document '{document.original_filename}'",
+            activity_type="DOCUMENT_DOWNLOAD"
+        )
     return response
 
 

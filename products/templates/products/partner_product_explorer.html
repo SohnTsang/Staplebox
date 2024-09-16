@@ -1,0 +1,343 @@
+{% extends "base_users.html" %}
+{% load static %}
+{% load custom_filters %}
+{% load file_tags %}
+
+{% block title %}Product Directory {% endblock %}
+
+{% block css %}
+<link rel="stylesheet" type="text/css" href="{% static 'exports/css/style.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'exports/css/modal.css' %}">
+
+<style>
+    /* Column widths for owner */
+    {% if is_owner %}
+    #product-explorer-table th:nth-child(1), #product-explorer-table td:nth-child(1) {
+        width: 3%;
+        text-align: center;
+        text-overflow: unset !important;
+    }
+    #product-explorer-table th:nth-child(2), #product-explorer-table td:nth-child(2) {
+        width: 30%;
+    }
+    #product-explorer-table th:nth-child(3), #product-explorer-table td:nth-child(3) {
+        width: 20%;
+    }
+    #product-explorer-table th:nth-child(4), #product-explorer-table td:nth-child(4) {
+        width: 20%;
+    }
+    #product-explorer-table th:nth-child(5), #product-explorer-table td:nth-child(5) {
+        width: 10%;
+    }
+    #product-explorer-table th:nth-child(6), #product-explorer-table td:nth-child(6) {
+        width: 5%;
+    }
+    /* Column widths for non-owner */
+    {% else %}
+    #product-explorer-table th:nth-child(1), #product-explorer-table td:nth-child(1) {
+        width: 2%;
+    }
+    #product-explorer-table th:nth-child(2), #product-explorer-table td:nth-child(2) {
+        width: 30%;
+    }
+    #product-explorer-table th:nth-child(3), #product-explorer-table td:nth-child(3) {
+        width: 20%;
+    }
+    #product-explorer-table th:nth-child(4), #product-explorer-table td:nth-child(4) {
+        width: 20%;
+    }
+    #product-explorer-table th:nth-child(5), #product-explorer-table td:nth-child(5) {
+        width: 10%;
+    }
+    #product-explorer-table th:nth-child(6), #product-explorer-table td:nth-child(6) {
+        width: 5%;
+    }
+    {% endif %}
+
+</style>
+{% endblock %}
+
+{% block content %}
+
+<main>
+    <div id="product-explorer" data-product-id="{{ signed_product_uuid }}" data-root-folder-id="{{ root_folder_id }}" class="">
+        <input type="hidden" id="productId" value="{{ signed_product_uuid }}">
+        <div class="background-overlay"></div>
+        <div class="content-section">
+            <div class="content-header-product-directory">
+                <div class="header-top">
+                    <div class="header-title-product">
+                        <h3>{{ product.product_name }}</h3>
+                        <div class="subheading">
+                            <div><strong>Product Code:</strong> {{ product.product_code }}</div>
+                            <div><strong>Product Type:</strong> {{ product.product_type }}</div>
+                            <div><strong>Description:</strong> {{ product.product_description }}</div>
+                        </div>
+                    </div>
+                    {% if is_owner %}
+                    <div class="button-group">
+                        <!-- Owner-specific buttons -->
+                        <div class="bulk-action-wrapper">
+                            <button class="button-bulk-action" id="bulkActionButton" disabled>
+                                Bulk Action
+                                <img src="{% static 'images/table_icon/arrow_drop_down_24dp_FILL0_wght400_GRAD0_opsz24_333333.png' %}" alt="Visibility" class="icon-bulk-action" id="bulkActionIcon"> 
+                            </button>
+                            <div class="bulk-action-dropdown" id="bulkActionDropdown">
+                                <a href="#" id="shareAccess" class="" data-product-id="{{ signed_product_uuid }}">Share</a>
+                                <a href="#" id="deleteSelectedItems" class="bulk-action-delete text-danger">Delete</a>
+                            </div>
+                        </div>
+                        <div class="action-button-container button-group" style="gap:6px;">
+                            <button class="button-8 action-button-title" data-dropdown-target="ActionDropdown">
+                                New
+                            </button>
+                            <div class="action-button-dropdown dropdown-content" id="ActionDropdown">
+                                <a href="#" data-bs-toggle="modal" data-bs-target="#createFolderModal">New Folder</a>
+                                <a href="#" data-bs-toggle="modal" id="openUploadModaProductlBtn" data-bs-target="#uploadDocumentModal">New Document</a>
+                            </div>
+                            <a href="#" class="button-8" id="editProductTrigger" data-product-uuid="{{ signed_product_uuid }}">Edit</a>
+                            <a href="{% url 'access_control:manage_access' product_uuid=signed_product_uuid %}" class="button-8">Access</a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% if is_owner %}
+                <div class="header-bottom">
+                    <div style="margin: 15px 0 5px 0;"><small>Folders: {{ total_folder_count }} | Documents: {{ total_document_count }}</small></div>
+                </div>
+                {% else %}
+                <div class="header-bottom">
+                    <div style="margin: 3px 0 5px 0;"></div>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="breadcrumb-section" style="margin: 15px 0 5px 0; padding-left:2px;">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        {% for breadcrumb in breadcrumbs %}
+                        <li class="breadcrumb-item">
+                            {% if forloop.last %}
+                            <span class="p-2 h6 fw-bold">{{ breadcrumb.name }}</span>
+                            {% else %}
+                            <a href="{% url 'products:partner_product_explorer_folder' product_uuid=signed_product_uuid partner_uuid=signed_partner_uuid folder_uuid=breadcrumb.id %}" class="breadcrumb-navigation">{{ breadcrumb.name }}</a>
+                            {% endif %}
+                        </li>
+                        {% endfor %}
+                    </ol>
+                </nav>
+            </div>
+
+            <div class="table-container-2" style="margin-top: 0px;">
+                <table id="product-explorer-table">
+                    <thead>
+                        <tr>
+                            {% if is_owner %}
+                            <th><input type="checkbox" id="selectAllItems"></th>
+                            {% else %}
+                            <th></th>
+                            {% endif %}
+                            <th>Name <span class="sort-icon desc inactive"></span></th>
+                            <th>Category <span class="sort-icon desc inactive"></span></th>
+                            <th>Date Modified <span class="sort-icon desc inactive"></span></th>
+                            <th>Version <span class="sort-icon desc inactive"></span></th>
+                            {% if is_owner %}
+                            <th>Action</th>
+                            {% else %}
+                            <th>Action</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if subfolders or documents %}
+                            <!-- Folders -->
+                            {% for folder in subfolders %}
+                            <tr class="clickable-td" data-href="{% url 'products:partner_product_explorer_folder' product_uuid=signed_product_uuid partner_uuid=signed_partner_uuid folder_uuid=folder.uuid %}" data-type="folder" data-id="{{ folder.uuid }}">
+                                {% if is_owner %}
+                                <td class="checkbox-cell" style="cursor: default;"><input class="folder-checkbox" type="checkbox"></td>
+                                {% else %}
+                                <td></td>
+                                {% endif %}
+                                <td class="name-cell">
+                                    <img src="{% static 'images/table_icon/folder.png' %}" alt="Folder Icon" class="folder-icon">
+                                    <span class="">{{ folder.name }}</span>
+                                </td>
+                                <td class="text-muted-weight">Folder</td>
+                                <td class="text-muted-weight">{{ folder.updated_at|date:"M d, Y H:i" }}</td>
+                                <td class="text-muted-weight ps-4">—</td>
+                                {% if is_owner %}
+                                <td class="actions">
+                                    <!-- Owner-specific folder actions -->
+                                    <div class="action-button-container">
+                                        <button class="action-button" data-dropdown-target="actionDropdown{{ forloop.counter }}">
+                                            <img src="{% static 'images/table_icon/more_vert_24dp_FILL0_wght400_GRAD0_opsz24_333333.png' %}" alt="Actions">
+                                        </button>
+                                        <div class="action-button-dropdown dropdown-content" id="actionDropdown{{ forloop.counter }}">
+                                            <a href="#" data-bs-toggle="modal" data-bs-target="#accessControlModal" data-folder-id="{{ folder.uuid }}" data-product-id="{{ signed_product_uuid }}">Share</a>
+                                            <a href="#" data-bs-toggle="modal" data-bs-target="#editFolderModal" data-folder-id="{{ folder.uuid }}" data-product-id="{{ signed_product_uuid }}">Edit</a>
+                                            <a href="#" data-bs-toggle="modal" data-bs-target="#moveEntityModal" data-entity-type="folder" data-entity-id="{{ folder.uuid }}" data-product-id="{{ signed_product_uuid }}" data-moving-folder-id="{{ folder.uuid }}" data-current-folder-id="{{ folder.parent }}" data-url="{% url 'products:move_entity' product_uuid=signed_product_uuid entity_type='folder' entity_uuid=folder.uuid current_folder_uuid=folder.parent %}">Move</a>
+                                            <hr class="dropdown-divider">
+                                            <form class="delete-folder-form" data-id="{{ folder.uuid }}" method="post">
+                                                {% csrf_token %}
+                                                <button type="submit" class="text-danger">Delete</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </td>
+                                {% else %}
+                                <td class="actions">
+                                    <!-- Partners don't have actions on folders -->
+                                    —
+                                </td>
+                                {% endif %}
+                            </tr>
+                            {% endfor %}
+                            
+                            <!-- Documents -->
+                            {% for document in documents %}
+                            <tr class="non-clickable-tr" data-document-id="{{ document.uuid }}" data-id="{{ document.uuid }}" data-type="document">
+                                {% if is_owner %}
+                                <td class="checkbox-cell" style="cursor: default;"><input class="document-checkbox" type="checkbox"></td>
+                                {% else %}
+                                <td style="width:0%;"></td>
+                                {% endif %}
+                                <td class="name-cell">
+                                    <img src="{{ document.name|file_icon }}" alt="File Icon" class="file-icon">
+                                    <span class="file-name-table" style="color: black !important">
+                                        {{ document.name }}
+                                    </span>
+                                </td>
+                                <td class="text-muted-weight">Document</td>
+                                <td class="text-muted-weight">{{ document.updated_at|date:"Y-m-d H:i" }}</td>
+                                <td class="text-muted-weight ps-4">{{ document.version }}</td>
+                                {% if is_owner %}
+                                <td class="actions">
+                                    <!-- Owner-specific document actions -->
+                                    <div class="action-button-container">
+                                        <button class="action-button">
+                                            <img src="{% static 'images/table_icon/more_vert_24dp_FILL0_wght400_GRAD0_opsz24_333333.png' %}" alt="Actions">
+                                        </button>
+                                        <div class="action-button-dropdown dropdown-content">
+                                            <a href="#" data-bs-toggle="modal" data-bs-target="#accessControlModal" data-document-id="{{ document.uuid }}" data-product-id="{{ signed_product_uuid }}">Share</a>
+                                            <a href="#" data-bs-toggle="modal" data-bs-target="#commentModal" data-document-id="{{ document.uuid }}">Comment</a>
+                                            <a href="#" data-bs-toggle="modal" data-bs-target="#moveEntityModal" data-entity-type="document" data-entity-id="{{ document.uuid }}" data-product-id="{{ signed_product_uuid }}" data-current-folder-id="{{ document.folder.uuid }}" data-url="{% url 'products:move_entity' product_uuid=signed_product_uuid entity_type='document' entity_uuid=document.uuid current_folder_uuid=document.folder %}">Move</a>
+                                            <a href="#" data-bs-toggle="modal" data-bs-target="#updateDocumentModal" data-document-id="{{ document.uuid }}">Upload New Version</a>
+                                            <a href="#" data-bs-toggle="modal" data-bs-target="#documentVersionsModal" data-document-id="{{ document.uuid }}">Version</a>
+                                            <a href="#" data-bs-toggle="modal" data-bs-target="#downloadHistoryModal" data-document-id="{{ document.uuid }}">View Download History</a>
+                                            <a href="{% url 'documents:download_document' document.uuid %}">Download</a>
+                                            <hr class="dropdown-divider">
+                                            <form class="delete-document-form" data-id="{{ document.uuid }}" method="post">
+                                                {% csrf_token %}
+                                                <button type="submit" class="text-danger">Delete</button>
+                                            </form>                                            
+                                        </div>
+                                    </div>
+                                </td>
+                                {% else %}
+                                <td class="actions">
+                                    <!-- Partner-specific document actions -->
+                                    <div class="action-button-container">
+                                        <button class="action-button" data-dropdown-target="actionDropdown{{ forloop.counter }}">
+                                            <img src="{% static 'images/table_icon/more_vert_24dp_FILL0_wght400_GRAD0_opsz24_333333.png' %}" alt="Actions">
+                                        </button>
+                                        <div class="action-button-dropdown dropdown-content" id="actionDropdown{{ forloop.counter }}">
+                                            <a href="#" data-bs-toggle="modal" data-bs-target="#documentVersionsModal" data-document-id="{{ document.uuid }}">Version</a>
+                                            <a href="{% url 'documents:download_document' document.uuid %}">Download</a>
+                                        </div>
+                                    </div>
+                                </td>
+                                {% endif %}
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                        <tr>
+                            <td colspan="{% if is_owner %}6{% else %}5{% endif %}">No Folders or Documents Added</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
+
+{% if is_owner %}
+    <!-- Include modals and scripts only if the user is the owner -->
+    {% include "modal/upload_document_modal.html" %}
+    {% include "modal/create_folder_modal.html" %}
+    {% include "modal/edit_folder_modal.html" %}
+    {% include "modal/remove_access_confirm_modal.html" %}
+    {% include "modal/edit_document_modal.html" %}
+    {% include "modal/document_version_modal.html" %}
+    {% include "modal/update_document_modal.html" %}
+    {% include "modal/comment_modal.html" %}
+    {% include "modal/move_entity_modal.html" %}
+    {% include "modal/access_control_modal.html" %}
+    {% include "modal/download_history_modal.html" %}
+{% else %}
+    <!-- Include modals that partners can use -->
+    {% include "modal/document_version_modal.html" %}
+    <!-- Include other modals if partners have access to them -->
+{% endif %}
+
+{% block javascript %}
+
+<script>
+    const productId = '{{ signed_product_uuid }}'; // Ensure this is rendered server-side
+</script>
+
+<!-- Common JavaScript code for both owner and partner -->
+<script>
+
+    document.querySelectorAll('.clickable-td').forEach(row => {
+        row.addEventListener('click', function(event) {
+            // Check if the click was within the checkbox, dropdown button, or actions cell
+            if (!event.target.closest('.actions, .actions *, .action-button, .action-button *, input[type="checkbox"]')) {
+                window.location.href = this.getAttribute('data-href');
+            }
+        });
+    });
+
+    // Document Version Modal functionality
+    document.addEventListener('DOMContentLoaded', function () {
+        var versionsModal = document.getElementById('documentVersionsModal');
+
+        versionsModal.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget;
+            var documentId = button.getAttribute('data-document-id');
+            var versionList = document.getElementById('versionList');
+
+            fetch(`/documents/document/ajax/versions/${documentId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    versionList.innerHTML = ''; // Clear previous entries
+                    data.versions.forEach(function(version) {
+                        var row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td class="text-center">${version.version}</td>
+                            <td class="text-start">${version.filename}</td>
+                            <td class="text-center">${version.modified}</td>
+                            <td class="text-center">${version.uploader}</td>
+                            <td class="text-center align-middle"><a href="${version.download_url}" class="badge bg-primary-custom rounded-pill p-2 text-white align-middle">Download</a></td>
+                        `;
+                        versionList.appendChild(row);
+                    });
+                })
+            .catch(error => console.error('Error loading versions:', error));
+        });
+    });
+    
+</script>
+
+{% if is_owner %}
+    <!-- Include owner-specific JavaScript scripts -->
+    <script>
+        // Owner-specific JavaScript code from product_explorer.html
+        // Copy the JavaScript code that is within {# block javascript #} in your product_explorer.html
+        // ...
+    </script>
+{% endif %}
+
+{% endblock %}
+
+{% endblock %}

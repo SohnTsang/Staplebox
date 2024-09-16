@@ -74,6 +74,19 @@
         background-color: #2c5b81;
     }
     
+    .activity-header {
+        display: flex;
+        justify-content: space-between;
+        font-weight: bold;
+        padding: 10px 5px;
+        border-bottom: 1px solid #ddd;
+        background-color: #f7f7f7; /* Optional: Add a background to distinguish the header */
+    }
+
+    .activity-header span {
+        text-align: left;
+    }
+
     .activity-list {
         list-style: none;
         padding: 0;
@@ -113,6 +126,7 @@
     .activity-timestamp {
         flex-basis: 15%; /* Adjust flex-basis as needed */
     }
+    
 
     .activity-action {
         flex-basis: 55%;
@@ -123,10 +137,6 @@
 
     .activity-type {
         flex-basis: 25%; /* Adjust flex-basis as needed */
-    }
-
-    .activity-item span {
-        padding-right: 10px; /* Optional spacing between items */
     }
 
     .action-content {
@@ -232,6 +242,12 @@
         </div>
     </form>
 
+    <div class="activity-header">
+        <span class="activity-timestamp">Timestamp</span>
+        <span class="activity-action">Action</span>
+        <span class="activity-type">Type</span>
+    </div>
+    
     <ul class="activity-list" id="activity-list">
         {% for activity in activities %}
             <li class="activity-item">

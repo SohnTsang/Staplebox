@@ -174,7 +174,7 @@ class ActivityLogView(ListView):
     model = UserActivity
     template_name = 'activity_log.html'
     context_object_name = 'activities'
-    paginate_by = 14  # Load 12 activities at a time
+    paginate_by = 13  # Load 13 activities at a time
 
     def get_queryset(self):
         queryset = UserActivity.objects.filter(user=self.request.user).order_by('-timestamp')

@@ -36,6 +36,10 @@ from django.core.signing import Signer, BadSignature
 from access_control.utils import AccessControlMixin
 from companies.models import CompanyProfile
 from rest_framework.exceptions import ValidationError
+from users.utils import log_user_activity
+from access_control.utils import company_has_access_to
+from django.http import HttpResponseForbidden
+from .utils import redirect_to_correct_view
 
 import logging
 
@@ -97,6 +101,7 @@ class ProductListView(APIView):
         return Response(context)
 
 
+
 class ListProductsAPIView(generics.ListAPIView):
     serializer_class = ProductSerializer
     permission_classes = [IsAuthenticated]
@@ -146,7 +151,7 @@ class EditProductView(AccessControlMixin, APIView):
             return product
         except BadSignature:
             return None
-        
+    
     def has_access(self, user, obj):
         # Only allow access if the user is the owner of the product
         return obj.user == user
@@ -168,7 +173,30 @@ class EditProductView(AccessControlMixin, APIView):
         serializer = ProductSerializer(product, data=request.data, partial=True)
         if serializer.is_valid():
             try:
+
+                # Keep track of the changes
+                updated_fields = []
+                for field in serializer.validated_data:
+                    old_value = getattr(product, field)
+                    new_value = serializer.validated_data[field]
+                    if old_value != new_value:
+                        updated_fields.append(f"{field} from '{old_value}' to '{new_value}'")
+                
                 serializer.save()
+
+                # Create an action message detailing the changes
+                if updated_fields:
+                    action_message = f"Updated product '{product.product_name}': " + ", ".join(updated_fields)
+                else:
+                    action_message = f"Updated product '{product.product_name}' with no changes."
+
+                # Log the product update action
+                log_user_activity(
+                    user=request.user,
+                    action=action_message,
+                    activity_type="PRODUCT_UPDATE"
+                )
+
                 return Response({"message": "Product updated"}, status=status.HTTP_200_OK)
             except IntegrityError as e:
                 error_msg = str(e)
@@ -185,55 +213,99 @@ class ProductExplorerView(APIView):
     template_name = 'products/product_explorer.html'
 
     def get(self, request, product_uuid, folder_uuid=None, item_id=None, item_type=None):
+        logger.debug("Fetching product explorer view...")
+
         try:
             unsigned_product_uuid = signer.unsign(product_uuid)
+            logger.debug(f"Unsigned product UUID: {unsigned_product_uuid}")
+
             product = get_object_or_404(Product, uuid=unsigned_product_uuid)
+
+            response = redirect_to_correct_view(request, product, 'ProductExplorerView')
+            if response:  # Redirect only if needed
+                return response
+            
             root_folder, _ = Folder.objects.get_or_create(product=product, name='Root', defaults={'parent': None})
+            logger.debug(f"Root folder: {root_folder}")
 
             if folder_uuid:
                 unsigned_folder_uuid = signer.unsign(folder_uuid)
                 current_folder = get_object_or_404(Folder, uuid=unsigned_folder_uuid)
+                logger.debug(f"Current folder UUID: {unsigned_folder_uuid}, Folder: {current_folder}")
+
             else:
                 current_folder = root_folder
+                logger.debug("No folder UUID provided, using root folder.")
 
-            exclude_partner_ids = []
+            exclude_partner_uuids = []
             if item_type and item_id:
+                logger.debug(f"Handling item access exclusion for item_type: {item_type}, item_id: {item_id}")
+
                 item_model = Document if item_type == "document" else Folder
                 item = get_object_or_404(item_model, pk=item_id)
-                exclude_partner_ids = AccessPermission.objects.filter(
-                    Q(document=item) | Q(folder=item)
-                ).values_list('partner2_id', flat=True)
 
-            partner_info = get_partner_info(request.user, exclude_partner_ids)
+                # Get the user's company profile
+                company_profile = request.user.userprofile.company_profiles.first()
 
-            if user_has_access_to(request.user, current_folder):
+                # Find all AccessPermissions related to the item
+                permissions = AccessPermission.objects.filter(Q(document=item) | Q(folder=item)).select_related('partner1', 'partner2')
+
+                # Determine the real partner based on the relationship
+                for permission in permissions:
+                    real_partner = permission.partner2 if permission.partner1 == company_profile else permission.partner1
+                    exclude_partner_uuids.append(real_partner.uuid)
+                    logger.debug(f"Excluding partner: {real_partner}")
+
+            exclude_partner_uuids = list(set(exclude_partner_uuids))  # Remove duplicates
+            logger.debug(f"Final exclude_partner_uuids: {exclude_partner_uuids}")
+
+            # Fetch the user's company profile
+            company_profile = request.user.userprofile.company_profiles.first()
+            partner_info = get_partner_info(company_profile, exclude_partner_uuids)
+            logger.debug(f"Partner info: {partner_info}")
+
+            # Initialize subfolders and documents to empty values to avoid the UnboundLocalError
+            subfolders = Folder.objects.none()
+            documents = Document.objects.none()
+
+            # Check access to current folder
+            if user_has_access_to(company_profile, current_folder):
+                logger.debug(f"User has access to the current folder: {current_folder}")
                 subfolders = Folder.objects.filter(parent=current_folder).order_by('name')
                 documents = Document.objects.filter(folder=current_folder).order_by('original_filename')
             else:
-                subfolders = Folder.objects.none()
-                documents = Document.objects.none()
+                logger.warning(f"User does not have access to the current folder: {current_folder}")
+
+            logger.debug(f"Subfolders: {subfolders.count()}, Documents: {documents.count()}")
 
             document_types = DocumentType.objects.all()
 
-            accessible_folders = [folder for folder in subfolders if user_has_access_to(request.user, folder)]
-            accessible_documents = [document for document in documents if user_has_access_to(request.user, document)]
+            accessible_folders = [folder for folder in subfolders if user_has_access_to(company_profile, folder)]
+            accessible_documents = [document for document in documents if user_has_access_to(company_profile, document)]
+            logger.debug(f"Accessible folders: {len(accessible_folders)}, Accessible documents: {len(accessible_documents)}")
+
 
             breadcrumbs = [{'id': signer.sign(str(root_folder.uuid)), 'name': product.product_name}]
             if current_folder != root_folder:
                 folder_ancestors = list(current_folder.get_ancestors(include_self=True))
                 breadcrumbs.extend([{'id': signer.sign(str(folder.uuid)), 'name': folder.name} for folder in folder_ancestors[1:]])
 
+            logger.debug(f"Breadcrumbs: {breadcrumbs}")
+
             signed_subfolders = [{'uuid': signer.sign(str(folder.uuid)), 'name': folder.name, 'parent': signer.sign(str(folder.parent.uuid)) if folder.parent else '', 'updated_at': folder.updated_at} for folder in accessible_folders]
             signed_documents = [{'uuid': signer.sign(str(document.uuid)), 'name': document.original_filename, 'folder': signer.sign(str(document.folder.uuid)), 'updated_at': document.updated_at, 'version': document.version} for document in accessible_documents]
 
-            accessible_folders = [folder for folder in subfolders if user_has_access_to(request.user, folder)]
-            accessible_documents = [document for document in documents if user_has_access_to(request.user, document)]
+            accessible_folders = [folder for folder in subfolders if user_has_access_to(company_profile, folder)]
+            accessible_documents = [document for document in documents if user_has_access_to(company_profile, document)]
 
             total_folder_count = Folder.objects.filter(product=product).count() - 2
             total_document_count = Document.objects.filter(folder__product=product).count()
             
-            accessible_folder_count = sum(1 for folder in Folder.objects.filter(product=product) if user_has_access_to(request.user, folder)) - 1
-            accessible_document_count = sum(1 for document in Document.objects.filter(folder__product=product) if user_has_access_to(request.user, document))
+            accessible_folder_count = sum(1 for folder in Folder.objects.filter(product=product) if user_has_access_to(company_profile, folder)) - 1
+            accessible_document_count = sum(1 for document in Document.objects.filter(folder__product=product) if user_has_access_to(company_profile, document))
+
+            logger.debug(f"Total folders: {total_folder_count}, Total documents: {total_document_count}")
+            logger.debug(f"Accessible folders: {accessible_folder_count}, Accessible documents: {accessible_document_count}")
 
             if request.user == product.user:
                 folder_count = total_folder_count
@@ -267,7 +339,98 @@ class ProductExplorerView(APIView):
 
         except (Product.DoesNotExist, BadSignature):
             return Response({'error': 'Product not found or invalid UUID'}, status=status.HTTP_404_NOT_FOUND)
+            
 
+
+class PartnerProductExplorerView(APIView):
+    permission_classes = [IsAuthenticated]
+    renderer_classes = [TemplateHTMLRenderer, JSONRenderer]
+    template_name = 'products/partner_product_explorer.html'
+
+    def get(self, request, product_uuid, partner_uuid, folder_uuid=None):
+        logger.debug("Fetching partner product explorer view...")
+
+        try:
+            unsigned_product_uuid = signer.unsign(product_uuid)
+            unsigned_partner_uuid = signer.unsign(partner_uuid)
+            logger.debug(f"Unsigned product UUID: {unsigned_product_uuid}")
+            logger.debug(f"Unsigned partner UUID: {unsigned_partner_uuid}")
+            
+
+            product = get_object_or_404(Product, uuid=unsigned_product_uuid)
+            partner = get_object_or_404(CompanyProfile, uuid=unsigned_partner_uuid)
+
+
+            response = redirect_to_correct_view(request, product, 'PartnerProductExplorerView')
+            if response:  # Redirect only if needed
+                return response
+            
+            partner_permissions = AccessPermission.objects.filter(
+                (Q(partner1=request.user.userprofile.company_profiles.first()) | 
+                 Q(partner2=request.user.userprofile.company_profiles.first())) & 
+                Q(product=product)
+            )
+
+            if not partner_permissions.exists():
+                return HttpResponseForbidden("You do not have permission to access this content.")
+            
+            user_company_profile = request.user.userprofile.company_profiles.first()
+
+            # Check if the user is the owner or the partner
+            if user_company_profile != product.company and user_company_profile != partner:
+                return Response({'error': 'You do not have access to this page'}, status=status.HTTP_403_FORBIDDEN)
+
+            # Get the root folder
+            root_folder, _ = Folder.objects.get_or_create(product=product, name='Root', defaults={'parent': None})
+
+            if folder_uuid:
+                unsigned_folder_uuid = signer.unsign(folder_uuid)
+                current_folder = get_object_or_404(Folder, uuid=unsigned_folder_uuid)
+            else:
+                current_folder = root_folder
+
+            # Get the folders and documents that have been shared with the partner
+            subfolders = Folder.objects.filter(parent=current_folder).order_by('name')
+            documents = Document.objects.filter(folder=current_folder).order_by('original_filename')
+
+            # Filter based on access permissions for the specific partner
+            accessible_folders = []
+            for folder in subfolders:
+                if AccessPermission.objects.filter(partner2=partner, folder=folder).exists():
+                    accessible_folders.append(folder)
+
+            accessible_documents = []
+            for document in documents:
+                if AccessPermission.objects.filter(partner2=partner, document=document).exists():
+                    accessible_documents.append(document)
+
+            # Build breadcrumbs
+            breadcrumbs = [{'id': signer.sign(str(root_folder.uuid)), 'name': product.product_name}]
+            if current_folder != root_folder:
+                folder_ancestors = list(current_folder.get_ancestors(include_self=True))
+                breadcrumbs.extend([{'id': signer.sign(str(folder.uuid)), 'name': folder.name} for folder in folder_ancestors[1:]])
+
+            document_types = DocumentType.objects.all()
+
+            context = {
+                'product': product,
+                'partner': partner,
+                'current_folder': FolderSerializer(current_folder).data,
+                'root_folder': root_folder,
+                'subfolders': [{'uuid': signer.sign(str(folder.uuid)), 'name': folder.name, 'parent': signer.sign(str(folder.parent.uuid)) if folder.parent else '', 'updated_at': folder.updated_at} for folder in accessible_folders],
+                'documents': [{'uuid': signer.sign(str(document.uuid)), 'name': document.original_filename, 'folder': signer.sign(str(document.folder.uuid)), 'updated_at': document.updated_at, 'version': document.version} for document in accessible_documents],
+                'document_types': DocumentTypeSerializer(document_types, many=True).data,
+                'breadcrumbs': breadcrumbs,
+                'is_owner': product.company == user_company_profile,
+                'signed_product_uuid': product_uuid,
+                'signed_partner_uuid': partner_uuid,
+                'signed_current_folder_uuid': signer.sign(str(current_folder.uuid)),
+            }
+
+            return Response(context)
+
+        except (Product.DoesNotExist, BadSignature):
+            return Response({'error': 'Product or Partner not found or invalid UUID'}, status=status.HTTP_404_NOT_FOUND)
 
 
 @login_required
@@ -307,8 +470,10 @@ class DeleteProductView(AccessControlMixin, APIView):
         except BadSignature:
             return None
 
-    def has_access(self, user, obj):
-        return obj.user == user
+    # Override has_access to check based on the company, not the user directly
+    def has_access(self, company_profile, product):
+        # Ensure the company has access to delete the product
+        return product.company == company_profile
 
     def delete(self, request, product_uuid, format=None):
         product = self.get_object_to_check(request, product_uuid=product_uuid)
@@ -321,6 +486,7 @@ class DeleteProductView(AccessControlMixin, APIView):
             return Response({"message": "Product deleted"}, status=status.HTTP_204_NO_CONTENT)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 
 @login_required

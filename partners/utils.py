@@ -1,18 +1,15 @@
 from django.db.models import Q
 from partners.models import Partnership
 from companies.models import CompanyProfile  # Adjust the import based on your actual models
+from django.core.signing import Signer, BadSignature
 
-def get_partner_info(user, filter_value='', sort_by='created_at', search_query=''):
+signer = Signer()
+
+def get_partner_info(company_profile, filter_value='', sort_by='created_at', search_query=''):
     partner_info = []
 
-    # Get the user's company profiles
-    user_company_profiles = CompanyProfile.objects.filter(user_profiles__user=user)
-
-    if not user_company_profiles.exists():
-        return partner_info
-
-    # Construct the query to filter partnerships where the user's company profile is either partner1 or partner2
-    query = Q(partner1__in=user_company_profiles) | Q(partner2__in=user_company_profiles)
+    # Construct the query to filter partnerships where the company's profile is either partner1 or partner2
+    query = Q(partner1=company_profile) | Q(partner2=company_profile)
     query &= Q(is_active=True)
 
     # Apply search criteria if provided
@@ -23,13 +20,15 @@ def get_partner_info(user, filter_value='', sort_by='created_at', search_query='
     partnerships = Partnership.objects.filter(query).distinct()
 
     for partnership in partnerships:
-        partner = partnership.partner2 if partnership.partner1 in user_company_profiles else partnership.partner1
+        partner = partnership.partner2 if partnership.partner1 == company_profile else partnership.partner1
+        # Sign the partner UUID
+        signed_partner_uuid = signer.sign(str(partner.uuid))
         partner_dict = {
             'company_name': partner.name,
             'company_role': partner.role,
-            'company_email': partner.email,  # Assuming email is a field in the CompanyProfile
+            'company_email': partner.email,
             'created_at': partnership.created_at.strftime('%Y-%m-%d'),
-            'partner_id': partner.uuid,  # Assuming `uuid` is the unique identifier
+            'partner_id': signed_partner_uuid,  # Use signed UUID
         }
         partner_info.append(partner_dict)
 
@@ -39,10 +38,8 @@ def get_partner_info(user, filter_value='', sort_by='created_at', search_query='
 
     # Sorting
     if sort_by == 'company_name':
-        # Sort the partner_info list by 'company_name'. This is Python-side sorting.
         partner_info.sort(key=lambda x: x['company_name'].lower())
     else:
-        # Default sorting by 'created_at'. Adjust as needed for datetime fields.
         partner_info.sort(key=lambda x: x['created_at'], reverse=True)  # Assuming you want the most recent first
 
     return partner_info

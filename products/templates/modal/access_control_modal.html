@@ -179,7 +179,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             li.className = 'partner-info partner-with-access';
                             li.innerHTML = `
                                 <div class="partner-name">${partner.company_name}</div>
-                                <small class="partner-role">${partner.company_role}</small>
+                                <small class="partner-role"></small>
                                 <button type="button" class="remove-btn" data-partner-id="${partner.partner_id}" data-item-id="${itemId}" data-item-type="${itemType}" data-company-name="${partner.company_name}" data-company-role="${partner.company_role}">Remove</button>
                             `;
                             partnersWithAccessList.appendChild(li);

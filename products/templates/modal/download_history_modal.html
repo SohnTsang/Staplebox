@@ -1,0 +1,91 @@
+<style>
+    /* Style for the download history table */
+    .download-version-history {
+        width: 100%;
+        table-layout: auto; /* Adjust table layout to auto to respect content size */
+        border-collapse: collapse;
+        min-width: 600px; /* Set a minimum width to avoid squashing columns on small screens */
+    }
+
+    .download-version-history th, .download-version-history td {
+        padding: 8px;
+        text-align: left;
+        white-space: nowrap; /* Prevent text from wrapping to a new line */
+        overflow: visible; /* Allow content to overflow */
+        text-overflow: unset; /* Disable text truncation */
+    }
+
+    /* Add a wrapper around the table to handle overflow */
+    .modal-body-p {
+        overflow-x: auto; /* Enable horizontal scrolling */
+        overflow-y: auto; /* Enable vertical scrolling */
+        white-space: nowrap; /* Ensure that the content remains on a single line */
+    }
+
+    .download-version-history th:nth-child(1), .download-version-history td:nth-child(1) {
+        width: 20% !important; /* Adjust the width for the timestamp column */
+    }
+
+    .download-version-history th:nth-child(2) {
+        width: 50% !important; /* Adjust the width for the downloaded by column */
+    }
+
+    .download-version-history th:nth-child(3) {
+        width: 30% !important; /* Adjust the width for the filename column */
+    }
+
+    /* Add a wrapper around the table to handle overflow */
+    .modal-body-p {
+        overflow-x: auto; /* Enable horizontal scrolling */
+        overflow-y: auto; /* Enable vertical scrolling */
+    }
+
+    @media (max-width: 768px) {
+        .download-version-history th:nth-child(1) {
+            width: 35%; /* Adjust width for smaller screens */
+        }
+
+        .download-version-history th:nth-child(2) {
+            width: 40%; /* Adjust width for smaller screens */
+        }
+
+        .download-version-history th:nth-child(3) {
+            width: 25%; /* Adjust width for smaller screens */
+        }
+
+        .modal-body-p {
+            overflow-x: scroll; /* Force horizontal scroll on small screens */
+        }
+    }
+
+    @media (max-width: 1280px) {
+        .modal-content-lg{
+            min-width: 70vw;
+        }
+    }
+
+</style>
+
+<div class="modal fade" id="downloadHistoryModal" tabindex="-1" aria-labelledby="downloadHistoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content modal-content-lg">
+            <div class="modal-title" id="downloadHistoryModalLabel">Download History</div>
+
+            <div class="modal-body modal-body-p">
+                <table class="table download-version-history">
+                    <thead>
+                        <tr class="small">
+                            <th>Timestamp</th>
+                            <th>Downloaded By</th>
+                            <th>Filename</th>
+                        </tr>
+                    </thead>
+                    <tbody id="downloadHistoryList" class="small"></tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="cancel-btn" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>

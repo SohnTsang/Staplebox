@@ -79,7 +79,7 @@ class PartnerCompanyProfileView(APIView):
             'uuid': signer.sign(str(document.uuid)),
             'original_filename': document.original_filename,
             'comments': document.comments,
-            'uploaded_by': document.uploaded_by,
+            'uploaded_by': document.uploaded_by.userprofile.company_profiles.first() if document.uploaded_by.userprofile.company_profiles.exists() else document.uploaded_by.username,
         } for document in documents]
 
         logger.info(f"User {request.user.username} viewed partner company profile for {company_profile.name}.")

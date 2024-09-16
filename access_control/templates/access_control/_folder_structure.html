@@ -2,185 +2,79 @@
 
 {% block extra_css %}
 <style>
-
-/* General background color on hover, but not when active/focused */
-.folder-row:not(:focus):not(:active):hover {
-    background-color: #7e9abe22; /* Lighter background color on hover */
+.hidden {
+    display: none;
 }
 
-.folder-content:not(:focus):not(:active):hover {
-    background-color: #7e9abe22; /* Lighter background color on hover */
-}
-
-/* Active or focused state */
-.folder-row:focus, .folder-row:active {
-    background-color: #1e7bee44; /* Keep background color when active/focused */
-}
-
-.folder-content:focus, .folder-content:active {
-    background-color: #1e7bee44; /* Keep background color when active/focused */
-}
-
-.expanded-top-level-folder td:first-child::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 6px;
-    background-color: #5379a8;
-    /* Ensure the pseudo-element doesn't extend outside the cell */
-    overflow: hidden;
-    /* Add shadow or blur effect */
-    box-shadow: 0.5px 0.5px 1px rgba(255, 255, 255, 0.1); /* Adjust the values as needed */
-    /* OR */
-    filter: blur(0.5px); /* Adjust the blur radius as needed */
-}
-
-
-.expanded-level-folder {
-    background-color: #f8f8f8;
-}
-.expanded-level-folder td:first-child::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    /* Ensure the pseudo-element doesn't extend outside the cell */
-    overflow: hidden;
-    box-shadow: 0.25px 0.5px 1px rgba(255, 255, 255, 0.1); /* Adjust the values as needed */
-    /* OR */
-    filter: blur(0.5px); /* Adjust the blur radius as needed */
-}
-
-
-/* Ensure the cell containing the pseudo-element is positioned relatively */
-.expanded-top-level-folder td:first-child {
-    position: relative;
-}
-
-/* Ensure the cell containing the pseudo-element is positioned relatively */
-.expanded-level-folder td:first-child {
-    position: relative;
+.folder-row {
+    cursor: pointer;
 }
 
 .arrow-icon {
     display: inline-block;
+    transition: transform 0.2s ease;
+    margin-right: 8px;
 }
 
-.collapse.show, .collapsing {
+.folderContent0 {
+    display: table-row; /* Initial visibility for root folders */
 }
 
-td {
-    vertical-align: middle !important;
+.cursor-default {
+    cursor: default;
 }
-
-.small-custom {
-    font-size: 0.9rem;
-}
-
-.no-select-on-dblclick {
-    cursor:default;
-    user-select: none; /* Default to no selection */
-}
-
-.checked-row span{
-    color: #236CC8; /* Example color; adjust as needed */
-    font-weight: 700;
-}
-
-.checked-row td{
-    color: #236CC8; /* Example color; adjust as needed */
-    font-weight: 600;
-}
-
-
 </style>
 {% endblock extra_css %}
 
-<!-- _folder_structure.html -->
 {% if folder %}
-    <!-- Folder Row: Toggle Visibility for Associated Content -->
-    <tr class="folder-row no-select-on-dblclick" onmousedown="enableSelection(this)" tabindex="0" data-bs-target=".folderContent{{ folder.uuid }}" aria-expanded="false" data-depth="0">
-        <td class="lh-lg ps-3 py-2 small-custom">
-            <input class="form-check-input custom-checkbox" type="checkbox" name="folders" value="{{ folder.uuid }}">
-            <span class="arrow-icon" style="display: inline-block;">
-                <svg class="arrow-icon" width="24" height="24" viewBox="0 0 24 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <g clip-path="url(#clip0_1426_57)">
-                        <path d="M10 17L15 12" stroke="#5379A8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M15 12L10 7" stroke="#5379A8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                    </g>
+<tr class="folder-row no-select-on-dblclick" tabindex="0" data-depth="{{ depth }}" onclick="toggleFolder(this)">
+    <td class="cursor-default"><input class="form-check-input" type="checkbox" name="folders" value="{{ folder_uuid }}"></td>
+    <td class="small-custom">
+        <span class="arrow-icon folder-{{ folder_uuid }}">
+            ▶
+        </span> 
+        <span class="fw-sm-bold">{{ folder.name }}</span>
+    </td>
+    <td class="d-none d-md-none d-lg-table-cell text-muted-weight small">Folder</td>
+    <td class="d-none d-sm-none d-md-table-cell text-muted-weight small">{{ folder.updated_at|date:"Y-m-d H:i" }}</td>
+</tr>
+
+<!-- Subfolders -->
+{% for subfolder_data in subfolders %}
+    {% include 'access_control/_subfolder_structure.html' with folder=subfolder_data.folder documents=subfolder_data.documents folder_uuid=subfolder_data.folder_uuid depth=subfolder_data.depth subfolders=subfolder_data.subfolders %}
+{% endfor %}
+
+<!-- Documents under Folder -->
+{% if folder.documents.exists %}
+    {% for document in documents %}
+        <tr class="folder-content no-select-on-dblclick hidden" tabindex="0" data-depth="{{ depth|add:'1' }}">
+            <td class="cursor-default"><input class="form-check-input" type="checkbox" name="documents" value="{{ document.uuid }}"></td>
+            <td class="document-name lh-lg ps-3 py-2 small-custom">
+                <svg width="20" height="20" viewBox="0 -0.5 19 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- SVG content here -->
                 </svg>
-            </span> <!-- Reserve space for the icon -->
-            
-            <span class="fw-sm-bold">{{ folder.name }}</span>
-        </td>
-        <td class="d-none d-md-none d-lg-table-cell text-muted-weight small">Folder</td> <!-- Placeholder for folders -->
-        <td class="d-none d-sm-none d-md-table-cell text-muted-weight small">{{ folder.updated_at|date:"Y-m-d H:i" }}</td>
-    </tr>
-
-    <!-- Handle Subfolders -->
-    {% for subfolder in folder.subfolders.all %}
-        {% include 'access_control/_subfolder_structure.html' with folder=subfolder documents=subfolder.documents.all %}
+                <span class="fw-sm-bold">{{ document.document.original_filename }}</span>
+            </td>
+            <td class="d-none d-md-none d-lg-table-cell text-muted-weight small">Document</td>
+            <td class="d-none d-sm-none d-md-table-cell text-muted-weight small">{{ document.updated_at|date:"Y-m-d H:i" }}</td>
+        </tr>
     {% endfor %}
-
-    {% if folder.documents.exists %}
-        {% for document in folder.documents.all %}
-            <!-- Document Row: Initially Hidden, Shown on Folder Expand -->
-            <tr class="folder-content collapse folderContent{{ folder.uuid }} expanded-level-folder no-select-on-dblclick" onmousedown="enableSelection(this)" tabindex="0">
-                
-                <td class="document-name lh-lg ps-3 py-2 small-custom">
-                    <input class="form-check-input custom-checkbox" type="checkbox" name="documents" value="{{ document.id }}">
-                    <svg width="20" height="20" viewBox="0 -0.5 19 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <g clip-path="url(#clip0_1428_85)">
-                            <path d="M7 21C5.89543 21 5 20.1046 5 19V3H14L19 8V19C19 20.1046 18.1046 21 17 21H7Z" stroke="#5379A8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                            <path d="M13 3V9H19" stroke="#5379A8" stroke-width="2.5" stroke-linejoin="round"/>
-                            <path d="M9 13H15" stroke="#5379A8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                            <path d="M9 17H15" stroke="#5379A8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                        </g>
-                        <defs>
-                            <clipPath id="clip0_1428_85">
-                                <rect width="26" height="26" fill="white"/>
-                            </clipPath>
-                        </defs>
-                    </svg>
-                    
-                    <span class="fw-sm-bold">{{ document.display_filename }}</span>
-                </td>
-                
-                <td class="d-none d-md-none d-lg-table-cell text-muted-weight small">Document</td>
-                <td class="d-none d-sm-none d-md-table-cell text-muted-weight small">{{ document.updated_at|date:"Y-m-d H:i" }}</td>
-            </tr>
-        {% endfor %}
-    {% endif %}
+{% endif %}
 {% endif %}
 
-{% if documents.exists %}
+{% if documents %}
     {% for document in documents %}
-        {% if not document.folder.parent %}
-            <!-- Document Row: Initially Hidden, Shown on Folder Expand -->
-            <tr class="folder-content no-select-on-dblclick" onmousedown="enableSelection(this)" tabindex="0">
+        {% if not document.document.folder.parent %}
+            <tr class="no-select-on-dblclick" tabindex="0" data-depth="{{ depth }}">
+                <td class="cursor-default"><input class="form-check-input" type="checkbox" name="documents" value="{{ document.uuid }}"></td>
                 <td class="document-name lh-lg ps-3 py-2 small-custom">
-                    <input class="form-check-input custom-checkbox" type="checkbox" name="documents" value="{{ document.id }}">
                     <svg width="24" height="20" viewBox="2 -0.5 19 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <g clip-path="url(#clip0_1428_85)">
-                            <path d="M7 21C5.89543 21 5 20.1046 5 19V3H14L19 8V19C19 20.1046 18.1046 21 17 21H7Z" stroke="#5379A8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                            <path d="M13 3V9H19" stroke="#5379A8" stroke-width="2.5" stroke-linejoin="round"/>
-                            <path d="M9 13H15" stroke="#5379A8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                            <path d="M9 17H15" stroke="#5379A8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                        </g>
-                        <defs>
-                            <clipPath id="clip0_1428_85">
-                                <rect width="26" height="26" fill="white"/>
-                            </clipPath>
-                        </defs>
+                        <!-- SVG content here -->
                     </svg>
-                    
-                    <span class="fw-sm-bold">{{ document.original_filename }}</span>
+                    <span class="fw-sm-bold">{{ document.document.original_filename }}</span>
                 </td>
                 <td class="d-none d-md-none d-lg-table-cell text-muted-weight small">Document</td>
-                <td class="d-none d-sm-none d-md-table-cell text-muted-weight small">{{ document.updated_at|date:"Y-m-d H:i" }}</td>
+                <td class="d-none d-sm-none d-md-table-cell text-muted-weight small">{{ document.document.updated_at|date:"Y-m-d H:i" }}</td>
             </tr>
         {% endif %}
     {% endfor %}
@@ -190,7 +84,6 @@ td {
 
 
 <script>
-    
     function enableSelection(element) {
         // Enable selection if it's a drag
         document.onmousemove = function() {
@@ -203,183 +96,93 @@ td {
 </script>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        function applyDynamicStylesBasedOnDepth(element, depth) {
-    
-            // Apply indent to the file/folder name (assuming it's the first td in each row)
-            if (element.children.length > 0) {
-                // Start with 30px for depth 1, and increase by 20px for each additional depth level
-                const basePadding = 39; // Base padding for depth 1
-                const additionalPaddingPerLevel = 23; // Additional padding for each depth level beyond the first
-                const paddingLeftValue = basePadding + (depth - 1) * additionalPaddingPerLevel;
-                element.children[0].style.setProperty('padding-left', `${paddingLeftValue}px`, 'important');
-            }
-        }
-    
-        // Function to set depth attributes and call styling function
-        function setDepthAndStyles(element, depth) {
-            element.setAttribute('data-depth', depth);
-            applyDynamicStylesBasedOnDepth(element, depth); // Apply dynamic styling based on depth
-        }
-    
-        // Recursively set depth and apply styles
-        function applyDepthToRows(row, depth) {
-            let targetClass = row.dataset.bsTarget;
-            if (targetClass) {
-                targetClass = targetClass.replace('.', '');
-                let childRows = document.querySelectorAll('.' + targetClass);
 
-                childRows.forEach(function(childRow) {
-                    setDepthAndStyles(childRow, depth);
-                    applyDepthToRows(childRow, depth + 1); // Increase depth for nested rows
-                });
-            }
-        }
-    
-        // Initialize depth setting for root elements
-        document.querySelectorAll('.folder-row[data-depth="0"]').forEach(function(row) {
-            applyDepthToRows(row, 1); // Start with depth 1 for children
-        });
-    });
-</script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Select all <td> elements containing checkboxes
+        const checkboxCells = document.querySelectorAll('td input[type="checkbox"]');
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Iterate over each .folder-row
+        checkboxCells.forEach(function(checkbox) {
+            // Get the parent <td> element of the checkbox
+            const td = checkbox.closest('td');
 
-        function addClassToNestedRows(targetSelector, className) {
-            const nestedRows = document.querySelectorAll(targetSelector);
-            nestedRows.forEach(nestedRow => {
-                nestedRow.classList.add(className);
-                // Check if this nested row has its own target to expand further
-                const nestedTargetSelector = nestedRow.dataset.bsTarget;
-                if (nestedTargetSelector) {
-                    // Recursively call this function to add classes further down the tree
-                    addClassToNestedRows(nestedTargetSelector, className);
-                }
-            });
-        }
+            // Attach a click event listener to the <td>
+            td.addEventListener('click', function(event) {
+                // Prevent the click event from propagating to parent elements
+                event.stopPropagation();
 
-        const folderRows = document.querySelectorAll('.folder-row');
-    
-        folderRows.forEach(row => {
-            // Correctly identify each row's corresponding collapsible content
-            const targetSelector = row.dataset.bsTarget;
-            const targetElements = document.querySelectorAll(targetSelector); // Use querySelectorAll to get all matching elements
-            
-            targetElements.forEach(targetElement => { // Iterate over each targetElement if there are multiple
-                const arrowIcon = row.querySelector('.arrow-icon');
-    
-                // When the target starts showing, change the icon to "right arrow"
-                targetElement.addEventListener('show.bs.collapse', function () {
-                    if (row.getAttribute('data-depth') == "0") {
-                        row.classList.add('expanded-top-level-folder');
-                        // Additionally, add 'expanded-level-folder' to all nested rows
-                        addClassToNestedRows(targetSelector + '.folder-row', 'expanded-level-folder');
-                    }
-                    arrowIcon.innerHTML = `
-                        <svg width="24" height="24" viewBox="0 0 24 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <g clip-path="url(#clip0_1426_58)">
-                                <path d="M7 10L12 15" stroke="#5379A8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                                <path d="M12 15L17 10" stroke="#5379A8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                            </g>
-                            <defs>
-                                <clipPath id="clip0_1426_58">
-                                    <rect width="24" height="24" fill="white"/>
-                                </clipPath>
-                            </defs>
-                        </svg>
-                    `;
-                });
-    
-                // When the target is fully hidden, change the icon to "down arrow"
-                targetElement.addEventListener('hidden.bs.collapse', function () {
-                    row.classList.remove('expanded-top-level-folder');
-                    arrowIcon.innerHTML = `
-                    <svg width="24" height="24" viewBox="0 0 24 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <g clip-path="url(#clip0_1426_57)">
-                            <path d="M10 17L15 12" stroke="#5379A8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                            <path d="M15 12L10 7" stroke="#5379A8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                        </g>
-                        <defs>
-                            <clipPath id="clip0_1426_57">
-                                <rect width="24" height="24" fill="white"/>
-                            </clipPath>
-                        </defs>
-                    </svg>
-                    `;
-                });
+                // Toggle the checkbox state
+                checkbox.checked = !checkbox.checked;
+
+                // Optional: If you want to trigger additional actions when the checkbox is checked/unchecked
+                checkbox.dispatchEvent(new Event('change'));
             });
         });
     });
-</script>
 
 
+    function toggleFolder(rowElement) {
+        if (!rowElement) {
+            console.error('Row element is undefined, cannot toggle folder.');
+            return;
+        }
 
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-    // Function to recursively check/uncheck and disable/enable nested checkboxes
-    function toggleNestedCheckboxes(folderRow, isChecked) {
-        // Check if data-bs-target is defined before attempting to replace characters
-        if (typeof folderRow.dataset.bsTarget !== 'undefined') {
-            const targetClass = folderRow.dataset.bsTarget.replace('.', '');
-            const nestedRows = document.querySelectorAll(`.${targetClass}`);
+        if (!rowElement.dataset || !rowElement.dataset.depth) {
+            console.error('Row element does not have a valid data-depth attribute.');
+            return;
+        }
 
-            nestedRows.forEach(row => {
-                const checkbox = row.querySelector('input[type="checkbox"]');
-                if (checkbox) {
-                    checkbox.disabled = isChecked; // Disable if parent is checked
-                    checkbox.checked = isChecked; // Check/uncheck to match the parent checkbox's state
-                    row.style.opacity = isChecked ? "0.6" : "1"; // Adjust opacity to visually indicate disabled/enabled state
-                    checkbox.dispatchEvent(new Event('change', { 'bubbles': true }));
+        const parentDepth = parseInt(rowElement.dataset.depth, 10);
+        const isExpanded = rowElement.classList.contains('expanded');
+        const tableRows = document.querySelectorAll('.folder-row, .folder-content');
+
+        console.log(`Toggling folder at depth ${parentDepth}, currently ${isExpanded ? 'expanded' : 'collapsed'}.`);
+
+        let sameDepthCount = 0;
+        let insideTargetDepth = false;
+
+        tableRows.forEach(nextRow => {
+            const nextRowDepth = parseInt(nextRow.dataset.depth, 10);
+
+            if (nextRowDepth === parentDepth) {
+                insideTargetDepth = false;
+            }
+
+            if (insideTargetDepth && nextRowDepth === parentDepth + 1) {
+                sameDepthCount++;
+                if (isExpanded) {
+                    // Collapse direct children
+                    nextRow.classList.add('hidden');
+                    console.log(`Collapsing direct child at depth ${nextRowDepth}, UUID: ${nextRow.dataset.folderUuid || nextRow.dataset.documentUuid}`);
+                } else {
+                    // Expand direct children
+                    nextRow.classList.remove('hidden');
+                    console.log(`Expanding direct child at depth ${nextRowDepth}, UUID: ${nextRow.dataset.folderUuid || nextRow.dataset.documentUuid}`);
                 }
-                // Apply the same logic recursively to all nested rows
-                toggleNestedCheckboxes(row, isChecked);
-            });
+            } else if (insideTargetDepth && nextRowDepth > parentDepth + 1) {
+                // Ensure deeper nested items are collapsed when the parent is collapsed
+                if (isExpanded) {
+                    nextRow.classList.add('hidden');
+                    console.log(`Collapsing deeper child at depth ${nextRowDepth}, UUID: ${nextRow.dataset.folderUuid || nextRow.dataset.documentUuid}`);
+                }
+            }
+
+            if (nextRow === rowElement) {
+                insideTargetDepth = true;
+            }
+        });
+
+        console.log(`Total rows found with depth ${parentDepth + 1}: ${sameDepthCount}`);
+
+        // Toggle arrow and expanded class
+        const arrowIcon = rowElement.querySelector('.arrow-icon');
+        if (isExpanded) {
+            arrowIcon.innerHTML = '▶';
+            rowElement.classList.remove('expanded');
+        } else {
+            arrowIcon.innerHTML = '▼';
+            rowElement.classList.add('expanded');
         }
     }
-
-    // Attach event listeners to all folder checkboxes
-    const folderCheckboxes = document.querySelectorAll('input[type="checkbox"][name="folders"]');
-    folderCheckboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
-            const folderRow = this.closest('.folder-row');
-            if (folderRow) {
-                // If checkbox is checked, check all nested checkboxes and disable them. Otherwise, uncheck and enable them.
-                toggleNestedCheckboxes(folderRow, this.checked);
-                
-            }
-        });
-    });
-});
-</script>
-
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-    document.querySelectorAll(".folder-row").forEach(row => {
-        row.addEventListener("dblclick", function() {
-            // This function toggles the visibility of all child folders
-            const targetSelector = row.dataset.bsTarget;
-            $(targetSelector).collapse('toggle'); // Toggle the immediate child folders
-
-            // Recursively collapse all child folders
-            recursiveCollapse(targetSelector, $(targetSelector).hasClass('show'));
-        });
-    });
-
-    function recursiveCollapse(selector, isShown) {
-        document.querySelectorAll(selector).forEach(function(element) {
-            const childFolders = element.getAttribute('data-bs-target');
-            if (childFolders) {
-                $(childFolders).each(function() {
-                    // If parent is being shown, show all children, else hide them
-                    isShown ? $(this).collapse('show') : $(this).collapse('hide');
-                    recursiveCollapse(childFolders, isShown); // Recurse into children
-                });
-            }
-        });
-    }
-});
 </script>
 
 <!-- When checked box trigger  -->

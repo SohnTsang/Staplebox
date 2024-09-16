@@ -263,7 +263,7 @@
                                 <a href="#" data-bs-toggle="modal" data-bs-target="#createFolderModal">New Folder</a>
                                 <a href="#" data-bs-toggle="modal" id="openUploadModaProductlBtn" data-bs-target="#uploadDocumentModal">New Document</a>
                             </div>
-                            <a href="{% url 'access_control:manage_access' product_uuid=signed_product_uuid %}" class="button-8">Edit</a>
+                            <a href="#" class="button-8" id="editProductTrigger" data-product-uuid="{{ signed_product_uuid }}">Edit</a>
 
                             <a href="{% url 'access_control:manage_access' product_uuid=signed_product_uuid %}" class="button-8">Access</a>
                         </div>
@@ -384,11 +384,11 @@
                                         </button>
                                         <div class="action-button-dropdown dropdown-content">
                                             <a href="#" data-bs-toggle="modal" data-bs-target="#accessControlModal" data-document-id="{{ document.uuid }}" data-product-id="{{ signed_product_uuid }}">Share</a>
-                                            <a href="#" data-bs-toggle="modal" data-bs-target="#editDocumentModal" data-document-id="{{ document.uuid }}">Edit</a>
                                             <a href="#" data-bs-toggle="modal" data-bs-target="#commentModal" data-document-id="{{ document.uuid }}">Comment</a>
                                             <a href="#" data-bs-toggle="modal" data-bs-target="#moveEntityModal" data-entity-type="document" data-entity-id="{{ document.uuid }}" data-product-id="{{ signed_product_uuid }}" data-current-folder-id="{{ document.folder.uuid }}" data-url="{% url 'products:move_entity' product_uuid=signed_product_uuid entity_type='document' entity_uuid=document.uuid current_folder_uuid=document.folder %}">Move</a>
                                             <a href="#" data-bs-toggle="modal" data-bs-target="#updateDocumentModal" data-document-id="{{ document.uuid }}">Upload New Version</a>
-                                            <a href="#" data-bs-toggle="modal" data-bs-target="#documentVersionsModal" data-document-id="{{ document.uuid }}">Version History</a>
+                                            <a href="#" data-bs-toggle="modal" data-bs-target="#documentVersionsModal" data-document-id="{{ document.uuid }}">Version</a>
+                                            <a href="#" data-bs-toggle="modal" data-bs-target="#downloadHistoryModal" data-document-id="{{ document.uuid }}">View Download History</a>
                                             <a href="{% url 'documents:download_document' document.uuid %}">Download</a>
                                             <hr class="dropdown-divider">
                                             <form class="delete-document-form" data-id="{{ document.uuid }}" method="post">
@@ -417,11 +417,14 @@
 {% include "modal/edit_folder_modal.html" %}
 {% include "modal/remove_access_confirm_modal.html" %}
 {% include "modal/edit_document_modal.html" %}
+{% include "modal/edit_product_modal.html" %}
+
 {% include "modal/document_version_modal.html" %}
 {% include "modal/update_document_modal.html" %}
 {% include "modal/comment_modal.html" %}
 {% include "modal/move_entity_modal.html" %}
 {% include "modal/access_control_modal.html" %}
+{% include "modal/download_history_modal.html" %}
 
 {% block javascript %}
 
@@ -433,6 +436,127 @@
 </script>
 
 <script>
+
+//function to trigger edit product modal and handle form submission
+
+document.addEventListener('DOMContentLoaded', function () {
+    const editProductTrigger = document.getElementById('editProductTrigger');
+    const editProductModal = document.getElementById('editProductModal');
+    const editProductForm = document.getElementById('editProductForm');
+    const submitButton = document.getElementById('SubmitEditProductForm');
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    editProductTrigger.addEventListener('click', function (event) {
+        event.preventDefault();
+        const productUuid = editProductTrigger.getAttribute('data-product-uuid');
+
+        // Fetch the product details
+        fetch(`/products/edit/${productUuid}/`, {
+            method: 'GET',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.product) {
+                // Populate the form fields with the existing product data
+                document.getElementById('edit_product_name').value = data.product.product_name;
+                document.getElementById('edit_product_code').value = data.product.product_code;
+                document.getElementById('edit_product_description').value = data.product.product_description;
+
+                // Populate the product type dropdown
+                const productTypeSelect = document.getElementById('edit_product_type');
+                productTypeSelect.innerHTML = ''; // Clear existing options
+                data.product_types.forEach(type => {
+                    const option = document.createElement('option');
+                    option.value = type[0];
+                    option.textContent = type[1];
+                    if (type[0] === data.product.product_type) {
+                        option.selected = true;
+                    }
+                    productTypeSelect.appendChild(option);
+                });
+
+                // Display the modal
+                editProductModal.style.display = 'block';
+            } else {
+                alert('Failed to load product details');
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    });
+
+    // Close the modal when clicking the "Cancel" button or outside the modal content
+    document.getElementById('CloseEditProductModal').addEventListener('click', function () {
+        editProductModal.style.display = 'none';
+    });
+
+    // Handle form submission
+    submitButton.addEventListener('click', function (event) {
+        event.preventDefault(); // Prevent default form submission
+
+        const productUuid = editProductTrigger.getAttribute('data-product-uuid');
+        const formData = new FormData(editProductForm);
+
+        fetch(`/products/edit/${productUuid}/`, {
+            method: 'PUT',
+            headers: {
+                'X-CSRFToken': csrfToken,
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message) {
+                setSessionMessage(data.message, 'success');
+                location.reload(); // Reload the page after a successful update
+            } else if (data.errors) {
+                // Display form errors
+                showMessage(data.errors, 'error');
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    });
+});
+
+
+
+document.addEventListener('DOMContentLoaded', function() {
+    const downloadHistoryModal = document.getElementById('downloadHistoryModal');
+    if (downloadHistoryModal) {
+        downloadHistoryModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            const documentId = button.getAttribute('data-document-id');
+            
+            fetch(`/documents/${documentId}/download-history/`)
+                .then(response => response.json())
+                .then(data => {
+                    const downloadHistoryList = document.getElementById('downloadHistoryList');
+                    downloadHistoryList.innerHTML = ''; // Clear existing content
+
+                    if (data.length === 0) {
+                        const noDataRow = document.createElement('tr');
+                        noDataRow.innerHTML = `
+                            <td colspan="3" class="" style="text-align:center;">No download history</td>
+                        `;
+                        downloadHistoryList.appendChild(noDataRow);
+                    } else {
+                        data.forEach(item => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${item.timestamp}</td>
+                                <td>${item.downloaded_by}</td>
+                                <td>${item.filename}</td>
+                            `;
+                            downloadHistoryList.appendChild(row);
+                        });
+                    }
+                });
+        });
+    }
+});
 
 document.addEventListener('DOMContentLoaded', function() {
     function activateAllPartnersTab() {
@@ -1274,17 +1398,6 @@ document.addEventListener('DOMContentLoaded', function() {
             fetch(`/documents/document/ajax/${documentId}/`)
                 .then(response => response.json())
                 .then(data => {
-                    var documentTypeSelect = document.getElementById('id_document_type');
-                    documentTypeSelect.innerHTML = ''; // Clear previous options
-
-                    // Populate document types
-                    data.document_types.forEach(function(type) {
-                        var option = new Option(type.type_name, type.id); // Corrected from type.name to type.type_name
-                        documentTypeSelect.add(option);
-                    });
-
-                    // Set the selected value
-                    documentTypeSelect.value = data.document_type_id;
 
                     document.getElementById('id_original_filename').value = data.original_filename;
                     document.getElementById('id_comments').value = data.comments; // Use .value for textarea to ensure text is set correctly
@@ -1297,7 +1410,6 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
 
             var data = {
-                'document_type': document.getElementById('id_document_type').value,
                 'original_filename': document.getElementById('id_original_filename').value,
                 'comments': document.getElementById('id_comments').value
             };

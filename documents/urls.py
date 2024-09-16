@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views
-from .views import EditComment, UpdateDocument, UploadDocumentPartnerView, DocumentUploadView, DeleteDocumentView, DeletePartnerDocumentView
+from .views import EditComment, UpdateDocument, UploadDocumentPartnerView, DocumentUploadView, DeleteDocumentView, DeletePartnerDocumentView, DownloadHistoryView
 
 
 
@@ -17,6 +17,7 @@ urlpatterns = [
     path('document/<str:document_uuid>/versions/', views.document_versions, name='document_versions'),
     path('download/<str:document_uuid>/<str:version_id>/', views.download_document, name='download_document_version'),
     path('download/<str:document_uuid>/', views.download_document, name='download_document'),
+    path('<str:document_uuid>/download-history/', DownloadHistoryView.as_view(), name='download_history'),
 
     path('document/<str:document_uuid>/comments/', views.comment_versions, name='comment_versions'),
     path('document/edit/<str:document_uuid>/', views.edit_document, name='edit_document'),

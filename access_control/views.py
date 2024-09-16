@@ -48,42 +48,72 @@ class ManageAccessView(APIView):
         except BadSignature:
             return Response({'error': 'Invalid product UUID'}, status=400)
 
-        user = request.user
+        company_profile = request.user.userprofile.company_profiles.first()
         product = get_object_or_404(Product, uuid=unsigned_product_uuid)
         
-        if product.user != user:
+        if product.company != company_profile:
             return Response({'error': 'Unauthorized'}, status=403)
 
-        partner_info = get_partner_info(user)
+        partner_info = get_partner_info(company_profile)
         partners_with_access = get_partners_with_access(product)
-        
-        form = AccessPermissionForm(user=user, product_uuid=product.uuid)
-        
-        root_folders = Folder.objects.filter(product=product, parent__isnull=True)
-        documents = Document.objects.filter(folder__in=root_folders)
 
-        folders_data = []
-        for root_folder in root_folders:
-            subfolders = Folder.objects.filter(parent=root_folder)
-            for subfolder in subfolders:
-                subfolder_documents = Document.objects.filter(folder=subfolder)
-                folders_data.append({'folder': subfolder, 'documents': subfolder_documents})
+        form = AccessPermissionForm(company_profile=company_profile, product_uuid=product.uuid)
+        
+        root_folders = Folder.objects.filter(product=product, parent__isnull=True).order_by('name')
+        
+        root_folders_data = []
+
+        def collect_folders_data(folder, depth=1):
+            subfolders_data = []
+            subfolder_qs = Folder.objects.filter(parent=folder).order_by('name')
+            for subfolder in subfolder_qs:
+                subfolders_data.append({
+                    'folder': subfolder,
+                    'documents': [{'uuid': signer.sign(str(doc.uuid)), 'document': doc, 'depth': depth + 1} for doc in Document.objects.filter(folder=subfolder).order_by('original_filename')],
+                    'folder_uuid': signer.sign(str(subfolder.uuid)),
+                    'depth': depth + 1,  # Correct depth for subfolders
+                    'subfolders': collect_folders_data(subfolder, depth + 1)  # Recursively collect subfolders with correct depth
+                })
+            return subfolders_data
 
         for root_folder in root_folders:
-            root_folder_documents = Document.objects.filter(folder=root_folder)
-            if root_folder_documents.exists():
-                folders_data.append({'folder': None, 'documents': root_folder_documents})
+            # Directly add subfolders and documents of root folders at depth 1
+            subfolder_qs = Folder.objects.filter(parent=root_folder).order_by('name')
+            for subfolder in subfolder_qs:
+                root_folders_data.append({
+                    'folder': subfolder,
+                    'documents': [{'uuid': signer.sign(str(doc.uuid)), 'document': doc, 'depth': 1} for doc in Document.objects.filter(folder=subfolder).order_by('original_filename')],
+                    'folder_uuid': signer.sign(str(subfolder.uuid)),
+                    'depth': 1,
+                    'subfolders': collect_folders_data(subfolder, depth=1)
+                })
+
+            # Also, add documents directly under the root folder as depth 1
+            root_folders_data.extend([
+                {
+                    'folder': None,  # No folder associated
+                    'documents': [{'uuid': signer.sign(str(doc.uuid)), 'document': doc, 'depth': 1} for doc in Document.objects.filter(folder=root_folder).order_by('original_filename')],
+                    'folder_uuid': signer.sign(str(root_folder.uuid)),  # This could be used to distinguish these documents
+                    'depth': 1,
+                    'subfolders': []
+                }
+            ])
+
+        # Sign the product UUID again before passing to the template
+        signed_product_uuid = signer.sign(str(product.uuid))
 
         context = {
             'product': product,
+            'product_uuid': signed_product_uuid,  # Pass the signed product UUID
             'partners': partner_info,
-            'documents': documents,
-            'folders': root_folders,
-            'folders_data': folders_data,
+            'documents': [],  # Excluding direct root documents as they are now part of root_folders_data
+            'folders': [],  # Root folders are not needed in the context as they are unneeded at depth 1
+            'root_folders_data': root_folders_data,
             'partners_with_access': partners_with_access,
             'form': form,
             'last_active_tab': request.session.get('last_active_tab', 'all'),
         }
+
         return Response(context)
 
     def post(self, request, product_uuid):
@@ -93,21 +123,28 @@ class ManageAccessView(APIView):
             return Response({'error': 'Invalid product UUID'}, status=400)
 
         product = get_object_or_404(Product, uuid=unsigned_product_uuid)
-        if product.user != request.user:
+        company_profile = request.user.userprofile.company_profiles.first()
+        if product.company != company_profile:
             return Response({'error': 'Unauthorized'}, status=403)
 
-        form = AccessPermissionForm(request.POST, user=request.user, product_uuid=product.uuid)
+        form = AccessPermissionForm(request.POST, company_profile=company_profile, product_uuid=product.uuid)
         if form.is_valid():
             action = request.POST.get('action')
             partners = form.cleaned_data['partners']
-            folder_ids = request.POST.getlist('folders')
-            document_ids = request.POST.getlist('documents')
+            folder_uuids = request.POST.getlist('folders')
+            document_uuids = request.POST.getlist('documents')
+
+            # Debugging: Log the data being processed
+            logger.debug(f"Action: {action}")
+            logger.debug(f"Partners: {partners}")
+            logger.debug(f"Folder UUIDs: {folder_uuids}")
+            logger.debug(f"Document UUIDs: {document_uuids}")
 
             with transaction.atomic():
                 if action == 'grant_access':
-                    self.grant_access(request.user, partners, product, folder_ids, document_ids)
+                    self.grant_access(company_profile, partners, product, folder_uuids, document_uuids)
                 elif action == 'update_access':
-                    self.update_access(request.user, partners, product, folder_ids, document_ids)
+                    self.update_access(company_profile, partners, product, folder_uuids, document_uuids)
 
             messages.success(request, "Access updated successfully.")
             return redirect('access_control:manage_access', product_uuid=product_uuid)
@@ -115,45 +152,43 @@ class ManageAccessView(APIView):
             messages.error(request, "Invalid form submission.")
             return self.get(request, product_uuid)
 
-    def grant_access(self, user, partners, product, folder_ids, document_ids):
+    def grant_access(self, company_profile, partners, product, folder_uuids, document_uuids):
         logger.debug("Granting access...")
         for partner in partners:
-            logger.debug(f"Partner ID: {partner.id}")  # Ensure this is the expected numeric ID
-            for folder_id in folder_ids:
-                logger.debug(f"Folder ID: {folder_id}")  # Log to confirm correct data type
-                folder = get_object_or_404(Folder, id=folder_id)
-                AccessPermission.objects.get_or_create(partner1=user, partner2=partner, product=product, folder=folder)
-            for document_id in document_ids:
-                logger.debug(f"Document ID: {document_id}")  # Log to confirm correct data type
-                document = get_object_or_404(Document, id=document_id)
-                AccessPermission.objects.get_or_create(partner1=user, partner2=partner, product=product, document=document)
+            for folder_uuid in folder_uuids:
+                try:
+                    folder = get_object_or_404(Folder, uuid=folder_uuid)
+                    logger.debug(f"Granting folder access to: {folder.uuid}")
+                    AccessPermission.objects.get_or_create(partner1=company_profile, partner2=partner, product=product, folder=folder)
+                except Exception as e:
+                    logger.error(f"Error granting folder access: {e}")
+            
+            for document_uuid in document_uuids:
+                try:
+                    document = get_object_or_404(Document, uuid=document_uuid)
+                    logger.debug(f"Granting document access to: {document.uuid}")
+                    AccessPermission.objects.get_or_create(partner1=company_profile, partner2=partner, product=product, document=document)
+                except Exception as e:
+                    logger.error(f"Error granting document access: {e}")
         logger.debug("Completed grant_access method.")
 
-    def update_access(self, user, partners, product, folder_ids, document_ids):
+    def update_access(self, company_profile, partners, product, folder_uuids, document_uuids):
         logger.debug("Starting update_access method...")
-        
-        # Assuming partners are now coming as user instances or IDs, handle both cases
+
         for partner in partners:
-            partner_id = partner if isinstance(partner, int) else partner.id
-            logger.debug(f"Processing partner ID: {partner_id}")
-            
-            try:
-                partner_user = get_object_or_404(User, id=partner_id)
-                logger.debug(f"Found User: {partner_user.username} with ID: {partner_id}")
-            except Exception as e:
-                logger.error(f"Error finding user with ID {partner_id}: {str(e)}")
-                continue
+            partner_profile = get_object_or_404(CompanyProfile, uuid=partner.uuid)
             
             # Deleting existing permissions before re-granting
-            existing_permissions = AccessPermission.objects.filter(partner1=user, partner2=partner_user, product=product)
+            existing_permissions = AccessPermission.objects.filter(partner1=company_profile, partner2=partner_profile, product=product)
             permissions_count = existing_permissions.count()
             existing_permissions.delete()
-            logger.info(f"Deleted {permissions_count} existing permissions for user {user.username} and partner {partner_user.username}")
+            logger.info(f"Deleted {permissions_count} existing permissions for company profile {company_profile.name} and partner {partner_profile.name}")
             
             # Re-grant access with possibly updated folders and documents
-            self.grant_access(user, [partner_user], product, folder_ids, document_ids)
+            self.grant_access(company_profile, [partner_profile], product, folder_uuids, document_uuids)
 
         logger.debug("Completed update_access method.")
+
 
 
 
@@ -211,7 +246,7 @@ def access_control_modal(request, product_uuid):
 
                 log_user_activity(
                     user=request.user,
-                    action=f"Granted access to document '{item.name}' for partner '{partner.name}'",
+                    action=f"Granted access to document '{item.display_filename}' for partner '{partner.name}'",
                     activity_type="ACCESS_PERMISSION_GRANTED",
                     item_name= "Product: " + product.product_name
                 )
@@ -292,10 +327,6 @@ def get_partners_without_access(request, product_uuid, item_uuid, item_type):
 
     return JsonResponse(partners_data, safe=False)
 
-
-
-
-
 @login_required
 def get_partners_with_access_json(request, item_uuid=None, item_type=None):
     if item_type not in ['document', 'folder']:
@@ -319,16 +350,14 @@ def get_partners_with_access_json(request, item_uuid=None, item_type=None):
 
     permissions = AccessPermission.objects.filter(
         Q(**{item_type: item}) | product_condition & Q(folder__isnull=True, document__isnull=True)
-    ).distinct().select_related('partner2')
+    ).distinct().select_related('partner2', 'partner1')  # Include partner1 in the query
+
     partners_data = []
     for permission in permissions:
-        partner = permission.partner2
-
-        # Determine which partner (1 or 2) is associated with the user
-        if partner in user_company_profiles:
-            real_partner = permission.partner1
+        if permission.partner1 in user_company_profiles:
+            real_partner = permission.partner2
         else:
-            real_partner = partner
+            real_partner = permission.partner1
 
         partners_data.append({
             'partner_id': signer.sign(str(real_partner.uuid)),
@@ -336,29 +365,84 @@ def get_partners_with_access_json(request, item_uuid=None, item_type=None):
             'company_role': real_partner.role.capitalize() if real_partner.role else 'N/A',
             'access_detail': 'Full Access'
         })
+
     return JsonResponse(partners_data, safe=False)
 
 
-
-
-
 @login_required
-def fetch_partner_access_details(request, product_id, partner_id):
-    # Ensure the user requesting this page is the product owner or has permission to view this information
-    product = get_object_or_404(Product, id=product_id)
-    partner = User.objects.get(id=partner_id)
+def fetch_partner_access_details(request, product_uuid, partner_uuid):
+    signer = Signer()
 
-    if product.user != request.user:
+    try:
+        unsigned_product_uuid = signer.unsign(product_uuid)
+        unsigned_partner_uuid = signer.unsign(partner_uuid)
+    except BadSignature as e:
+        logger.error(f"BadSignature Error: {str(e)} - product_uuid: {product_uuid}, partner_uuid: {partner_uuid}")
+        return JsonResponse({'error': 'Invalid UUID'}, status=400)
+
+    logger.debug(f"Unsigned Product UUID: {unsigned_product_uuid}")
+    logger.debug(f"Unsigned Partner UUID: {unsigned_partner_uuid}")
+
+    # Ensure the user requesting this page is the product owner or has permission to view this information
+    company_profile = request.user.userprofile.company_profiles.first()
+    product = get_object_or_404(Product, uuid=unsigned_product_uuid)
+    partner = get_object_or_404(CompanyProfile, uuid=unsigned_partner_uuid)
+
+    logger.debug(f"Company Profile: {company_profile}")
+    logger.debug(f"Product: {product}")
+    logger.debug(f"Partner: {partner}")
+
+    if product.company != company_profile:
+        logger.warning(f"Unauthorized Access Attempt: {company_profile} attempted to access {product}")
         return JsonResponse({'error': 'Unauthorized'}, status=403)
 
-    product_access = AccessPermission.objects.filter(partner2=partner, product=product, folder__isnull=True, document__isnull=True).exists()
-    # Fetch access details for the given partner and product
-    folders_access = AccessPermission.objects.filter(partner2_id=partner_id, product_id=product_id, folder__isnull=False).values_list('folder_id', flat=True)
-    documents_access = AccessPermission.objects.filter(partner2_id=partner_id, product_id=product_id, document__isnull=False).values_list('document_id', flat=True)
+    # Determine if the user is partner1 or partner2
+    partnership = get_object_or_404(Partnership, 
+                                    Q(partner1=company_profile, partner2=partner) | 
+                                    Q(partner1=partner, partner2=company_profile))
+
+    if partnership.partner1 == company_profile:
+        is_partner1 = True
+    else:
+        is_partner1 = False
+
+    logger.debug(f"Is Partner1: {is_partner1}")
+
+    if is_partner1:
+        product_access = AccessPermission.objects.filter(
+            partner2=partner, product=product, folder__isnull=True, document__isnull=True
+        ).exists()
+
+        folders_access = AccessPermission.objects.filter(
+            partner2=partner, product=product, folder__isnull=False
+        ).values_list('folder__uuid', flat=True)
+
+        documents_access = AccessPermission.objects.filter(
+            partner2=partner, product=product, document__isnull=False
+        ).values_list('document__uuid', flat=True)
+    else:
+        product_access = AccessPermission.objects.filter(
+            partner1=partner, product=product, folder__isnull=True, document__isnull=True
+        ).exists()
+
+        folders_access = AccessPermission.objects.filter(
+            partner1=partner, product=product, folder__isnull=False
+        ).values_list('folder__uuid', flat=True)
+
+        documents_access = AccessPermission.objects.filter(
+            partner1=partner, product=product, document__isnull=False
+        ).values_list('document__uuid', flat=True)
+
+    logger.debug(f"Product Access: {product_access}")
+    logger.debug(f"Folders Access List: {folders_access}")
+    logger.debug(f"Documents Access List: {documents_access}")
 
     # Convert querysets to lists (as querysets are not JSON serializable directly)
-    folders_access_list = list(folders_access)
-    documents_access_list = list(documents_access)
+    folders_access_list = [signer.sign(str(uuid)) for uuid in folders_access]
+    documents_access_list = [signer.sign(str(uuid)) for uuid in documents_access]
+
+    logger.debug(f"Signed Folders Access List: {folders_access_list}")
+    logger.debug(f"Signed Documents Access List: {documents_access_list}")
 
     # Return the access details as a JSON response
     return JsonResponse({
@@ -457,7 +541,7 @@ def remove_specific_access(request, product_uuid, entity_type, entity_uuid):
         # Log the activity
         log_user_activity(
             user=request.user,
-            action=f"Removed access to document '{entity.name}' for partner '{partner.name}'",
+            action=f"Removed access to document '{entity.display_filename}' for partner '{partner.name}'",
             activity_type="ACCESS_PERMISSION_REVOKED",
             item_name=f"Product: {product.product_name}"
         )

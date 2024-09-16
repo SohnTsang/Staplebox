@@ -5,12 +5,6 @@
             <div class="modal-body">
                 <form method="post" enctype="multipart/form-data" id="editDocumentForm">
                     {% csrf_token %}
-                    <!-- Document Type Dropdown -->
-                    <label for="id_document_type" class="">Document Type</label>
-                    <select name="document_type" id="id_document_type" class="">
-                        <!-- Options populated dynamically -->
-                    </select>
-                    
                     <!-- Original Filename Input -->
                     <label for="id_original_filename" class="">Document Name</label>
                     <input type="text" name="original_filename" id="id_original_filename" class="" value="{{ form.original_filename.value }}">

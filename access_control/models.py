@@ -24,7 +24,7 @@ class AccessPermission(models.Model):
     document = models.ForeignKey(Document, blank=True, null=True, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     access_type = models.CharField(max_length=50, choices=ACCESS_TYPES, default='full')
-
+    is_direct = models.BooleanField(default=True)  # Add this field
     
     def __str__(self):
         return f"{self.partner1} grants {self.partner2} - Prod: {self.product}, Folder: {self.folder}, Doc: {self.document}"
@@ -85,3 +85,4 @@ class AccessPermission(models.Model):
         if document:
             cache_key = f"doc_access_{partner2.id}_{document.id}"
             cache.delete(cache_key)
+            

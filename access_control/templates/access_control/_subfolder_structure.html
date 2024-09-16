@@ -1,64 +1,37 @@
-{% block extra_css %}
-<style>
-
-</style>
-{% endblock extra_css %}
-
 <!-- _subfolder_structure.html -->
 <!-- Subfolder Row: Initially Hidden, Shown on Parent Folder Expand -->
-<tr class="folder-row collapse folderContent{{ folder.parent_id }} no-select-on-dblclick" onmousedown="enableSelection(this)" tabindex="0" data-bs-target=".folderContent{{ folder.uuid }}" aria-expanded="false">
+<tr class="folder-row no-select-on-dblclick hidden" tabindex="0" data-depth="{{ depth }}" onclick="toggleFolder(this)">
+    <td class="cursor-default"><input class="form-check-input" type="checkbox" name="folders" value="{{ folder_uuid }}"></td>
     <td class="lh-lg ps-3 py-2 small-custom">
-        <input class="form-check-input custom-checkbox" type="checkbox" name="folders" value="{{ folder.uuid }}">
-        <span class="arrow-icon" style="display: inline-block;">
-            <svg class="arrow-icon" width="24" height="24" viewBox="0 0 24 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <g clip-path="url(#clip0_1426_57)">
-                    <path d="M10 17L15 12" stroke="#5379A8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M15 12L10 7" stroke="#5379A8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </g>
-                <defs>
-                    <clipPath id="clip0_1426_57">
-                    <rect width="24" height="24" fill="white"/>
-                    </clipPath>
-                </defs>
-            </svg>
+        <span class="arrow-icon">
+            ▶
         </span>
-        
         <span class="folder-name fw-sm-bold">{{ folder.name }}</span>
     </td>
-    <td class="d-none d-md-none d-lg-table-cell text-muted-weight small">Folder</td> <!-- Placeholder for subfolders -->
+    <td class="d-none d-md-none d-lg-table-cell text-muted-weight small">Folder</td>
     <td class="d-none d-sm-none d-md-table-cell text-muted-weight small">{{ folder.updated_at|date:"Y-m-d H:i" }}</td>
 </tr>
 
 <!-- Nested Subfolders -->
-{% for subfolder in folder.subfolders.all %}
-    {% include 'access_control/_subfolder_structure.html' with folder=subfolder documents=subfolder.documents.all %}
+{% for subfolder_data in subfolders %}
+    {% include 'access_control/_subfolder_structure.html' with folder=subfolder_data.folder documents=subfolder_data.documents parent_uuid=folder_uuid folder_uuid=subfolder_data.folder_uuid depth=subfolder_data.depth subfolders=subfolder_data.subfolders %}
 {% endfor %}
 
 <!-- Documents under Subfolder -->
-{% for document in documents %}
-    <tr class="folder-content collapse folderContent{{ folder.uuid }} no-select-on-dblclick" onmousedown="enableSelection(this)" tabindex="0">
+{% for document in folder.documents.all %}
+    <tr class="folder-content no-select-on-dblclick hidden" tabindex="0" data-depth="{{ depth|add:'1' }}">
+        <td class="cursor-default"><input class="form-check-input" type="checkbox" name="documents" value="{{ document.uuid }}"></td>
         <td class="document-name lh-lg ps-3 py-2 small-custom">
-            <input class="form-check-input custom-checkbox" type="checkbox" name="documents" value="{{ document.id }}">
-            <svg width="24" height="20" viewBox="2 -0.5 19 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <g clip-path="url(#clip0_1428_85)">
-                    <path d="M7 21C5.89543 21 5 20.1046 5 19V3H14L19 8V19C19 20.1046 18.1046 21 17 21H7Z" stroke="#5379A8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M13 3V9H19" stroke="#5379A8" stroke-width="2.5" stroke-linejoin="round"/>
-                    <path d="M9 13H15" stroke="#5379A8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M9 17H15" stroke="#5379A8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </g>
-                <defs>
-                    <clipPath id="clip0_1428_85">
-                        <rect width="26" height="26" fill="white"/>
-                    </clipPath>
-                </defs>
+            <svg width="20" height="20" viewBox="0 -0.5 19 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- SVG content here -->
             </svg>
-            
             <span class="fw-sm-bold">{{ document.original_filename }}</span>
         </td>
         <td class="d-none d-md-none d-lg-table-cell text-muted-weight small">Document</td>
         <td class="d-none d-sm-none d-md-table-cell text-muted-weight small">{{ document.updated_at|date:"Y-m-d H:i" }}</td>
     </tr>
 {% endfor %}
+
 
 
 {% block javascript %}

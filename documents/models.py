@@ -12,6 +12,7 @@ from django.core.exceptions import ValidationError
 import uuid
 from django.core.signing import Signer
 import hashlib
+from companies.models import CompanyProfile
 
 signer = Signer()
 
@@ -148,8 +149,8 @@ class Document(models.Model):
     def formatted_modified_date(self):
         return localtime(self.updated_at).strftime("%Y-%m-%d %H:%M")
 
-    def update_version(self, new_file, new_hash, comments=None, uploaded_by=None):
-        # Create a new DocumentVersion instance with the new file
+    def update_version(self, new_file, new_hash, comments=None, uploaded_by=None, partner=None):
+        # Update the method signature to include 'partner'
         new_version = DocumentVersion.objects.create(
             document=self,
             file=new_file,
@@ -158,6 +159,7 @@ class Document(models.Model):
             original_filename=new_file.name,
             file_hash=new_hash,
             comments=comments,
+            partner=partner,  # Set the partner here
         )
         self.version = new_version.version
         self.file_hash = new_hash
@@ -188,6 +190,10 @@ class DocumentVersion(models.Model):
     comments = models.TextField(blank=True, null=True)  # Add this line
     original_folder = models.ForeignKey(Folder, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
     
+    # Add the partner field here
+    partner = models.ForeignKey(CompanyProfile, on_delete=models.CASCADE, null=True, blank=True, related_name='document_versions')
+
+
     class Meta:
         unique_together = [('document', 'version')]
 

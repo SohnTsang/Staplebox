@@ -103,7 +103,7 @@ a {
                 {% elif own_profile %}
                     <button id="loadTokenBtn" class="btn">Show Invite Token</button>
                     <button id="showLinkedUsersBtn" class="btn">Show Linked Users</button> <!-- New Button -->
-
+                {% else %}
                 {% endif %}
             </div>
 
@@ -292,9 +292,9 @@ a {
                                 <td><a href="{% url 'documents:download_document' document.uuid %}">{{ document.original_filename }}</a></td>
                                 <td>{{ document.comments }}</td>
                                 <td>{{ document.uploaded_by }}</td>
+                                
                                 <td>
-                                    {% if request.user.userprofile.company_profiles.first == document.uploaded_by.userprofile.company_profiles.first %}
-                                    
+                                    {% if request.user.userprofile.company_profiles.first.uuid == document.uploaded_by.uuid %}
                                     <form class="delete-form" data-document-id="{{ document.uuid }}">
                                         {% csrf_token %}
                                         <button type="submit" class="remove-btn">Delete</button>

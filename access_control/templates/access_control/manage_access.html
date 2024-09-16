@@ -4,162 +4,155 @@
 {% load crispy_forms_filters %}
 
 
-
 {% block extra_css %}
+<link rel="stylesheet" type="text/css" href="{% static 'exports/css/style.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'exports/css/modal.css' %}">
+
 <style>
 
-span {
-    vertical-align: middle;
-}
-.custom-modal {
-    display: none; /* Hidden by default */
-    position: fixed;
-    z-index: 1051; /* Slightly above message popup */
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto; /* Enable scroll if needed */
-    background-color: rgba(0,0,0,0.4); /* Dim background */
+body {
+    font-family: Arial, sans-serif;
+    color: #333;
+    background-color: #f5f5f5;
+    margin: 0;
+    padding: 0;
 }
 
+.container {
+    width: 90%;
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 20px;
+}
 
-.modal-header, .modal-footer {
+.row {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    gap: 20px;
 }
 
-.close-modal-btn {
-    cursor: pointer;
-    border: none;
-    background: none;
+.wrapper {
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
 }
-
-.modal-header h5 {
-    margin: 0;
-}
-
-.modal-body p {
-    margin: 15px 0;
-}
-
-.table > :not(caption) > * > * {
-  color: var(--bs-table-color-state, var(--bs-table-color-type, var(--bs-table-color)));
-  background-color: var(--bs-table-bg);
-  border-bottom-width: var(--bs-border-width);
-  box-shadow: inset 0 0 0 9999px var(--bs-table-bg-state, var(--bs-table-bg-type, var(--bs-table-accent-bg)));
-}
-
-.sticky tr {
-    position: sticky;
-    top: 0;
-    z-index: 100; /* To ensure it stays above the content */
-    background-color: #fff; /* To prevent content behind it from showing through */
-    box-shadow: 0 1px 1px -1px #dee2e6;
-}
-
 
 .title {
-    min-height: 70px;
-    align-items: center; /* This vertically centers the content */
+    padding: 20px;
+    border-bottom: 1px solid #eee;
     display: flex;
-    flex-shrink: 0; /* Prevents these elements from shrinking, ensuring they maintain their size */
-
+    align-items: center;
+    font-size: 18px;
+    font-weight: bold;
+    color: #007bff;
 }
 
-.list-group-item:focus-within, .list-group-item:active {
-    background-color: #1e7bee44; /* Adjust color to suit your design */
+.tab-buttons {
+    display: flex;
+    justify-content: space-around;
+    border-bottom: 1px solid #eee;
+    margin-bottom: 10px;
 }
 
-.list-group-item:not(:focus):not(:active):hover {
-    background-color: #7e9abe22; /* Lighter background color on hover */
+.tab-button {
+    flex: 1;
+    padding: 10px;
+    text-align: center;
+    cursor: pointer;
+    background-color: #f8f8f8;
+    border-right: 1px solid #eee;
 }
 
-/* Active or focused state */
-.list-group-item:focus, .list-group-item:active {
-    background-color: #1e7bee44 !important; /* Keep background color when active/focused */
+.tab-button:last-child {
+    border-right: none;
 }
 
-.list-group-item.focus {
-    background-color: #1e7bee44 !important; /* Keep background color when active/focused */
+.tab-button.active {
+    background-color: #007bff;
+    color: white;
 }
 
-/* Wrapping div for responsive table with max-height and vertical scrolling */
+.list-group {
+    padding: 10px;
+    max-height: 500px;
+}
+
+.list-group-item-access {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.list-group-item-access:hover {
+    background-color: #f0f0f0;
+}
+
+.checkbox-container, .checkbox-container-radio {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+
+.form-check-input {
+    margin-right: 10px;
+}
+
 .table-responsive {
-    max-height: 82.5vh; /* Example max-height, adjust as needed */
-    min-height: 82.5vh; /* Example max-height, adjust as needed */
-    
-    box-sizing: content-box; /* Ensures padding is added to the total width and height */
-    border: 1px solid #ddd;
-    overflow-y: auto;
     overflow-x: auto;
+    padding: 10px;
 }
 
 .table {
     width: 100%;
-    max-width: 100%;
-    margin-bottom: 0px;
+    border-collapse: collapse;
     table-layout: fixed;
-    border-collapse: collapse; /* Optional: for border spacing consistency */
 }
-
 
 .table th, .table td {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
     text-align: left;
-    vertical-align: top;
-    line-height: 1.42857143;
-}
-
-.table thead th {
-    line-height: 1.282;
 }
 
 .table th {
+    background-color: #f8f8f8;
     font-weight: bold;
 }
 
-/* Name column specific styles for truncating text */
-.table td:nth-child(1) { /* Adjust the column index as necessary */
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 0; /* Ensures that text-overflow takes effect */
+.table tbody tr:hover {
+    background-color: #f0f0f0;
 }
 
-.table th:nth-child(1), .table td:nth-child(1) {
-    width: 50%;
+.toolbar {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    padding: 10px;
+    background-color: #e7f3ff;
+    border-radius: 5px;
+    gap: 10px;
 }
 
-.table th:nth-child(2), .table td:nth-child(2) {
-    width: 15%;
+button {
+    padding: 10px 20px;
+    border: none;
+    background-color: #007bff;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
 }
 
-.table th:nth-child(3), .table td:nth-child(3) {
-    width: 20%;
+button:hover {
+    background-color: #0056b3;
 }
-
-.table th:nth-child(3), .table td:nth-child(3) {
-    width: 15%;
-}
-
-/* Responsiveness and overflow handling */
-@media screen and (max-width: 767px) {
-    .table-responsive {
-        border: 0;
-    }
-
-    .table th, .table td {
-        white-space: normal;
-    }
-}
-
-
 
 .tooltip-text {
     visibility: hidden;
     width: 100px;
-    font-size:13px;
+    font-size: 13px;
     background-color: #2e2e2e;
     color: #fff;
     text-align: center;
@@ -169,7 +162,7 @@ span {
     z-index: 1;
     top: 100%;
     left: 50%;
-    margin-left: -20px; /* Use half of the width to center the tooltip */
+    margin-left: -20px;
     opacity: 0;
     transition: opacity 0.5s ease;
     z-index: 1000;
@@ -184,26 +177,6 @@ span {
     z-index: 9999;
 }
 
-.visually-hidden {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    padding: 0;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    border: 0;
-}
-
-.action-button-bar {
-    text-align: right; /* Aligns the button to the right */
-    padding-right: 20px; /* Provides some padding on the right */
-}
-.fw-sm-bold {
-    font-weight: 500;
-    color:#2e2e2e;
-}
-
 </style>
 {% endblock extra_css %}
 
@@ -211,166 +184,89 @@ span {
 
 {% block content %}
 
-
-<div class="container mt-1">
+<div class="container">
     <div class="row">
         <!-- Left Side: Partners -->
-        <div id="mypartners" class="col-md-4 col-lg-4 ps-1">
-            <div class="bg-white rounded-2 wrapper vh-90">
-                <div class="title">
-                    <h4 class="text-primary-custom fw-bold px-4">Partners</h4>
-                </div>
-                <div class="">
-                    <ul class="nav nav-tabs modern-tabs col-12" id="invitationTab" role="tablist">
-                        <li class="nav-item col-6" role="presentation">
-                            <button class="nav-link tab-link py-2-custom {% if last_active_tab == 'all' %}active{% endif %}" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab" aria-controls="received" aria-selected="{% if last_active_tab == 'all' %}true{% else %}false{% endif %}">
-                                <div class="button-text small">All</div>
-                            </button>
-                        </li>
-                        <li class="nav-item col-6 border-0" role="presentation">
-                            <button class="nav-link tab-link py-2-custom {% if last_active_tab == 'current' %}active{% endif %}" id="current-tab" data-bs-toggle="tab" data-bs-target="#current" type="button" role="tab" aria-controls="sent" aria-selected="{% if last_active_tab == 'current' %}true{% else %}false{% endif %}">
-                                <div class="button-text small">Granted</div>
-                            </button>
-                        </li>
-                    </ul>
-                </div>
-                <div class="tab-content" id="information">
-                    <div class="tab-pane fade {% if last_active_tab == 'all' %}show active{% endif %}" id="all" role="tabpanel" aria-labelledby="all-tab">
-                        <div class="list-group" id="all-partners">
-                            <div class="col-12 mb-3">
-                                <form method="post" action="{% url 'access_control:manage_access' product.id %}">
-                                    {% csrf_token %}
-                                    {% for partner in partners %}
-                                    <div class="list-group-item flex-column">
-                                        <div class="d-flex py-1">
-                                            <div class="visually-hidden" style="align-self: center;">
-                                                <!-- Ensure the name is correctly set for collecting multiple partner IDs -->
-                                                <input class="form-check-input custom-checkbox" type="checkbox" name="partners" value="{{ partner.partner_id }}" id="partner_{{ partner.partner_id }}">
-                                            </div>
-                                            <div class="ps-3">
-                                                <div class="fw-sm-bold">{{ partner.company_name }}</div>
-                                                <div class="text-primary-custom fw-medium small">{{ partner.company_role|title }}</div>
-                                                
-                                            </div>
-                                            
-                                            <div class="dropdown">
-                                                <!-- Dropdown Actions -->
-                                            </div>
-                                        </div>
-                                    </div>
-                                    {% empty %}
-                                    <div class="list-group" id="all-partners">
-                                        <img src="{% static 'images/empty_state/no_partners.png' %}" alt="No Parnters" class="mt-5 text-center" style="align-self:center;" width="210" height="180">
-                                        <small class="text-center mt-3">Partners added will be shown here</small>
-                                    </div>
-                                    {% endfor %}
-                                    <div class="row mt-3">
-                                        <div class="col-12">
-                                            <div>
-                                                <!-- This button now submits the form enclosing the partner checkboxes -->
-                                                <button type="submit" name="action" value="grant_access" class="btn btn-primary">Grant Access</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </form>
+        <div id="mypartners" class="wrapper" style="flex: 1;">
+            <div class="title">Partners</div>
+            <div class="tabs">
+                <div class="tab {% if last_active_tab == 'all' %}active{% endif %}" data-tab="all">All</div>
+                <div class="tab {% if last_active_tab == 'current' %}active{% endif %}" data-tab="current">Granted</div>
+            </div>
+            <div class="list-group" id="all-partners" style="{% if last_active_tab != 'all' %}display:none{% endif %}">
+                <form method="post" action="{% url 'access_control:manage_access' product_uuid %}">
+                    {% csrf_token %}
+                    {% for partner in partners %}
+                        <div class="list-group-item-access">
+                            <div class="checkbox-container">
+                                <input type="checkbox" name="partners" value="{{ partner.partner_id }}" id="partner_{{ partner.partner_id }}">
+                                <label for="partner_{{ partner.partner_id }}">{{ partner.company_name }}</label>
+                                <!-- Add a link to the partner product explorer view -->
+                                <a href="{% url 'products:partner_product_explorer' product_uuid=product_uuid partner_uuid=partner.partner_id %}">View as Partner</a>
                             </div>
                         </div>
+                    {% empty %}
+                    <div class="empty-state">
+                        <img src="{% static 'images/empty_state/no_partners.png' %}" alt="No Partners" class="empty-img">
+                        <p>Partners added will be shown here</p>
                     </div>
-                    <div class="tab-pane fade {% if last_active_tab == 'current' %}show active{% endif %}" id="current" role="tabpanel" aria-labelledby="current-tab">
-                        <div class="list-group" id="current-access">
-                            <div class="col-12 mb-3">
-                                <div class="" id="partners-with-access">
-                                    <form method="post" action="{% url 'access_control:manage_access' product.id %}">
-                                        {% csrf_token %}
-                                        <div class="toolbar d-flex justify-content-start ps-3 py-1 gap-4 rounded-pill" style="background-color: #1e7bee33;">
-                                            <div class="align-content-center">
-                                                <button type="submit" name="action" value="update_access" class="btn d-flex align-items-center justify-content-center img-wrapper">
-                                                    <img src="{% static 'images/navbar_icon/update_access.png' %}" alt="Update Access" class="text-center" style="align-self:center;" width="21.7237" height="20">
-                                                    <span class="tooltip-text">Update Access</span>
-                                                </button>
-                                            </div>
-                                        </div>
-                                        {% for access in partners_with_access %}
-                                        <div class="list-group-item list-group-item-action partner-access-item" data-partner-id="{{ access.partner2_id }}" tabindex="0">
-                                            
-                                            <div class="d-flex py-1">
-                                                
-                                                <div class="visually-hidden" style="align-self: center;">
-                                                    <input type="radio" name="partners" value="{{ access.partner2_id }}" id="partner_{{ access.partner2_id }}">
-                                                </div>
-                                                    <div class="flex-grow-1 d-flex flex-column ms-3">
-                                                        <div class="fw-sm-bold">{{ access.company_name }}</div>
-                                                        <div class="text-primary-custom fw-medium small">{{ access.company_role|title }}</div>
-                                                        
-                                                    </div>
-                                                    <button type="button" class="btn btn-danger btn-sm remove-access" data-partner-id="{{ access.partner2_id }}" onclick="removeAccess(this.getAttribute('data-partner-id'))" style="align-self:center;">Remove</button>
-
-                                                <!-- Remove Button Form -->
-                                                
-                                            </div>
-                                        </div>
-                                        {% empty %}
-                                        <div class="list-group" id="all-partners">
-                                            <img src="{% static 'images/empty_state/no_partners.png' %}" alt="No Parnters" class="mt-5 text-center" style="align-self:center;" width="210" height="190">
-                                            <small class="text-center mt-3">Partners granted access will be shown here</small>
-                                        </div>
-                                        {% endfor %}
-                                    </form>
-                                </div>
-                            </div>
+                    {% endfor %}
+                    <button type="submit" name="action" value="grant_access" class="btn">Grant Access</button>
+                </form>
+            </div>
+            <div class="list-group" id="current-access" style="{% if last_active_tab != 'current' %}display:none{% endif %}">
+                <form method="post" action="{% url 'access_control:manage_access' product_uuid %}">
+                    {% csrf_token %}
+                    <div class="toolbar">
+                        <button type="submit" name="action" value="update_access" class="btn">Update Access</button>
+                    </div>
+                    {% for access in partners_with_access %}
+                    <div class="list-group-item-access partner-access-item" data-partner-id="{{ access.partner_uuid }}">
+                        <div class="checkbox-container-radio">
+                            <input type="radio" name="partners" value="{{ access.partner_uuid }}" id="partner_{{ access.partner_uuid }}">
+                            <label for="partner_{{ access.partner_uuid }}">{{ access.company_name }}</label>
                         </div>
+                        <button type="button" class="remove-btn" data-partner-id="{{ access.partner_uuid }}" onclick="removeAccess(this.getAttribute('data-partner-id'))">Remove</button>
                     </div>
-                </div>
+                    
+                    {% empty %}
+                    <div class="empty-state">
+                        <img src="{% static 'images/empty_state/no_partners.png' %}" alt="No Partners" class="empty-img">
+                        <p>Partners granted access will be shown here</p>
+                    </div>
+                    {% endfor %}
+                </form>
             </div>
         </div>
-            
 
-        <div class="col-md-8">
-            <div class="bg-white rounded-2 wrapper vh-90">
-                <div class="title">
-                    <h4 class="text-primary-custom fw-bold px-4">{{ product.product_name }}</h4>
-                </div>
-                <div class="toolbar d-flex justify-content-start ps-3 py-2 gap-2 rounded-pill" style="background-color: #1e7bee33; align-items:center;">
-                    <input class="form-check-input custom-checkbox" type="checkbox" id="selectAll">
-                    <label class="form-check-label" for="selectAll">All</label>
-                </div>
-                <div class="table-responsive border-0">
-                    <table class="table">
-                        <thead class="sticky">
-                            <tr class="">
-                                <th class="ps-3 py-2-custom">Name</th>
-                                <th class="d-none d-md-none d-lg-table-cell py-2-custom">Type</th>
-                                <th class="d-none d-sm-none d-md-table-cell py-2-custom">Date Modified</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for item in folders_data %}
-                                {% include 'access_control/_folder_structure.html' with folder=item.folder documents=item.documents %}
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+        <!-- Right Side: Product Details -->
+        <div class="wrapper" style="flex: 2;">
+            <div class="title">{{ product.product_name }}</div>
+            <div class="toolbar">
+                <input type="checkbox" class="" id="selectAll">
+                <label for="selectAll">Select All</label>
+            </div>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Date Modified</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in root_folders_data %}
+                            {% include 'access_control/_folder_structure.html' with folder=item.folder documents=item.documents folder_uuid=item.folder_uuid depth=item.depth subfolders=item.subfolders %}
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Custom Confirmation Modal -->
-<div id="confirmationModal" class="custom-modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h5>Confirm Removal</h5>
-            <button type="button" class="close-modal-btn">&times;</button>
-        </div>
-        <div class="modal-body">
-            <p>Are you sure you want to remove access?</p>
-        </div>
-        <div class="modal-footer">
-            <button type="button" value="remove_access" id="confirmBtn" class="btn btn-danger">Remove</button>
-            <button type="button" class="btn btn-secondary close-modal-btn">Cancel</button>
-        </div>
-    </div>
-</div>
 
 {% block javascript %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
@@ -378,20 +274,8 @@ span {
 
 <script>
     
-var removeAccessBaseUrl = "{% url 'access_control:remove_access' product.id 9999 %}".replace('/9999', '');
+var removeAccessBaseUrl = "{% url 'access_control:remove_access' product_uuid 9999 %}".replace('/9999', '');
 
-function showMessage(message, type) {
-    // Assuming type can be 'success' or 'error' to add specific styling if needed
-    const messagePopup = document.createElement('div');
-    messagePopup.className = `message-popup ${type} rounded shadow-sm`;
-    messagePopup.innerHTML = `<div class="alert">${message}</div>`;
-    document.body.appendChild(messagePopup);
-
-    // Slide down animation
-    messagePopup.style.top = "20px"; // Adjust if necessary
-
-}
-    
 function removeAccess(partnerId) {
     
     document.getElementById('confirmationModal').style.display = 'block';
@@ -435,24 +319,43 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <script>
     // Define 'productId' at the top of your script or in a separate script block before using it
-    const productId = "{{ product.id }}"; // Dynamically set the productId using Django's template language
+    const productId = "{{ product_uuid }}"; // Dynamically set the productId using Django's template language
 </script>
 
 <script>
+    //function to switch all and granted tab
     document.addEventListener('DOMContentLoaded', function () {
-        // Select all the .list-group-item elements within the #partners-with-access container
-        var clickableDivs = document.querySelectorAll('#all-partners #partners-with-access .list-group-item');
-    
-        clickableDivs.forEach(function(div) {
-            div.addEventListener('click', function() {
-                // Find the radio button inside the clicked div and check it
-                var radioButton = this.querySelector('input[type=radio]');
-                if (radioButton) {
-                    radioButton.checked = true;
+        // Get all tab buttons
+        const tabButtons = document.querySelectorAll('.tab');
+
+        // Add click event listeners to each tab button
+        tabButtons.forEach(button => {
+            button.addEventListener('click', function () {
+                // Remove 'active' class from all tab buttons
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+
+                // Add 'active' class to the clicked tab button
+                this.classList.add('active');
+
+                // Get the data-tab attribute to know which tab to show
+                const tabToShow = this.getAttribute('data-tab');
+
+                // Hide all partner lists
+                document.querySelectorAll('.list-group').forEach(list => {
+                    list.style.display = 'none';
+                });
+
+                // Show the selected partner list
+                if (tabToShow === 'all') {
+                    document.getElementById('all-partners').style.display = 'block';
+                } else if (tabToShow === 'current') {
+                    document.getElementById('current-access').style.display = 'block';
                 }
             });
         });
     });
+
+    //function to select partner
 </script>
 
 <script>
@@ -479,6 +382,8 @@ document.addEventListener('DOMContentLoaded', function() {
 <script>
     function fetchPartnerAccessDetails(partnerId) {
         const url = `/access_control/fetch_access_details/${productId}/${partnerId}/`;
+        console.log(`Fetching data from: ${url}`);
+
         fetch(url)
             .then(response => {
                 if (!response.ok) {
@@ -487,12 +392,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 return response.json();
             })
             .then(data => {
+                console.log("Fetched data:", data);
                 updateAccessCheckboxes(data.folders, data.documents, data.product_access);
             })
             .catch(error => console.error('Error fetching access details:', error));
     }
 
     function updateAccessCheckboxes(folders, documents, grantingProductLevelAccess) {
+        console.log("Updating checkboxes with folders:", folders, "and documents:", documents);
+
         // Reset all checkboxes
         document.querySelectorAll('input[name="folders"], input[name="documents"]').forEach(input => {
             input.checked = false; // Reset checkbox state
@@ -500,37 +408,62 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Check the 'selectAll' checkbox based on grantingProductLevelAccess
         const selectAllCheckbox = document.getElementById('selectAll');
-        if(grantingProductLevelAccess) {
+        if (grantingProductLevelAccess) {
             selectAllCheckbox.checked = true;
         } else {
             selectAllCheckbox.checked = false;
         }
-        // Manually dispatch a change event for the 'selectAll' checkbox
         selectAllCheckbox.dispatchEvent(new Event('change', { 'bubbles': true }));
 
-        // Check folders and documents as before
+        // Check folders and documents
         folders.forEach(folderId => {
             const folderCheckbox = document.querySelector(`input[name="folders"][value="${folderId}"]`);
             if (folderCheckbox) {
+                console.log(`Checking folder checkbox with id: ${folderId}`);
                 folderCheckbox.checked = true;
                 folderCheckbox.dispatchEvent(new Event('change', { 'bubbles': true }));
+            } else {
+                console.warn(`Folder checkbox with id ${folderId} not found`);
             }
         });
 
         documents.forEach(documentId => {
             const documentCheckbox = document.querySelector(`input[name="documents"][value="${documentId}"]`);
             if (documentCheckbox) {
+                console.log(`Checking document checkbox with id: ${documentId}`);
                 documentCheckbox.checked = true;
                 documentCheckbox.dispatchEvent(new Event('change', { 'bubbles': true }));
+            } else {
+                console.warn(`Document checkbox with id ${documentId} not found`);
             }
         });
     }
+
     document.addEventListener("DOMContentLoaded", function() {
-        const partnerItems = document.querySelectorAll(".partner-access-item");
+        const partnerItems = document.querySelectorAll(".checkbox-container-radio");
+        
         partnerItems.forEach(item => {
+            // This handles the main container click
             item.addEventListener("click", function() {
-                const partnerId = this.dataset.partnerId;
+                // Get the partnerId from the parent element (.list-group-item-access)
+                const partnerId = this.closest('.partner-access-item').dataset.partnerId;
+                console.log(`Fetching access details for partnerId: ${partnerId}`);
                 fetchPartnerAccessDetails(partnerId);
+                
+                // Find the radio button inside the clicked container
+                const radioButton = this.querySelector('input[type="radio"]');
+                if (radioButton) {
+                    radioButton.checked = true;  // Set the radio button as checked
+                    radioButton.dispatchEvent(new Event('change', { 'bubbles': true })); // Trigger change event
+                }
+            });
+        });
+
+        // Add event listener to stop propagation on checkbox-container-radio
+        const checkboxContainers = document.querySelectorAll('.checkbox-container-radio');
+        checkboxContainers.forEach(container => {
+            container.addEventListener('click', function(event) {
+                event.stopPropagation(); // Prevents the click event from bubbling up to the parent
             });
         });
     });
@@ -541,19 +474,15 @@ document.addEventListener('DOMContentLoaded', function() {
 <script>
     document.addEventListener("DOMContentLoaded", function() {
         // Select both forms by their action attribute or any unique identifier
-        const forms = document.querySelectorAll('form[action="{% url 'access_control:manage_access' product.id %}"]');
+        const forms = document.querySelectorAll('form[action="{% url 'access_control:manage_access' product.uuid %}"]');
     
         forms.forEach((form) => {
             form.addEventListener("submit", function(event) {
-                // Prevent multiple submissions of hidden inputs if the form is submitted more than once
+                console.log("Form submitted");
                 removeHiddenInputs(form);
-    
-                // Assuming you want to keep using 'folders' and 'documents' as names for the checkboxes
-                // You'll need to ensure these inputs exist in your HTML
-    
-                // Select all checked folder checkboxes
+
                 const selectedFolders = document.querySelectorAll('input[name="folders"]:checked');
-                // For each selected folder, create a hidden input in the form
+                console.log("Selected Folders:", selectedFolders);
                 selectedFolders.forEach(function(folder) {
                     const hiddenInput = document.createElement("input");
                     hiddenInput.type = "hidden";
@@ -561,19 +490,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     hiddenInput.value = folder.value;
                     form.appendChild(hiddenInput);
                 });
-    
-                // Select all checked document checkboxes
+
                 const selectedDocuments = document.querySelectorAll('input[name="documents"]:checked');
-                // For each selected document, create a hidden input in the form
-                selectedDocuments.forEach(function(docItem) { // Renamed parameter to avoid conflict
+                console.log("Selected Documents:", selectedDocuments);
+                selectedDocuments.forEach(function(docItem) {
                     const hiddenInput = document.createElement("input");
                     hiddenInput.type = "hidden";
                     hiddenInput.name = "documents";
-                    hiddenInput.value = docItem.value; // Updated variable name here as well
+                    hiddenInput.value = docItem.value;
                     form.appendChild(hiddenInput);
                 });
-    
-                // No need to call event.preventDefault() as we want to submit the form
             });
         });
     
@@ -639,12 +565,12 @@ function clearAllCheckboxes() {
 
 function resetSelections() {
     // Uncheck all checkboxes in partner items
-    document.querySelectorAll('.list-group-item.flex-column input[type="checkbox"]').forEach(checkbox => {
+    document.querySelectorAll('.list-group-item-access.flex-column input[type="checkbox"]').forEach(checkbox => {
         checkbox.checked = false;
     });
 
     // Remove focus class from all partner items
-    document.querySelectorAll('.list-group-item.flex-column').forEach(item => {
+    document.querySelectorAll('.list-group-item-access.flex-column').forEach(item => {
         item.classList.remove('focus');
     });
 }
@@ -665,7 +591,7 @@ document.addEventListener("DOMContentLoaded", function() {
     };
 
     // Listen for clicks on partner items
-    document.querySelectorAll('.list-group-item.flex-column').forEach(item => {
+    document.querySelectorAll('.list-group-item-access.flex-column').forEach(item => {
         item.addEventListener('click', function() {
             togglePartnerSelection(this);
         });
