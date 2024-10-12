@@ -152,9 +152,9 @@ class EditProductView(AccessControlMixin, APIView):
         except BadSignature:
             return None
     
-    def has_access(self, user, obj):
-        # Only allow access if the user is the owner of the product
-        return obj.user == user
+    def has_access(self, user_company_profile, obj):
+        # Check if the company profile of the user is the same as the company profile of the product
+        return obj.company == user_company_profile
         
     def get(self, request, product_uuid, format=None):
         product = self.get_object_to_check(request, product_uuid=product_uuid)
